@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.32 2004/08/01 16:02:57 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.33 2004/09/19 21:34:55 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -58,7 +58,7 @@ pod will be generated speeding up the build process.
 sub do_pod_files
 {
 	return () if (grep /disable[-_]apidoc/i, @ARGV);
-	print STDERR "Including ApiDoc pod.\n";
+	print STDERR "Including ApiDoc pod...\n";
 
 	shift; # package name
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.64 2004/06/28 04:41:57 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.65 2004/09/19 21:34:55 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -2314,9 +2314,7 @@ void
 list_signals (class, package)
 	gchar * package
     PREINIT:
-	int            i;
-	guint          j;
-	int            num;
+	guint          i, j, num;
 	const char   * pkgname;
 	guint        * sigids;
 	GType          package_type;

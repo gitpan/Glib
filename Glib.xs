@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.37 2004/06/22 02:11:32 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.38 2004/09/19 21:34:55 kaffeetisch Exp $
  */
 
 =head2 Miscellaneous
@@ -132,7 +132,7 @@ gperl_sv_from_filename (const gchar *filename)
 {
 	GError *error = NULL;
         SV *sv;
-	gssize len;
+	gsize len;
         gchar *str = g_filename_to_utf8 (filename, -1, NULL, &len, &error);
 
         if (!str)

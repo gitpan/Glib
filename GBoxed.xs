@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.19 2004/04/14 17:59:23 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.20 2004/09/19 21:34:55 kaffeetisch Exp $
  */
 
 =head2 GBoxed
@@ -331,7 +331,9 @@ default_boxed_unwrap (GType        gtype,
 		croak ("expected a blessed reference");
 
 	if (!sv_derived_from (sv, package))
-		croak ("variable is not of type %s", package);
+		croak ("%s is not of type %s",
+		       gperl_format_variable_for_output (sv),
+		       package);
 
 	boxed_wrapper = INT2PTR (BoxedWrapper*, SvIV (SvRV (sv)));
 	if (!boxed_wrapper)
