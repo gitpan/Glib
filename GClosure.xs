@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.24 2003/11/12 02:25:56 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.26 2003/11/17 01:37:26 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -101,11 +101,17 @@ gperl_closure_marshal (GClosure * closure,
 
 	flags = return_value ? G_SCALAR : G_DISCARD;
 
+	SPAGAIN;
+
 	GPERL_CLOSURE_MARSHAL_CALL (flags);
 
-	if (return_value && G_VALUE_TYPE (return_value)) {
-		SPAGAIN;
-		gperl_value_from_sv (return_value, POPs);
+	if (return_value) {
+		/* we need to remove the value to from the stack,
+		 * regardless of whether we do anything with it. */
+		SV * sv = POPs;
+		if (G_VALUE_TYPE (return_value))
+			gperl_value_from_sv (return_value, sv);
+		PUTBACK; /* vitally important */
 	}
 
 	/*
@@ -345,14 +351,11 @@ gperl_callback_invoke (GPerlCallback * callback,
                        ...)
 {
 	va_list var_args;
-	dSP;
+	dGPERL_CALLBACK_MARSHAL_SP;
 
 	g_return_if_fail (callback != NULL);
 
-#ifdef PERL_IMPLICIT_CONTEXT
-	PERL_SET_CONTEXT (callback->priv);
-	SPAGAIN;
-#endif
+	GPERL_CALLBACK_MARSHAL_INIT (callback);
 
 	ENTER;
 	SAVETMPS;
@@ -362,9 +365,6 @@ gperl_callback_invoke (GPerlCallback * callback,
 	va_start (var_args, return_value);
 
 	/* put args on the stack */
-#ifdef NOISY
-	warn ("/* put args on the stack */\n");
-#endif
 	if (callback->n_params > 0) {
 		int i;
 
@@ -415,9 +415,6 @@ gperl_callback_invoke (GPerlCallback * callback,
 	PUTBACK;
 
 	/* invoke the callback */
-#ifdef NOISY
-	warn ("/* invoke the callback */\n");
-#endif
 	if (return_value && G_VALUE_TYPE (return_value)) {
 		if (1 != call_sv (callback->func, G_SCALAR))
 			croak ("callback returned more than one value in "
@@ -425,17 +422,12 @@ gperl_callback_invoke (GPerlCallback * callback,
 			       "is happening");
 		SPAGAIN;
 		gperl_value_from_sv (return_value, POPs);
+		PUTBACK; /* we modified the stack pointer */
 	} else {
-#ifdef NOISY
-		warn ("calling call_sv\n");
-#endif
 		call_sv (callback->func, G_DISCARD);
 	}
 
 	/* clean up */
-#ifdef NOISY
-	warn ("/* clean up */\n");
-#endif
 
 	FREETMPS;
 	LEAVE;

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.34 2003/11/13 18:49:37 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.38 2003/11/21 06:31:28 muppetman Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -351,8 +351,6 @@ static SV *
 flags_as_arrayref (GType type,
 		   gint val)
 {
-	const char * package;
-	SV * rv;
 	GFlagsValue * vals = gperl_type_flags_get_values (type);
 	AV * flags = newAV ();
 	while (vals && vals->value_nick && vals->value_name) {
@@ -687,6 +685,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 		if (return_value) {
 			SPAGAIN;
 			gperl_value_from_sv (return_value, POPs);
+			PUTBACK;
 		}
 
 		FREETMPS;
@@ -825,9 +824,7 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 	sv = POPs;
 	retval = SvTRUE (sv);
 
-/* warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
- * warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return)))); */
-
+	PUTBACK;
 	FREETMPS;
 	LEAVE;
 
@@ -873,11 +870,11 @@ parse_signal_hash (GType instance_type,
 	PERL_UNUSED_VAR (signal_name);
 
 	svp = hv_fetch (hv, "flags", 5, FALSE);
-	if (svp && (*svp) && SvTRUE (*svp))
+	if (svp && (*svp) && SvOK (*svp))
 		s->flags = SvGSignalFlags (*svp);
 
 	svp = hv_fetch (hv, "param_types", 11, FALSE);
-	if (svp && (*svp) && SvTRUE (*svp) && SvROK (*svp)
+	if (svp && (*svp) && SvROK (*svp)
 	    && SvTYPE (SvRV (*svp)) == SVt_PVAV) {
 		guint i;
 		AV * av = (AV*) SvRV (*svp);
@@ -896,7 +893,7 @@ parse_signal_hash (GType instance_type,
 
 	svp = hv_fetch (hv, "class_closure", 13, FALSE);
 	if (svp && *svp) {
-		if (SvTRUE (*svp))
+		if (SvOK (*svp))
 			s->class_closure =
 				gperl_closure_new (*svp, NULL, FALSE);
 		/* else the class closure is NULL */
@@ -905,7 +902,7 @@ parse_signal_hash (GType instance_type,
 	}
 
 	svp = hv_fetch (hv, "return_type", 11, FALSE);
-	if (svp && (*svp) && SvTRUE (*svp)) {
+	if (svp && (*svp) && SvOK (*svp)) {
 		s->return_type = gperl_type_from_package (SvPV_nolen (*svp));
 		if (!s->return_type)
 			croak ("unknown or unregistered return type %s",
@@ -983,7 +980,7 @@ add_signals (GType instance_type, HV * signals)
 				croak ("failed to create signal %s",
 				       signal_name);
 
-		} else if ((SvPOK (value) && SvTRUE (value)) ||
+		} else if ((SvPOK (value) && SvLEN (value) > 0) ||
 		           (SvROK (value) && SvTYPE (SvRV (value)) == SVt_PVCV)) {
 			/*
 			 * a subroutine reference or method name to override
@@ -1061,6 +1058,7 @@ gperl_type_get_property (GObject * object,
 
                   gperl_value_from_sv (value, POPs);
 
+                  PUTBACK;
                   FREETMPS;
                   LEAVE;
         }
@@ -1499,7 +1497,7 @@ list_signals (class, package)
 	gchar * package
     PREINIT:
 	int            i;
-	int            j;
+	guint          j;
 	int            num;
 	const char   * pkgname;
 	guint        * sigids;
@@ -1519,12 +1517,26 @@ list_signals (class, package)
 		croak ("%s is not registered with either GPerl or GLib",
 		       package);
 
-	if (!G_TYPE_IS_CLASSED (package_type) || 
-	    !G_TYPE_IS_INSTANTIATABLE(package_type))
+	if (!G_TYPE_IS_INSTANTIATABLE(package_type) &&
+	    !G_TYPE_IS_INTERFACE (package_type))
 		XSRETURN_EMPTY;
-	oclass = g_type_class_ref (package_type);
-	if (!oclass)
-		XSRETURN_EMPTY;
+	if (G_TYPE_IS_CLASSED (package_type)) {
+		/* ref the class to ensure that the signals get created. */
+		oclass = g_type_class_ref (package_type);
+		if (!oclass)
+			XSRETURN_EMPTY;
+	} else {
+#if 0
+		/* we need to ensure that the interface's prerequisite types
+		 * have been created, in case any signals in this type depend
+		 * on the prerequisite.  however, this only works on 2.2.x...
+		 * what can we do about that? */
+		int i, n;
+		GType * prereqs = g_type_interface_prerequisites (package_type, &n);
+		for (i = 0 ; i < n ; i++)
+			warn ("  prereq %d : %s\n", i, g_type_name (prereqs[i]));
+#endif
+	}
 	sigids = g_signal_list_ids (package_type, &num);
 	if (!num)
 		XSRETURN_EMPTY;
@@ -1558,7 +1570,8 @@ list_signals (class, package)
 		hv_store (hv, "param_types", 11, newRV_noinc ((SV*)av), 0);
 		PUSHs (sv_2mortal (newRV_noinc ((SV*)hv)));
 	}
-	g_type_class_unref (oclass);
+	if (oclass)
+		g_type_class_unref (oclass);
 #undef GET_NAME
 
 

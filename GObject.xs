@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.23 2003/11/10 00:09:10 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.24 2003/11/21 06:31:28 muppetman Exp $
  */
 
 /* 
@@ -663,7 +663,7 @@ gperl_get_object_check (SV * sv,
 	if (!package)
 		croak ("INTERNAL: GType %s (%d) is not registered with GPerl!",
 		       g_type_name (gtype), gtype);
-	if (!SvTRUE(sv) || !SvROK (sv) || !sv_derived_from (sv, package))
+	if (!sv || !SvROK (sv) || !sv_derived_from (sv, package))
 		croak ("variable is not of type %s", package);
 	return gperl_get_object (sv);
 }

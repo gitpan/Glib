@@ -1,3 +1,79 @@
+2003/11/21 02:12 (-0500) muppetman
+
+	* Glib.pm, README: bump version to 1.012 and release.
+
+2003/11/21 01:00 (-0500) muppetman
+
+	* GBoxed.xs: implement a generic Glib::Boxed::copy, and some doc
+
+	* GBoxed.xs, GObject.xs, GType.xs, GValue.xs, typemap: replace
+	SvTRUE() with SvOK() as a more efficient test for definedness.
+	SvTRUE() is rather heavy, in that it evaluates to an awful lot
+	of code, where what we generally need is just to see if the scalar
+	is the Perl equivalent of C's NULL.
+
+	* GParamSpec.xs: now that there's a gunichar typemap, implement
+	things that were waiting on it.  not sure why you'd want a unichar
+	param in perl, but the point is to make it possible.  :-)
+
+2003/11/19 14:08 (-0500) muppetman
+
+	cleanup for win32:
+
+	* GType.xs: hush some warnings from msvc
+
+	* MakeHelper.pm: if we're using cl, use its weird command switch
+	to put the object files in the right place... /Fo<file>
+
+	* Glib.exports: added some missing symbols
+
+2003/11/18 17:21 (-0500) muppetman
+
+	* Glib.xs: use GPerlFilename_const in the right place to hush the
+	compiler.  also use the length returned from g_filename_(to|from)_utf8
+	to avoid having  to call strlen() in gperl_sv_from_filename and
+	gperl_filename_from_sv.
+
+2003/11/18 01:09 (-0500) muppetman
+
+	* GType.xs: interfaces can have signals as well; adjust logic to
+	allow them through as well.  this still misses some signals because
+	on 2.0.x we don't have a way to list interfaces' prerequisite types
+	to ensure that they are loaded.  the beginnings of code to use
+	g_type_interface_prerequisites() in 2.2.x is commented out, waiting
+	for me to finish it.
+
+	* ParseXSDoc: handle length() arguments in xsubs.  they basically
+	just get stripped.
+
+	* GenPod.pm: 'gchar_length' means 'string'.
+
+	* typemap: a corresponding OUTPUT typemap for gunichar.
+
+2003/11/17 22:02 (+0100) kaffeetisch
+
+	* typemap: Implement a gunichar INPUT typemap.
+
+2003/11/16 20:32 (-0500) muppetman
+
+	* gperl_marshal.h: add similar macros for GPerlCallback, to make sure
+	that the callback is executed by the correct interpreter.
+
+	* GClosure.xs: use the new GPerlCallback helper macros in
+	gperl_marshal.h
+
+2003/11/16 02:44 (-0500) muppetman
+
+	* GClosure.xs, GType.xs: clean up the stack properly after call_sv
+	to stop internal bleeding.
+
+	* TODO: updated
+
+2003/11/14 04:31 pcg
+
+        * Glib.pm: rework the doc for filename conversion. horribly buggy
+        it still was.
+
 2003/11/13 21:32 (-0500) muppetman
 
 	* Glib.pm, README: bump version to 1.011 for first 1.02 beta

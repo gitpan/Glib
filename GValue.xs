@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.9 2003/09/21 16:59:12 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.10 2003/11/21 06:31:28 muppetman Exp $
  */
 
 =head2 GValue
@@ -119,10 +119,8 @@ gperl_value_from_sv (GValue * value,
 		case G_TYPE_BOXED:
 			/* SVs need special treatment! */
 			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV))
-				g_value_set_boxed (value, 
-				                   sv == &PL_sv_undef 
-				                    ? NULL
-				                    : sv);
+				g_value_set_boxed (value, !SvOK (sv) 
+				                   ? NULL : sv);
 			else
 				g_value_set_boxed (value, gperl_get_boxed_check (sv, G_VALUE_TYPE(value)));
 			break;

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.41 2003/11/14 04:29:44 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.43 2003/11/21 07:37:52 muppetman Exp $
 #
 
 package Glib;
@@ -27,7 +27,7 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '1.011';
+our $VERSION = '1.012';
 
 # this is the 'lite' version of what we could get Exporter to do for us.
 # we export nothing, so it seems silly to drag in all of Exporter::Heavy
@@ -285,48 +285,54 @@ Glib::MainLoop, GObject is now Glib::Object, GBoxed is now Glib::Boxed, etc.
 
 =head1 FILENAMES, URIS AND ENCODINGS
 
-Perl knows two datatypes, unicode text and binary data. Filenames on a
-system that doesn't use a utf-8 locale are usually stored in a local
-encoding ("binary"). Gtk+ and descendants, however, internally work in
-unicode all the time, so when feeding a filename into a GLib/Gtk+ function
-that expects a filename, you first need to convert it from the local
-encoding to unicode.
+Perl knows two datatypes, unicode text and binary bytes. Filenames on
+a system that doesn't use a utf-8 locale are often stored in a local
+encoding ("binary bytes"). Gtk+ and descendants, however, internally
+work in unicode most of the time, so when feeding a filename into a
+GLib/Gtk+ function that expects a filename, you first need to convert it
+from the local encoding to unicode.
 
 This involves some elaborate guessing, which perl currently avoids, but
-GLib and Gtk+ do. The following functions expose the conversion algorithm
-that glib uses.
+GLib and Gtk+ do. As an exception, some Gtk+ functions want a filename
+in local encoding, but the perl interface usually works around this by
+automatically converting it for you.
+
+In short: Everything should be in unicode on the perl level.
+
+The following functions expose the conversion algorithm that GLib uses.
 
 These functions are only necessary when you want to use perl functions
-to manage filenames returned by a glib/gtk+ function, or when you feed
-filenames into glib/gtk+ functions that have their source outside your
-program (e.g. commandline arguments).
+to manage filenames returned by a GLib/Gtk+ function, or when you feed
+filenames into GLib/Gtk+ functions that have their source outside your
+program (e.g. commandline arguments, readdir results etc.).
 
 =over 4
 
 =item $filename = Glib::filename_to_unicode $filename_in_local_encoding
 
-Convert a perl strings that supposedly contains a filename into a filename
-in the local encoding, the same way that glib or gtk+ do it internally.
+Convert a perl string that supposedly contains a filename in local
+encoding into a filename represented as unicode, the same way that GLib
+does it internally.
 
 Example:
 
-   $filesel->set_filename (Glib::filename_to_unicode $ARGV[1]);
+   $gtkfilesel->set_filename (Glib::filename_to_unicode $ARGV[1]);
 
 =item $filename_in_local_encoding = Glib::filename_from_unicode $filename
 
-Converts a perl string containing a filename in the local encoding into a
-perl string in the same way glib ot gtk+ do it.
+Converts a perl string containing a filename into a filename in the local
+encoding in the same way GLib does it.
 
 Example:
 
-   open MY, "<", Glib::filename_from_unicode $filesel->get_filename;
+   open MY, "<", Glib::filename_from_unicode $gtkfilesel->get_filename;
 
 =back
 
 Other functions for converting URIs are currently missing. Also, it might
-be useful to know that perl currently has no policy at all regarding this
-issue, if your scalar happens to be in utf8 internally it will use utf8,
-if it happens to be stored as bytes, it will use it as-is.
+be useful to know that perl currently has no policy at all regarding
+filename issues, if your scalar happens to be in utf-8 internally it will
+use utf-8, if it happens to be stored as bytes, it will use it as-is.
 
 
 =head1 EXCEPTIONS

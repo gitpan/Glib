@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.8 2003/11/08 06:12:09 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.9 2003/11/19 20:15:41 muppetman Exp $
 #
 
 @exports = qw(
@@ -24,6 +24,8 @@ gperl_croak_gerror
 gperl_alloc_temp
 gperl_str_eq
 gperl_str_hash
+gperl_filename_from_sv
+gperl_sv_from_filename
 gperl_try_convert_enum
 gperl_convert_enum
 gperl_convert_back_enum_pass_unknown

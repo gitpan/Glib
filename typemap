@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.15 2003/11/12 20:46:28 pcg Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.18 2003/11/21 06:31:28 muppetman Exp $
 #
 
 TYPEMAP
@@ -33,6 +33,7 @@ gint64		T_IV
 guint64		T_UV
 glong		T_IV
 gulong		T_UV
+gunichar	T_GUNICHAR
 gchar		T_IV
 gchar *		T_GCHAR
 const gchar *	T_GCHAR
@@ -74,6 +75,9 @@ T_GPERL_GENERIC_WRAPPER
 	$var = Sv${(my $ntype = $type) =~ s/(?:const\s+)?([:\w]+)(?:\s*\*)$/$1/x;
 	           \$ntype} ($arg);
 
+T_GUNICHAR
+	$var = g_utf8_get_char (SvGChar ($arg));
+
 T_GCHAR
 	/* same as SvGChar(), but not in a function */
 	sv_utf8_upgrade ($arg);
@@ -97,7 +101,7 @@ T_G_TYPE_IO_CONDITION
 	$var = gperl_convert_flags (G_TYPE_IO_CONDITION, $arg);
 
 T_G_MAIN_CONTEXT
-	if (!$arg || !SvTRUE ($arg) || !SvROK ($arg)) {
+	if (!$arg || !SvOK ($arg) || !SvROK ($arg)) {
 		$var = NULL;
 	} else {
 		$var = ($type) SvIV (SvRV ($arg));
@@ -113,6 +117,14 @@ OUTPUT
 
 T_GPERL_GENERIC_WRAPPER
 	$arg = newSV${(my $ntype = $type) =~ s/\s*\*//; \$ntype} ($var);
+
+T_GUNICHAR
+	{
+	gchar temp[6];
+	gint length = g_unichar_to_utf8 ($var, temp);
+	sv_setpvn ((SV*)$arg, temp, length);
+	SvUTF8_on ($arg);
+	}
 
 T_GCHAR
 	/* same as newSVGChar(), but not in a function */

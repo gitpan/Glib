@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.9 2003/11/10 00:09:11 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.10 2003/11/21 06:31:28 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -250,9 +250,12 @@ g_param_spec_boolean (class, name, nick, blurb, default_value, flags)
 	name, nick, blurb, default_value, flags
 
 
-#### gunichar not in typemap
 ###  GParamSpec* g_param_spec_unichar (const gchar *name, const gchar *nick, const gchar *blurb, gunichar default_value, GParamFlags flags) 
-#
+GParamSpec*
+g_param_spec_unichar (const gchar *name, const gchar *nick, const gchar *blurb, gunichar default_value, GParamFlags flags) 
+    C_ARGS:
+	name, nick, blurb, default_value, flags
+
 ###  GParamSpec* g_param_spec_enum (const gchar *name, const gchar *nick, const gchar *blurb, GType enum_type, gint default_value, GParamFlags flags) 
 GParamSpec*
 g_param_spec_enum (class, const gchar *name, const gchar *nick, const gchar *blurb, const char * enum_type, SV * default_value, GParamFlags flags)
