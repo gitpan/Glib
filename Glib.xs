@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.2 2003/05/22 14:23:11 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.3 2003/06/27 17:02:29 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -83,3 +83,4 @@ BOOT:
 	GPERL_CALL_BOOT (boot_Glib__Object);
 	GPERL_CALL_BOOT (boot_Glib__Signal);
 	GPERL_CALL_BOOT (boot_Glib__MainLoop);
+	GPERL_CALL_BOOT (boot_Glib__ParamSpec);

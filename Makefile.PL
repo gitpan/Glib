@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.2 2003/06/18 23:51:45 pcg Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.5 2003/07/05 05:19:52 muppetman Exp $
 #
 
 use 5.008;
@@ -15,6 +15,17 @@ mkdir 'build', 0777;
 %pkgcfg = Glib::PkgConfig->find ('gobject-2.0');
 
 if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') }) {
+   %pm_files = (
+	'Glib.pm'      => '$(INST_LIBDIR)/Glib.pm',
+	'PkgConfig.pm' => '$(INST_LIBDIR)/Glib/PkgConfig.pm',
+	'Subclass.pm'  => '$(INST_LIBDIR)/Glib/Object/Subclass.pm',
+   );
+   %pod_files = (
+	'Glib.pm'      => '$(INST_MAN3DIR)/Glib.3pm',
+	'PkgConfig.pm' => '$(INST_MAN3DIR)/Glib::PkgConfig.3pm',
+	'Subclass.pm'  => '$(INST_MAN3DIR)/Glib::Object::Subclass.3pm',
+   );
+
    # add -I. and -I./build to the include path so we can find our own files.
    # this will be inherited by dependant modules, so they can find their
    # generated files.
@@ -24,10 +35,9 @@ if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') })
    $glib->add_headers ('"gperl.h"');
    $glib->install (qw(gperl.h));
    $glib->save_config ('build/IFiles.pm');
-   $glib->add_pm ('Glib.pm'         => '$(INST_LIBDIR)/Glib.pm',
-               'PkgConfig.pm' => '$(INST_LIBDIR)/Glib/PkgConfig.pm');
-   $glib->add_xs ('Glib.xs', 'GType.xs', 'GBoxed.xs', 'GObject.xs', 'GValue.xs', 
-               'GClosure.xs', 'GSignal.xs', 'GMainLoop.xs');
+   $glib->add_pm (%pm_files);
+   $glib->add_xs ('Glib.xs', 'GType.xs', 'GBoxed.xs', 'GObject.xs', 'GValue.xs',
+                  'GClosure.xs', 'GSignal.xs', 'GMainLoop.xs', 'GParamSpec.xs');
 }
 
 WriteMakefile(
@@ -38,7 +48,8 @@ WriteMakefile(
                              ExtUtils::Depends => 0.1,
                            },
     ABSTRACT_FROM	=> 'Glib.pm', # retrieve abstract from module
-    OBJECT		=> '$(O_FILES)', # link all the C files too
+    XSPROTOARG		=> '-noprototypes',
+    MAN3PODS		=> $glib ? \%pod_files : {},
     $glib ? $glib->get_makefile_vars : (),
 );
 

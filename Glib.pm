@@ -16,7 +16,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
 # Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.7 2003/06/20 16:03:01 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.10 2003/07/05 05:04:46 muppetman Exp $
 #
 
 package Glib;
@@ -24,51 +24,17 @@ package Glib;
 use 5.008;
 use strict;
 use warnings;
-use Carp;
 
-require Exporter;
 require DynaLoader;
-use AutoLoader;
+our @ISA = qw(DynaLoader);
 
-our @ISA = qw(Exporter DynaLoader);
-
-# Items to export into callers namespace by default. Note: do not export
-# names by default without a very good reason. Use EXPORT_OK instead.
-# Do not simply export all your public functions/methods/constants.
-
-# This allows declaration	use Glib ':all';
-# If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
-# will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw(
-
-) ] );
-
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-
-our @EXPORT = qw(
-
-);
-
-our $VERSION = '0.24';
+our $VERSION = 0.26;
 
 sub dl_load_flags { 0x01 }
 
 bootstrap Glib $VERSION;
 
-# Preloaded methods go here.
-
-package Glib::Object;
-
-use overload
-	'==' => \&Glib::Object::eq,
-	fallback => 1;
-
-package Glib;
-
-# Autoload methods go after =cut, and are processed by the autosplit program.
-
 1;
-__END__
 
 =head1 NAME
 
@@ -104,15 +70,15 @@ that purpose.  [FIXME link to a document describing this stuff in detail.]
 This module also provides facilities for creating wrappers for other
 GObject-based libraries.  [FIXME link to a developer's doc]
 
-
 =head1 SEE ALSO
+
+How to create your own gobject subclasses:
+
+  Glib::Objects::Subclass
 
 Other PMs installed with this module:
 
   Glib::PkgConfig - simple interface to pkg-config for developers
-  ExtUtils::Depends - Easily build XS extensions that depend
-                      on XS extensions
-
 
 This module is the basis for the Gtk2 module, so most of the references
 you'll be able to find about this one are tied to that one.  The perl
@@ -136,7 +102,9 @@ http://lists.gnome.org/.
 muppet, E<lt>scott at asofyet dot orgE<gt>, who borrowed heavily from the work
 of Göran Thyni, E<lt>gthyni at kirra dot netE<gt> and Guillaume Cottenceau
 E<lt>gc at mandrakesoft dot comE<gt> on the first gtk2-perl module, and from
-the sourcecode of the original gtk-perl and pygtk projects.
+the sourcecode of the original gtk-perl and pygtk projects.  Marc Lehmann
+E<lt>pcg at goof dot comE<gt> did lots of great work on the magic of making
+Glib::Object wrapper and subclassing work like they should.
 
 =head1 COPYRIGHT AND LICENSE
 

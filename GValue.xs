@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.3 2003/06/11 13:27:27 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.5 2003/06/27 17:02:21 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -42,7 +42,6 @@ gperl_value_from_sv (GValue * value,
     			g_value_set_object(value, gperl_get_object(sv));
 			break;
 		case G_TYPE_CHAR:
-			//if ((tmp = SvPV_nolen(sv)))
 			if ((tmp = SvGChar(sv)))
 				g_value_set_char(value, tmp[0]);
 			else
@@ -121,7 +120,7 @@ gperl_value_from_sv (GValue * value,
 
 
 SV *
-gperl_sv_from_value (GValue * value)
+gperl_sv_from_value (const GValue * value)
 {
 	int typ = G_TYPE_FUNDAMENTAL(G_VALUE_TYPE(value)); 
 	switch (typ) {
@@ -170,7 +169,6 @@ gperl_sv_from_value (GValue * value)
 			 * rather than inside blessed wrappers. */
 			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV)) {
 				SV * sv = g_value_get_boxed (value);
-				//return sv ? sv : &PL_sv_undef;
 				return sv ? g_value_dup_boxed (value)
 				          : &PL_sv_undef;
 			}
@@ -200,3 +198,7 @@ gperl_sv_from_value (GValue * value)
 	return NULL;
 }
 
+/* apparently this line is required by ExtUtils::ParseXS, but not by xsubpp. */
+MODULE = Glib::Value	PACKAGE = Glib::Value	PREFIX = g_value_
+
+PROTOTYPES: ENABLE

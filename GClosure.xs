@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.6 2003/06/18 20:56:39 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.7 2003/06/25 15:02:14 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -423,3 +423,5 @@ dump_callback (GPerlCallback * c)
 
 #endif
 
+/* ExtUtils::ParseXS requires at least one MODULE line to be present */
+MODULE = Glib::Closure	PACKAGE = Glib::Closure	PREFIX = g_closure_
