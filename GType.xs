@@ -1,22 +1,22 @@
 /*
- * Copyright (c) 2003 by the gtk2-perl team (see the file AUTHORS)
+ * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
+ * list)
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Library General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at your
+ * option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+ * License for more details.
  *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the 
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
- * Boston, MA  02111-1307  USA.
+ * You should have received a copy of the GNU Library General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.14 2003/09/16 19:09:25 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.17 2003/10/10 02:43:41 muppetman Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -396,7 +396,7 @@ gperl_set_isa (const char * child_package,
 
 	child_isa_full = g_strconcat (child_package, "::ISA", NULL);
 	isa = get_av (child_isa_full, TRUE); /* create on demand */
-	//warn ("--> @%s = qw(%s);\n", child_isa_full, parent_package);
+	/* warn ("--> @%s = qw(%s);\n", child_isa_full, parent_package); */
 	g_free (child_isa_full);
 
 	av_push (isa, newSVpv (parent_package, 0));
@@ -418,7 +418,7 @@ gperl_prepend_isa (const char * child_package,
 
 	child_isa_full = g_strconcat (child_package, "::ISA", NULL);
 	isa = get_av (child_isa_full, TRUE); /* create on demand */
-	//warn ("--> @%s = qw(%s);\n", child_isa_full, parent_package);
+	/* warn ("--> @%s = qw(%s);\n", child_isa_full, parent_package); */
 	g_free (child_isa_full);
 
 	av_unshift (isa, 1);
@@ -451,7 +451,7 @@ gperl_type_from_package (const char * package)
 	return 0;
 }
 
-=item GType gperl_type_from_package (GType gtype)
+=item GType gperl_package_from_type (GType gtype)
 
 Look up the name of the package associated with I<gtype>, regardless of how it
 was registered.  Returns NULL if no mapping can be found.
@@ -751,7 +751,7 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 	int n;
 	gboolean retval;
 
-//	warn ("gperl_real_signal_accumulator");
+/*	warn ("gperl_real_signal_accumulator"); */
 
 	/* invoke the callback, with custom marshalling */
 	ENTER;
@@ -768,8 +768,8 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 
 	PUTBACK;
 
-//warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
-//warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return))));
+/* warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
+ * warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return)))); */
 
 	n = call_sv (callback->func, G_EVAL|G_ARRAY);
 
@@ -808,8 +808,8 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 	sv = POPs;
 	retval = SvTRUE (sv);
 
-//warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
-//warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return))));
+/* warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
+ * warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return)))); */
 
 	FREETMPS;
 	LEAVE;
@@ -922,7 +922,7 @@ add_signals (GType instance_type, HV * signals)
 
 		/* the key is the signal name */
 		signal_name = hv_iterkey (he, &keylen);
-//		warn ("\n#####\nsignal name: %s\n", signal_name);
+/*		warn ("\n#####\nsignal name: %s\n", signal_name); */
 		/* if the signal is defined at this point, we're going to
 		 * override the installed closure. */
 		signal_id = g_signal_lookup (signal_name, instance_type);
@@ -945,9 +945,9 @@ add_signals (GType instance_type, HV * signals)
 			s = parse_signal_hash (instance_type,
 			                       signal_name,
 			                       (HV*) SvRV (value));
-//			warn ("\ncreating signal %s with accumulator %p and accu_data %p\n", signal_name, s->accumulator, s->accu_data);
-//			sv_setsv (DEFSV, newSVGSignalFlags (s->flags));
-//			eval_pv ("warn ('   flags ['.join (', ', @$_).\"]\n\")", 0);
+/*			warn ("\ncreating signal %s with accumulator %p and accu_data %p\n", signal_name, s->accumulator, s->accu_data);
+ *			sv_setsv (DEFSV, newSVGSignalFlags (s->flags));
+ *			eval_pv ("warn ('   flags ['.join (', ', @$_).\"]\n\")", 0); */
 			signal_id = g_signal_newv (signal_name,
 			                           instance_type,
 			                           s->flags,

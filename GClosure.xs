@@ -1,22 +1,22 @@
 /*
- * Copyright (c) 2003 by the gtk2-perl team (see the file AUTHORS)
+ * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
+ * list)
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Library General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or (at your
+ * option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License for more details.
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Library General Public
+ * License for more details.
  *
- * You should have received a copy of the GNU Library General Public
- * License along with this library; if not, write to the 
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
- * Boston, MA  02111-1307  USA.
+ * You should have received a copy of the GNU Library General Public License
+ * along with this library; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.13 2003/09/16 19:09:01 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.16 2003/10/02 07:13:03 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -387,11 +387,11 @@ gperl_callback_invoke (GPerlCallback * callback,
 	va_list var_args;
 #ifndef PERL_IMPLICIT_CONTEXT
 	dSP;
+	g_return_if_fail (callback != NULL);
 #else
 	SV ** SP;
-
+	g_return_if_fail (callback != NULL);
 	PERL_SET_CONTEXT (callback->priv);
-
 	SPAGAIN;
 #endif
 
@@ -423,7 +423,12 @@ gperl_callback_invoke (GPerlCallback * callback,
 				/* we modified the stack -- we need to make 
 				 * sure perl sees that! */
 				PUTBACK;
-				errstr = newSVpvn (error, 0);
+				errstr = newSVpvf ("error while collecting"
+				                   " varargs parameters: %s\n"
+						   "is your GPerlCallback "
+						   "created properly? "
+						   " bailing out",
+						   error);
 				g_free (error);
 				/* this won't return */
 				croak (SvPV_nolen (errstr));
