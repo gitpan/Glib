@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.3 2004/05/04 22:11:24 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.3.2.1 2005/01/29 20:54:32 muppetman Exp $
 #
 
 #
@@ -136,7 +136,7 @@ is ($obj->get ('some_enum'), 'value-one', 'enum property');
 $obj->set (some_enum => 'value-two');
 is ($obj->get ('some_enum'), 'value-two', 'enum property, after set');
 
-ok (eq_array ([$obj->get ('some_flags')], ['value-one']), 'flags property');
+ok (eq_array ($obj->get ('some_flags'), ['value-one']), 'flags property');
 $obj->set (some_flags => ['value-one', 'value-two']);
 is ($obj->get ('some_flags'), ['value-one', 'value-two'], 
 	'flags property, after set');
