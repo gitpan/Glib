@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.12 2003/11/21 06:31:27 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.12.2.2 2004/02/05 04:51:08 muppetman Exp $
  */
 
 =head2 GBoxed
@@ -242,7 +242,7 @@ gperl_boxed_package_from_type (GType type)
 	G_LOCK (info_by_gtype);
 
 	boxed_info = (BoxedInfo*)
-		g_hash_table_lookup (info_by_gtype, (gpointer)type);
+		g_hash_table_lookup (info_by_gtype, (gpointer) type);
 
 	G_UNLOCK (info_by_gtype);
 
@@ -459,13 +459,12 @@ gperl_get_boxed_check (SV * sv, GType gtype)
 		       g_type_name (gtype));
 
 	G_LOCK (info_by_gtype);
-	boxed_info = g_hash_table_lookup (info_by_gtype,
-	                                  (gpointer)gtype);
+	boxed_info = g_hash_table_lookup (info_by_gtype, (gpointer) gtype);
 	G_UNLOCK (info_by_gtype);
 
 	if (!boxed_info)
 		croak ("internal problem: GType %s (%d) has not been registered with GPerl",
-			gtype, g_type_name (gtype));
+			g_type_name (gtype), gtype);
 
 	unwrap = boxed_info->wrapper_class
 	       ? boxed_info->wrapper_class->unwrap

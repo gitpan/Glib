@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.10 2003/11/21 06:31:28 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.10.2.2 2004/02/05 04:51:08 muppetman Exp $
  */
 
 =head2 GValue
@@ -114,7 +114,8 @@ gperl_value_from_sv (GValue * value,
 			g_value_set_string(value, SvGChar(sv));
 			break;
 		case G_TYPE_POINTER:
-			g_value_set_pointer(value, (gpointer) SvIV(sv));
+			g_value_set_pointer (value,
+			                     INT2PTR (gpointer, SvIV (sv)));
 			break;
 		case G_TYPE_BOXED:
 			/* SVs need special treatment! */
@@ -207,7 +208,7 @@ gperl_sv_from_value (const GValue * value)
 			return newSVGChar (g_value_get_string (value));
 
 		case G_TYPE_POINTER:
-			return newSViv((IV) g_value_get_pointer(value));
+			return newSViv (PTR2IV (g_value_get_pointer (value)));
 
 		case G_TYPE_BOXED:
 			/* special case for SVs, which are stored directly

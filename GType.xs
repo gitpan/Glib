@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.41 2003/11/29 03:03:12 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.41.2.4 2004/02/05 04:51:08 muppetman Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -90,8 +90,8 @@ gperl_register_fundamental (GType gtype, const char * package)
 			                       (GDestroyNotify)g_free);
 	}
 	p = g_strdup (package);
-	g_hash_table_insert (packages_by_type, (gpointer)gtype, p);
-	g_hash_table_insert (types_by_package, p, (gpointer)gtype);
+	g_hash_table_insert (packages_by_type, (gpointer) gtype, p);
+	g_hash_table_insert (types_by_package, p, (gpointer) gtype);
 	G_UNLOCK (types_by_package);
 	G_UNLOCK (packages_by_type);
 
@@ -127,7 +127,7 @@ gperl_fundamental_package_from_type (GType gtype)
 	const char * res;
 	G_LOCK (packages_by_type);
 	res = (const char *)
-		g_hash_table_lookup (packages_by_type, (gpointer)gtype);
+		g_hash_table_lookup (packages_by_type, (gpointer) gtype);
 	G_UNLOCK (packages_by_type);
 	return res;
 }
@@ -611,7 +611,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 	GSignalQuery query;
 	gchar * tmp;
 	SV * method_name;
-	guint i;
+	STRLEN i;
         HV *stash;
         SV **slot;
 	/* see GClosure.xs and gperl_marshal.h for an explanation.  we can't
@@ -622,6 +622,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 #else
 	PERL_UNUSED_VAR (marshal_data);
 #endif
+	PERL_UNUSED_VAR (closure);
 
 #ifdef NOISY
 	warn ("gperl_signal_class_closure_marshal");
@@ -646,6 +647,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 
         /* does the function exist? then call it. */
         if (slot && GvCV (*slot)) {
+		SV * save_errsv;
 		int flags;
 		dSP;
 
@@ -659,7 +661,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 		/* watch very carefully the reference counts on the scalar
 		 * object references, or else we can get indestructible
 		 * objects. */
-		EXTEND (SP, n_param_values);
+		EXTEND (SP, (int)n_param_values);
 		for (i = 0; i < n_param_values; i++)
 			PUSHs (sv_2mortal (gperl_sv_from_value
 						((GValue*) &param_values[i])));
@@ -669,6 +671,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 		/* now call it */
 		/* note: keep this as closely sync'ed as possible with the
 		 * definition of GPERL_CLOSURE_MARSHAL_CALL. */
+		save_errsv = sv_2mortal (newSVsv (ERRSV));
 		flags = G_EVAL | (return_value ? G_SCALAR : G_VOID|G_DISCARD);
 		call_method (SvPV_nolen (method_name), flags);
 		SPAGAIN;
@@ -679,6 +682,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 			gperl_value_from_sv (return_value, POPs);
 			PUTBACK;
 		}
+		SvSetSV (ERRSV, save_errsv);
 
 		FREETMPS;
 		LEAVE;
@@ -779,9 +783,6 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 		XPUSHs (callback->data);
 
 	PUTBACK;
-
-/* warn ("return_accum is '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (return_accu))));
- * warn ("handler_return was '%s'\n", SvPV_nolen (sv_2mortal (gperl_sv_from_value (handler_return)))); */
 
 	n = call_sv (callback->func, G_EVAL|G_ARRAY);
 
@@ -935,7 +936,6 @@ add_signals (GType instance_type, HV * signals)
 
 		/* the key is the signal name */
 		signal_name = hv_iterkey (he, &keylen);
-/*		warn ("\n#####\nsignal name: %s\n", signal_name); */
 		/* if the signal is defined at this point, we're going to
 		 * override the installed closure. */
 		signal_id = g_signal_lookup (signal_name, instance_type);
@@ -958,9 +958,6 @@ add_signals (GType instance_type, HV * signals)
 			s = parse_signal_hash (instance_type,
 			                       signal_name,
 			                       (HV*) SvRV (value));
-/*			warn ("\ncreating signal %s with accumulator %p and accu_data %p\n", signal_name, s->accumulator, s->accu_data);
- *			sv_setsv (DEFSV, newSVGSignalFlags (s->flags));
- *			eval_pv ("warn ('   flags ['.join (', ', @$_).\"]\n\")", 0); */
 			signal_id = g_signal_newv (signal_name,
 			                           instance_type,
 			                           s->flags,
@@ -1030,9 +1027,6 @@ gperl_type_get_property (GObject * object,
 
 	PERL_UNUSED_VAR (property_id);
 
-#ifdef NOISY
-	warn ("%s:%d: gperl_type_get_property - stub", G_STRLOC);
-#endif
         slot = hv_fetch (stash, "GET_PROPERTY", sizeof ("GET_PROPERTY") - 1, 0);
 
         /* does the function exist? then call it. */
@@ -1071,10 +1065,6 @@ gperl_type_set_property (GObject * object,
         assert (stash);
 
 	PERL_UNUSED_VAR (property_id);
-
-#ifdef NOISY
-	warn ("%s:%d: gperl_type_set_property - stub", G_STRLOC);
-#endif
 
         slot = hv_fetch (stash, "SET_PROPERTY", sizeof ("SET_PROPERTY") - 1, 0);
 
@@ -1211,6 +1201,10 @@ gperl_type_class_init (GObjectClass * class)
 
 MODULE = Glib::Type	PACKAGE = Glib::Type	PREFIX = g_type_
 
+=for flags Glib::SignalFlags
+
+=cut
+
 =head1 DESCRIPTION
 
 This package defines several utilities for dealing with the GLib type system
@@ -1267,17 +1261,17 @@ are optional, with defaults provided:
 
 =over
 
-=item closure
+=item class_closure => subroutine or undef
 
 Use this code reference (or sub name) as the class closure (that is, the 
 default handler for the signal).  If not specified, "do_I<signal_name>",
 in the current package, is used.
 
-=item return_type
+=item return_type => package name or undef
 
 Return type for the signal.  If not specified, then the signal has void return.
 
-=item param_types
+=item param_types => ARRAYREF
 
 Reference to a list of parameter types (package names), I<omitting the instance
 and user data>.  Callbacks connected to this signal will receive the instance
@@ -1286,15 +1280,33 @@ and finally by any user data that was supplied when the callback was connected.
 Not specifying this key is equivalent to supplying an empty list, which
 actually means instance and maybe data.
 
-=item flags
+=item flags => Glib::SignalFlags
 
-Flags describing this signal's properties. FIXME finish this
+Flags describing this signal's properties. See the GObject C API reference'
+description of GSignalFlags for a complete description.
+
+=item accumulator => subroutine or undef
+
+The signal accumulator is a special callback that can be used to collect return
+values of the various callbacks that are called during a signal emission.
+Generally, you can omit this parameter; custom accumulators are used to do
+things like stopping signal propagation by return value or creating a list of
+returns, etc.
 
 =back
 
 =item properties => ARRAYREF
 
-FIXME finish this
+Array of Glib::ParamSpec objects, each describing an object property to add
+to the new type.  These properties are available for use by all code that
+can access the object, regardless of implementation language.  See
+L<Glib::ParamSpec>.  This list may be empty; if it is not, the functions
+C<GET_PROPERTY> and C<SET_PROPERTY> in I<$new_package> will be called to
+get and set the values.  Note that an object property is just a mechanism
+for getting and setting a value -- it implies no storage.  As a convenience,
+Glib::Object::Subclass provides a default implementation of GET_PROPERTY
+and SET_PROPERTY which use the property nicknames as hash keys in the object
+variable for storage.
 
 =back
 
@@ -1664,8 +1676,12 @@ Now That" section of L<Glib> for more info.
 
 =cut
 
+=for apidoc
+=for arg b (SV*)
+=for arg swap (integer)
+=cut
 int
-bool (SV *a, SV *b, SV *swap)
+bool (SV *a, b, swap)
     PROTOTYPE: $;@
     CODE:
         RETVAL = !!gperl_convert_flags (
@@ -1677,8 +1693,12 @@ bool (SV *a, SV *b, SV *swap)
     OUTPUT:
         RETVAL
 
+=for apidoc
+=for arg b (SV*)
+=for arg swap (integer)
+=cut
 SV *
-as_arrayref (SV *a, SV *b, SV *swap)
+as_arrayref (SV *a, b, swap)
     PROTOTYPE: $;@
     CODE:
 {
@@ -1711,6 +1731,7 @@ eq (SV *a, SV *b, int swap)
         a_ = gperl_convert_flags (gtype, swap ? b : a);
         b_ = gperl_convert_flags (gtype, swap ? a : b);
 
+	RETVAL = FALSE;
         switch (ix) {
           case 0: RETVAL = a_ == b_; break;
           case 1: RETVAL = (a_ & b_) == b_; break;

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.45.2.3 2003/12/12 03:12:31 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.45.2.5 2004/02/06 02:11:07 muppetman Exp $
 #
 
 package Glib;
@@ -27,7 +27,7 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '1.020';
+our $VERSION = '1.022';
 
 # this is the 'lite' version of what we could get Exporter to do for us.
 # we export nothing, so it seems silly to drag in all of Exporter::Heavy
