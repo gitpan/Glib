@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.8 2003/09/05 04:54:06 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.9 2003/09/16 19:09:25 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -133,7 +133,7 @@ gperl_alloc_temp (int nbytes)
 	dTHR;
 
 	SV * s = sv_2mortal (newSVpv ("", 0));
-	SvGROW (s, nbytes);
+	SvGROW (s, (unsigned)nbytes);
 	memset (SvPV (s, PL_na), 0, nbytes);
 	return SvPV (s, PL_na);
 }

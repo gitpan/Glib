@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.19 2003/09/12 03:16:32 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.21 2003/09/16 19:09:01 muppetman Exp $
  */
 
 #ifndef _GPERL_H_
@@ -202,11 +202,14 @@ SV * newSVGSignalFlags (GSignalFlags flags);
 GSignalFlags SvGSignalFlags (SV * sv);
 SV * newSVGSignalInvocationHint (GSignalInvocationHint * ihint);
 
-gulong gperl_signal_connect (SV            * instance,
-                             char          * detailed_signal,
-                             SV            * callback,
-                             SV            * data,
-                             GConnectFlags   flags);
+void gperl_signal_set_marshaller_for (GType             instance_type,
+                                      char            * detailed_signal,
+                                      GClosureMarshal   marshaller);
+gulong gperl_signal_connect          (SV              * instance,
+                                      char            * detailed_signal,
+                                      SV              * callback,
+                                      SV              * data,
+                                      GConnectFlags     flags);
 
 
 /*
@@ -224,9 +227,15 @@ struct _GPerlClosure {
 /* evaluates to true if the instance and data are to be swapped on invocation */
 #define GPERL_CLOSURE_SWAP_DATA(gpc)	((gpc)->swap)
 
-GClosure * gperl_closure_new (SV * callback, 
-			      SV * data, 
-			      gboolean swap);
+/* this is the one you want. */
+GClosure * gperl_closure_new                 (SV              * callback, 
+                                              SV              * data, 
+                                              gboolean          swap);
+/* very scary, use only if you really know what you are doing */
+GClosure * gperl_closure_new_with_marshaller (SV              * callback, 
+                                              SV              * data, 
+                                              gboolean          swap,
+                                              GClosureMarshal   marshaller);
 
 /*
  * GPerlCallback
@@ -259,7 +268,7 @@ void            gperl_callback_invoke  (GPerlCallback * callback,
  */
 
 int  gperl_install_exception_handler (GClosure * closure);
-void gperl_remove_exception_handler  (int tag);
+void gperl_remove_exception_handler  (guint tag);
 void gperl_run_exception_handlers    (void);
 
 /*

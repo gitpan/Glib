@@ -1,6 +1,6 @@
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.14 2003/09/12 03:36:01 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.15 2003/09/19 04:36:43 muppetman Exp $
 
-Glib version 1.00rc1
+Glib version 1.00rc2
 ====================
 
 This module provides perl access to Glib and GLib's GObject libraries.
@@ -64,6 +64,11 @@ and etc.
 Glib uses unicode internally; therefore this module requires perl 5.8.0
 or newer.
 
+You'll also need the following modules in order to build the Glib module
+from source:
+
+  ExtUtils::Depends >= 0.100
+  ExtUtils::PkgConfig >= 1.00
 
 COPYRIGHT AND LICENCE
 

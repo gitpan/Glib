@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.15 2003/09/12 03:16:32 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.16 2003/09/16 19:09:25 muppetman Exp $
  */
 
 /* 
@@ -280,7 +280,7 @@ gperl_object_take_ownership (GObject * object)
 	G_LOCK (sink_funcs);
 
 	if (sink_funcs) {
-		int i;
+		guint i;
 		for (i = 0 ; i < sink_funcs->len ; i++)
 			if (g_type_is_a (G_OBJECT_TYPE (object),
 			                 g_array_index (sink_funcs,
@@ -376,6 +376,7 @@ gperl_object_package_from_type (GType gtype)
 	} else
 		croak ("internal problem: gperl_object_package_from_type "
 		       "called before any classes were registered");
+	return NULL; /* not reached */
 }
 
 
@@ -406,6 +407,7 @@ gperl_object_stash_from_type (GType gtype)
 	} else
 		croak ("internal problem: gperl_object_stash_from_type "
 		       "called before any classes were registered");
+	return NULL; /* not reached */
 }
 
 
@@ -436,6 +438,7 @@ gperl_object_type_from_package (const char * package)
 	} else
 		croak ("internal problem: gperl_object_type_from_package "
 		       "called before any classes were registered");
+	return 0; /* not reached */
 }
 
 /*

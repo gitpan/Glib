@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.11 2003/09/12 03:16:32 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.13 2003/09/16 19:09:01 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -174,21 +174,47 @@ gperl_closure_new (SV * callback,
 		   SV * data,
 		   gboolean swap)
 {
+	return gperl_closure_new_with_marshaller (callback, data, swap, NULL);
+}
+
+=item GClosure * gperl_closure_new_with_marshaller (SV * callback, SV * data, gboolean swap, GClosureMarshal marshaller)
+
+Like C<gperl_closure_new>, but uses a caller-supplied marshaller.  This is
+provided for use in those sticky circumstances when you just can't do it 
+any other way; in general, you want to use the default marshaller, which you
+get if you provide NULL for I<marshaller>.
+
+If you use you own marshaller, you need to take care of everything yourself,
+including swapping the instance and data if C<GPERL_CLOSURE_SWAP_DATA
+(closure)> is true, calling C<gperl_run_exception_handlers> if ERRSV is true
+after invoking the perl sub, and ensuring that you properly use the
+C<marshal_data> parameter as the perl interpreter when PERL_IMPLICIT_CONTEXT is
+defined.  See the implementation of the default marshaller,
+C<gperl_closure_marshal>, in Glib/GClosure.xs for inspiration.
+
+=cut
+GClosure *
+gperl_closure_new_with_marshaller (SV * callback,
+				   SV * data,
+				   gboolean swap,
+				   GClosureMarshal marshaller)
+{
 	GPerlClosure *closure;
 	g_return_val_if_fail (callback != NULL, NULL);
+	if (marshaller == NULL)
+		marshaller = gperl_closure_marshal;
 
 	closure = (GPerlClosure*) g_closure_new_simple (sizeof (GPerlClosure), 
 							NULL);
 	g_closure_add_invalidate_notifier ((GClosure*) closure, 
 					   NULL, gperl_closure_invalidate);
 #ifndef PERL_IMPLICIT_CONTEXT
-	g_closure_set_marshal ((GClosure*) closure, gperl_closure_marshal);
+	g_closure_set_marshal ((GClosure*) closure, marshaller);
 #else
 	/* make sure the closure gets executed by the same interpreter that's
 	 * creating it now; gperl_closure_marshal will interpret the 
 	 * marshal_data as the proper aTHX. */
-	g_closure_set_meta_marshal ((GClosure*) closure, aTHX,
-	                            gperl_closure_marshal);
+	g_closure_set_meta_marshal ((GClosure*) closure, aTHX, marshaller);
 #endif
 
 	/* 
@@ -551,7 +577,7 @@ exception_handler_free (ExceptionHandler * h)
 }
 
 static void
-remove_exception_handler_unlocked (int tag)
+remove_exception_handler_unlocked (guint tag)
 {
 	GSList * i;
 
@@ -567,7 +593,7 @@ remove_exception_handler_unlocked (int tag)
 }
 
 
-=item void gperl_remove_exception_handler (int tag)
+=item void gperl_remove_exception_handler (guint tag)
 
 Remove the exception handler identified by I<tag>, as returned by
 gperl_install_exception_handler().  If I<tag> cannot be found, this
@@ -580,7 +606,7 @@ have it return FALSE.
 
 =cut
 void
-gperl_remove_exception_handler (int tag)
+gperl_remove_exception_handler (guint tag)
 {
 	G_LOCK (exception_handlers);
 	remove_exception_handler_unlocked (tag);
@@ -691,7 +717,7 @@ gperl_install_exception_handler (SV * class, SV * func, SV * data=NULL)
 	UNUSED(class);
 
 void
-gperl_remove_exception_handler (SV * class, int tag)
+gperl_remove_exception_handler (SV * class, guint tag)
     C_ARGS:
 	tag
     CLEANUP:

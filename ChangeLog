@@ -1,3 +1,60 @@
+2003/09/19 00:21 muppetman
+
+	* Glib.pm, META.yml, README, debian/changelog, debian/control: updated
+	for 1.00rc2 release
+
+	* Makefile.PL: there was no version 0.1 of ExtUtils::PkgConfig...
+
+2003/09/17 10:44 rwmcfa1
+
+	* Makefile.PL: ExtUtils::PkgConfig can now deal with version 
+	requirements using pkg-config's interface, make use of it.
+
+	* t/6.t: removed, this tested Glib::PkgConfig
+
+2003/09/16 23:50 rwmcfa1
+
+	* Makefile.PL, perl-*spec.in: somewhat automated versioning system 
+	implemented for depenancy modules
+
+	* PkgConfig.pm: moved to new ExtUtils::PkgConfig module
+
+	* MANIFEST: PkgConfig.pm removed from manifest
+
+2003/09/16 15:00 muppetman
+
+	* GClosure.xs, gperl.h: changed type of "tag" in signature of
+	gperl_remove_exception_handler() to avoid signedness warnings.
+	the tag's supposed to be a guint anyway.
+
+	* GObject.xs, GMainLoop.xs, GParamSpec.xs, GSignal.xs, GType.xs,
+	GValue.xs, Glib.xs: cleanup: casting to hush pedantic compiler
+	warnings; can't have UNUSED in PREINIT:, put it in CLEANUP:;
+	quell no-return warnings on functions that croak.
+
+2003/09/15 22:26 rwmcfa1
+
+	* Makefile.PL: spec file dependancies improved
+
+2003/09/15 17:43 muppetman
+
+	* gperl.h, Glib.exports: add gperl_signal_set_marshaller_for and
+	gperl_closure_new_with_marshaller
+
+	* GClosure.xs: add gperl_closure_new_with_marshaller, allowing you
+	to specify a custom marshaller to use for a GPerlClosure.  you can't
+	just call g_closure_set_marshal again, because glib asserts that it
+	hasn't been set yet.  this is used by gperl_signal_connect, as part 
+	of the changes described below.  includes POD that warns you that
+	you really don't want to use this function.  gperl_closure_new now
+	just calls this.
+
+	* GSignal.xs: add thread safety to the closures list.  added
+	gperl_signal_set_marshaller_for, to allow client code to specify a
+	special marshaller to use for all invocations of a particular named
+	signal on a particular class; this is intended to allow workarounds
+	for unhelpfully defined signal parameter types.
+
 2003/09/11 23:33 muppetman
 
 	* Glib.pm, MANIFEST, META.yml, README, debian/changelog: updated

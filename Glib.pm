@@ -16,7 +16,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
 # Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.21 2003/09/12 03:36:01 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.22 2003/09/19 04:36:43 muppetman Exp $
 #
 
 package Glib;
@@ -28,7 +28,7 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '1.00rc1';
+our $VERSION = '1.00rc2';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
