@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.37.2.1 2004/03/17 02:56:07 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.47 2004/07/19 01:05:18 muppetman Exp $
  */
 
 /* 
@@ -48,7 +48,6 @@ typedef struct _SinkFunc  SinkFunc;
 struct _ClassInfo {
 	GType   gtype;
 	char  * package;
-        HV *	stash;
 };
 
 struct _SinkFunc {
@@ -66,6 +65,15 @@ static GArray     * sink_funcs     = NULL;
 
 static GQuark wrapper_quark; /* this quark stores the object's wrapper sv */
 
+/* what should be done here */
+#define GPERL_THREAD_SAFE !GPERL_DISABLE_THREADSAFE
+
+#if GPERL_THREAD_SAFE
+/* keep a list of all gobjects */
+static gboolean     perl_gobject_tracking = FALSE;
+static GHashTable * perl_gobjects = NULL;
+G_LOCK_DEFINE_STATIC (perl_gobjects);
+#endif
 
 /* thread safety locks for the modifiables above */
 G_LOCK_DEFINE_STATIC (types_by_type);
@@ -83,12 +91,6 @@ class_info_new (GType gtype,
 	class_info = g_new0 (ClassInfo, 1);
 	class_info->gtype = gtype;
 	class_info->package = g_strdup (package);
-        /* Taking a reference to the stash is not really correct,
-         * as the stash might be replaced, giving us the wrong stash.
-         * Fortunately doing this is not documented nor really supported,
-         * nor does perl cope with it gracefully. So this just shields us
-         * from segfaults. */
-        class_info->stash = (HV *)SvREFCNT_inc (gv_stashpv (package, 1));
 
 	return class_info;
 }
@@ -97,7 +99,6 @@ void
 class_info_destroy (ClassInfo * class_info)
 {
 	if (class_info) {
-                SvREFCNT_dec (class_info->stash);
 		g_free (class_info->package);
 		g_free (class_info);
 	}
@@ -394,24 +395,11 @@ not registered.  The stash is useful for C<bless>ing.
 HV *
 gperl_object_stash_from_type (GType gtype)
 {
-	if (types_by_type) {
-		ClassInfo * class_info;
-
-		G_LOCK (types_by_type);
-
-		class_info = (ClassInfo *) 
-			g_hash_table_lookup (types_by_type, (gpointer) gtype);
-
-		G_UNLOCK (types_by_type);
-
-		if (class_info)
-			return class_info->stash;
-                else
-                  	return NULL;
-	} else
-		croak ("internal problem: gperl_object_stash_from_type "
-		       "called before any classes were registered");
-	return NULL; /* not reached */
+	const char * package = gperl_object_package_from_type (gtype);
+	if (package)
+		return gv_stashpv (package, TRUE);
+	else
+		return NULL;
 }
 
 
@@ -625,6 +613,18 @@ gperl_new_object (GObject * object,
 	if (own)
 		gperl_object_take_ownership (object);
 
+#if GPERL_THREAD_SAFE
+	if(perl_gobject_tracking)
+	{
+		G_LOCK (perl_gobjects);
+/*g_printerr ("adding object: 0x%p - %d\n", object, object->ref_count);*/
+		if (!perl_gobjects)
+			perl_gobjects = g_hash_table_new (g_direct_hash, g_direct_equal);
+		g_hash_table_insert (perl_gobjects, (gpointer)object, (gpointer)1);
+		G_UNLOCK (perl_gobjects);
+	}
+#endif
+
 	return sv;
 }
 
@@ -668,7 +668,10 @@ gperl_get_object_check (SV * sv,
 		croak ("INTERNAL: GType %s (%d) is not registered with GPerl!",
 		       g_type_name (gtype), gtype);
 	if (!sv || !SvROK (sv) || !sv_derived_from (sv, package))
-		croak ("variable is not of type %s", package);
+		croak ("%s is not of type %s",
+		       gperl_format_variable_for_output (sv),
+		       package);
+
 	return gperl_get_object (sv);
 }
 
@@ -729,7 +732,87 @@ init_property_value (GObject * object,
 
 =cut
 
+/*
+ * $sv = $object->{name}
+ *
+ * if the key doesn't exist with name, convert - to _ and try again.
+ * that is, support both "funny-name" and "funny_name".
+ *
+ * if create is true, autovivify the key (and always return a value).
+ * if create is false, returns NULL is there is no such key.
+ */
+SV *
+_gperl_fetch_wrapper_key (GObject * object,
+                          const char * name,
+                          gboolean create)
+{
+	SV ** svp;
+	SV * svname;
+	HV * wrapper_hash;
+	wrapper_hash = g_object_get_qdata (object, wrapper_quark);
+	svname = newSVpv (name, strlen (name));
+	svp = hv_fetch (wrapper_hash, SvPV_nolen (svname), SvLEN (svname)-1,
+	                FALSE); /* never create on the first try; prefer
+	                         * prefer to create the second version. */
+	if (!svp) {
+		/* the key doesn't exist with that name.  do s/-/_/g and
+		 * try again. */
+		register char * c;
+		for (c = SvPV_nolen (svname); c <= SvEND (svname) ; c++)
+			if (*c == '-')
+				*c = '_';
+		svp = hv_fetch (wrapper_hash,
+		                SvPV_nolen (svname), SvLEN (svname)-1,
+		                create);
+	}
+	SvREFCNT_dec (svname);
+
+	return (svp ? *svp : NULL);
+}
+
+#if GPERL_THREAD_SAFE
+static void
+_inc_ref_and_count (GObject * key, gint value, gpointer user_data)
+{
+	PERL_UNUSED_VAR (user_data);
+	g_object_ref (key);
+	g_hash_table_replace (perl_gobjects, key, (gpointer)++value);
+}
+#endif
+
+
 MODULE = Glib::Object	PACKAGE = Glib::Object	PREFIX = g_object_
+
+#if GPERL_THREAD_SAFE
+
+void
+CLONE (gchar * class)
+    CODE:
+    	if (perl_gobject_tracking && strcmp (class, "Glib::Object") == 0)
+	{
+		G_LOCK (perl_gobjects);
+/*g_printerr ("we're in clone: %s\n", class);*/
+		g_hash_table_foreach (perl_gobjects, 
+				      (GHFunc)_inc_ref_and_count, NULL);
+		G_UNLOCK (perl_gobjects);
+	}
+
+#endif
+
+=for apidoc set_threadsafe
+Enables/disables threadsafe gobject tracking. Returns whether or not tracking
+will be successful and thus whether using perl ithreads will be possible. 
+=cut
+gboolean
+set_threadsafe (class, gboolean threadsafe)
+    CODE:
+#if GPERL_THREAD_SAFE
+	RETVAL = perl_gobject_tracking = threadsafe;
+#else
+	RETVAL = FALSE;
+#endif 
+    OUTPUT:
+	RETVAL
 
 =for object Glib::Object Bindings for GObject
 =cut
@@ -777,14 +860,37 @@ DESTROY (SV *sv)
         } else {
                 SvREFCNT_inc (SvRV (sv));
         }
+#if GPERL_THREAD_SAFE
+	if(perl_gobject_tracking)
+	{
+		gint count;
+		G_LOCK (perl_gobjects);
+		count = (int)g_hash_table_lookup (perl_gobjects, object);
+		count--;
+		if (count > 0)
+		{
+/*g_printerr ("decing: %p - %d\n", object, count);*/
+			g_hash_table_replace (perl_gobjects, object, 
+					      (gpointer)count);
+		}
+		else
+		{
+/*g_printerr ("removing: %p\n", object);*/
+			g_hash_table_remove (perl_gobjects, object);
+		}
+		G_UNLOCK (perl_gobjects);
+	}
+#endif
         g_object_unref (object);
 #ifdef NOISY
+	warn ("DESTROY> (%p) done\n", object);
+	/*
         warn ("DESTROY> (%p)[%d] => %s (%p)[%d]", 
               object, object->ref_count,
               gperl_object_package_from_type (G_OBJECT_TYPE (object)),
               sv, SvREFCNT (SvRV(sv)));
+	*/
 #endif
-
 
 =for apidoc
 
@@ -949,6 +1055,12 @@ g_object_set (object, ...)
 		g_value_unset (&value);
 	}
 
+=for apidoc
+
+Emits a "notify" signal for the property I<$property> on I<$object>.
+
+=cut
+void g_object_notify (GObject * object, const gchar * property_name)
 
 =for apidoc
 
@@ -1031,29 +1143,8 @@ g_object_list_properties (object_or_class_name)
 #ifdef NOISY
 	warn ("list_properties: %d properties\n", n_props);
 #endif
-	for (i = 0; i < n_props; i++) {
-		const gchar * pv;
-		HV * property = newHV ();
-
-		hv_store (property, "name",  4,
-		          newSVpv (g_param_spec_get_name (props[i]), 0), 0);
-
-		/* map type names to package names, if possible */
-		pv = gperl_package_from_type (props[i]->value_type);
-		if (!pv) pv = g_type_name (props[i]->value_type);
-		hv_store (property, "type",  4, newSVpv (pv, 0), 0);
-
-		pv = gperl_package_from_type (props[i]->owner_type);
-		if (!pv) pv = g_type_name (props[i]->owner_type);
-		hv_store (property, "owner_type", 10, newSVpv (pv, 0), 0);
-
-		/* this one can be NULL, it seems */
-		pv = g_param_spec_get_blurb (props[i]);
-		if (pv) hv_store (property, "descr", 5, newSVpv (pv, 0), 0);
-		hv_store (property, "flags", 5, newSVGParamFlags (props[i]->flags), 0) ;
-		
-		XPUSHs (sv_2mortal (newRV_noinc((SV*)property)));
-	}
+	for (i = 0; i < n_props; i++)
+		XPUSHs (sv_2mortal (newSVGParamSpec (props[i])));
 	g_free(props);
 
 

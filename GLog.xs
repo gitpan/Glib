@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.11.2.1 2004/06/04 17:00:17 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.12 2004/06/09 01:58:44 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -194,6 +194,7 @@ g_log_set_handler (class, gchar_ornull * log_domain, SV * log_levels, SV * log_f
 	param_types[0] = G_TYPE_STRING;
 	param_types[1] = g_log_level_flags_get_type ();
 	param_types[2] = G_TYPE_STRING;
+
 	callback = gperl_callback_new (log_func, user_data,
 	                               3, param_types, G_TYPE_NONE);
 	RETVAL = g_log_set_handler (log_domain,

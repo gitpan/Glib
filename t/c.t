@@ -1,5 +1,9 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.2 2003/12/10 20:19:10 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.3 2004/05/04 22:11:24 muppetman Exp $
+#
+
+#
+# enums and flags.
 #
 
 use strict;

@@ -1,5 +1,7 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.6 2004/02/05 04:42:17 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.7 2004/05/04 22:11:24 muppetman Exp $
+#
+# Really simple smoke tests for Glib::Object wrappers.
 #
 
 use strict;

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.24.2.2 2004/03/22 15:55:04 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.28 2004/08/01 16:02:57 kaffeetisch Exp $
 #
 
 TYPEMAP
@@ -45,6 +45,7 @@ const gchar_length *	T_GCHAR_LEN
 gchar_ornull *	T_GCHAR_ORNULL
 const gchar_ornull *	T_GCHAR_ORNULL
 char_ornull *	T_CHAR_ORNULL
+char_own *	T_CHAR_OWN
 const char_ornull *	T_CHAR_ORNULL
 guchar		T_UV
 guchar *	T_PV
@@ -137,7 +138,8 @@ T_GPERL_FILENAME_ORNULL
 OUTPUT
 
 T_GPERL_GENERIC_WRAPPER
-	$arg = newSV${(my $ntype = $type) =~ s/\s*\*//; \$ntype} ($var);
+	$arg = newSV${(my $ntype = $type) =~ s/(?:const\s+)?([:\w]+)(?:\s*\*)$/$1/;
+		      \$ntype} ($var);
 
 T_GUNICHAR
 	{
@@ -175,6 +177,10 @@ T_CHAR_ORNULL
 	} else {
 		SvSetSV ($arg, &PL_sv_undef);
 	}
+
+T_CHAR_OWN
+	sv_setpv ((SV*)$arg, $var);
+        g_free ($var);
 
 T_G_TYPE_IO_CONDITION
 	$arg = gperl_convert_back_flags (G_TYPE_IO_CONDITION, $var);

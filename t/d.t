@@ -1,6 +1,10 @@
 #!/usr/bin/perl -w
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/d.t,v 1.2 2004/02/23 06:44:36 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/d.t,v 1.3 2004/05/04 22:11:24 muppetman Exp $
+#
+
+#
+# Glib::Error
 #
 
 use strict;

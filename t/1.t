@@ -1,5 +1,8 @@
-##
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.7.2.1 2004/03/16 18:10:18 muppetman Exp $
+#
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.9 2004/05/04 22:11:23 muppetman Exp $
+#
+# Basic test for Glib fundamentals.  make sure that the smoke does't get out,
+# and test most of the procedural things in Glib's toplevel namespace.
 #
 
 use strict;

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.10.2.1 2004/03/12 03:32:44 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.12 2004/06/01 15:40:31 muppetman Exp $
 #
 
 @exports = qw(
@@ -61,6 +61,7 @@ gperl_object_set_no_warn_unreg_subclass
 gperl_object_stash_from_type
 gperl_object_type_from_package
 gperl_package_from_type
+gperl_param_spec_package_from_type
 gperl_prepend_isa
 gperl_register_boxed
 gperl_register_error_domain

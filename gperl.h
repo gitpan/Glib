@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.34.2.1 2004/03/17 16:01:32 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.38 2004/08/01 16:02:57 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -73,6 +73,8 @@ typedef struct {
 GPerlArgv * gperl_argv_new ();
 void gperl_argv_update (GPerlArgv *pargv);
 void gperl_argv_free (GPerlArgv *pargv);
+
+char * gperl_format_variable_for_output (SV * sv);
 
 /* internal trickery */
 gpointer gperl_type_class (GType type);
@@ -212,6 +214,7 @@ typedef gchar gchar_length;
 typedef gchar gchar_own;
 typedef gchar gchar_ornull;
 typedef char char_ornull;
+typedef char char_own;
 typedef GObject GObject_ornull;
 typedef GObject GObject_noinc;
 typedef gchar *GPerlFilename;
@@ -313,6 +316,8 @@ SV * newSVGParamSpec (GParamSpec * pspec);
 GParamSpec * SvGParamSpec (SV * sv);
 SV * newSVGParamFlags (GParamFlags flags);
 GParamFlags SvGParamFlags (SV * sv);
+
+const char * gperl_param_spec_package_from_type (GType gtype);
 
 /*
  * helpful debugging stuff

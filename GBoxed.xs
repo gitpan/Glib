@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.17.2.2 2004/03/22 15:55:04 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.19 2004/04/14 17:59:23 kaffeetisch Exp $
  */
 
 =head2 GBoxed

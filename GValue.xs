@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.15 2004/03/09 04:48:57 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.17 2004/06/28 04:28:08 muppetman Exp $
  */
 
 =head2 GValue
@@ -65,8 +65,11 @@ gperl_value_from_sv (GValue * value,
 		     SV * sv)
 {
 	char* tmp;
-	int typ = G_TYPE_FUNDAMENTAL(G_VALUE_TYPE(value)); 
-	/* printf("TYPE: %d, S: %s\n", typ, g_strdup(SvPV_nolen(sv))); */
+	int typ;
+	if (!sv || !SvOK (sv))
+		return TRUE; /* use the GValue type's default */
+	typ = G_TYPE_FUNDAMENTAL(G_VALUE_TYPE(value)); 
+	/*printf ("TYPE: %d, S: %s\n", typ, SvPV_nolen(sv));*/
 	switch (typ) {
     		case G_TYPE_INTERFACE:
 			/* pygtk mentions something about only handling 
@@ -155,9 +158,7 @@ gperl_value_from_sv (GValue * value,
 
 coerce whatever is in I<value> into a perl scalar and return it.
 
-Returns NULL if the code doesn't know how to perform the conversion.  FIXME
-this really ought to always succeed; a failed conversion should be considered a
-bug or unimplemented code!
+Croaks if the code doesn't know how to perform the conversion.
 
 =cut
 SV *

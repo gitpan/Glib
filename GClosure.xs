@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.28.2.1 2004/04/11 23:02:50 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.30 2004/05/11 17:38:11 kaffeetisch Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -49,7 +49,7 @@ gperl_closure_invalidate (gpointer data,
 	PERL_UNUSED_VAR (data);
 	
 #ifdef NOISY
-	warn ("Invalidating closure for %s\n", pc->name);
+	warn ("Invalidating closure for %s\n", SvPV_nolen (pc->callback));
 #endif
 	if (pc->callback) {
 		SvREFCNT_dec (pc->callback);     

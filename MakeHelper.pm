@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.28.2.4 2004/04/12 02:26:37 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.32 2004/08/01 16:02:57 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -87,6 +87,55 @@ sub do_pod_files
 	$pod_files{'$(INST_LIB)/$(FULLEXT)/index.pod'} = '$(INST_MAN3DIR)/$(NAME)::index.$(MAN3EXT)';
 
 	return %pod_files;
+}
+
+=item LIST = Glib::MakeHelper->select_files_by_version ($stem, $major, $minor)
+
+Returns a list of all files that match "$stem-\d+\.\d+" and for which the first
+number is bigger than I<$major> and the second number is bigger than I<$minor>.
+If I<$minor> is odd, it will be incremented by one so that the version number of
+an upcoming stable release can be used during development as well.
+
+=cut
+
+sub select_files_by_version {
+	my ($class, $stem, $major, $minor) = @_;
+
+	# make minors even, so that we don't have to deal with stable/unstable
+	# file naming changes.
+	$minor++ if ($minor % 2);
+
+	my @files = ();
+	foreach (glob $stem . '-*\.*') {
+		if (/$stem-(\d+)\.(\d+)/) {
+			push @files, $_
+				if  $1 <= $major
+				and $2 <= $minor;
+		}
+	}
+
+	return @files;
+}
+
+=item LIST = Glib::MakeHelper->read_source_list_file ($filename)
+
+Reads I<$filename>, removes all comments (starting with "#") and leading and
+trailing whitespace, and returns a list of all lines that survived the treatment.
+
+=cut
+
+sub read_source_list_file {
+	my ($class, $filename) = @_;
+	my @list = ();
+	open IN, $filename or die "can't read $filename: $!\n";
+	while (<IN>) {
+		s/#.*$//;		# eat comments
+		s/^\s*//;		# trim leading space
+		s/\s*$//;		# trim trailing space
+		push @list, $_ if $_;	# keep non-blanks
+	}
+	close IN;
+	return @list;
 }
 
 =item string = Glib::MakeHelper->postamble_clean (@files)

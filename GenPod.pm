@@ -1,6 +1,11 @@
 #
 #
 #
+# TODO:
+#	should we look at signals etc. for enums/flags?
+#	we're getting warnings about unregistered types with new enums/flags 
+#	stuff, quell them.
+#
 
 package Glib::GenPod;
 
@@ -26,6 +31,7 @@ our @EXPORT = qw(
 	podify_ancestors
 	podify_interfaces
 	podify_methods
+	podify_enums_and_flags
 );
 
 our $COPYRIGHT = undef;
@@ -231,6 +237,8 @@ sub xsdoc2pod
 
 		$package = $pkgdata->{object} if (exists $pkgdata->{object});
 
+		preprocess_pod ($_) foreach (@{$pkgdata->{pods}});
+
 		push @files, {
 			name => $package,
 			file => $pod,
@@ -282,24 +290,8 @@ sub xsdoc2pod
 		$ret = podify_pods ($pkgdata->{pods}, 'post_signals');
 		print "$ret\n\n" if ($ret);
 
-		if ($pkgdata->{enums}) {
-			print "\n=head1 ENUMS AND FLAGS\n\n";
-			foreach my $ef (@{ $pkgdata->{enums} }) {
-				my $pod = $ef->{pod};
-				shift @{ $pod->{lines} };
-				pop @{ $pod->{lines} }
-					if $pod->{lines}[-1] =~ /^=cut/;
-
-				# the name may be a C name...
-				my $name = convert_type ($ef->{name});
-				my $type = UNIVERSAL::isa ($name, 'Glib::Flags')
-				         ? 'flags' : 'enum';
-
-				print "=head2 $type $name\n\n"
-				    . join ("\n", @{$pod->{lines}}) . "\n\n"
-				    . podify_values ($ef->{name}) . "\n";;
-			}
-		}
+		$ret = podify_enums_and_flags ($pkgdata, $package);	
+		print "\n=head1 ENUMS AND FLAGS\n\n$ret" if ($ret);
 
 		$ret = podify_pods ($pkgdata->{pods}, 'post_enums');
 		print "$ret\n\n" if ($ret);
@@ -532,10 +524,106 @@ sub podify_signals {
     return $str
 }
 
+sub podify_enums_and_flags
+{
+	my $pkgdata = shift;
+	my $package = shift;
+	
+	my %types = ();
+	
+	my $name;
+	my $pod;
+	my %info = ();
+	foreach (@{$pkgdata->{enums}})
+	{
+		$name = convert_type ($_->{name});
+			
+		$pod = $_->{pod};
+		shift @{ $pod->{lines} };
+		pop @{ $pod->{lines} } if $pod->{lines}[-1] =~ /^=cut/;
+
+		$info{$name} = {
+			type => $_->{type},
+			pod  => $pod->{lines},
+		};
+		$types{$name}++;
+	}
+
+	foreach my $xsub (@{$pkgdata->{xsubs}})
+	{
+		if ($xsub->{return_type})
+		{
+			foreach my $ret (@{$xsub->{return_type}})
+			{
+				$name = convert_type ($ret);
+				$types{$name}++;
+			}
+		}
+		if ($xsub->{args})
+		{
+			foreach my $arg (@{$xsub->{args}})
+			{
+				if ($arg->{type})
+				{
+					$name = convert_type ($arg->{type});
+					$types{$name}++;
+				}
+			}
+		}
+	}
+
+	if ($package)
+	{
+		my @props;
+		eval { @props = Glib::Object::list_properties($package); 1; };
+		foreach my $prop (@props)
+		{
+			next unless ($prop->{type});
+			$name = convert_type ($prop->{type});
+			$types{$name}++;
+		}
+	
+		my @sigs;
+		eval { @sigs = Glib::Type->list_signals ($package); 1; };
+		foreach my $sig (@sigs)
+		{
+			if ($sig->{return_type})
+			{
+				$name = convert_type ($sig->{return_type});
+				$types{$name}++;
+			}
+			foreach (@{$sig->{param_types}})
+			{
+				next unless ($_);
+				$name = convert_type ($_);
+				$types{$name}++;
+			}
+		}
+	}
+
+	my $type;
+	my $ret = '';
+	foreach (sort keys %types)
+	{
+		$type = UNIVERSAL::isa ($_, 'Glib::Flags');
+		if ($type or UNIVERSAL::isa ($_, 'Glib::Enum') or 
+		    exists $info{$_})
+		{
+			$type = $type ? 'flags' : 'enum';
+			$ret .= "=head2 $type $_\n\n";
+			$ret .= join ("\n", @{$info{$_}{pod}}) . "\n\n"
+				if ($info{$_}{pod});
+			$ret .= podify_values ($_) . "\n";
+		}
+	}
+	return $ret;
+}
+
+
 =item $string = podify_pods ($pods, $position)
 
 Helper function to allow specific placement of generic pod within the auto
-generated pages. Pod sections starting out with =for posistion XXX, where XXX
+generated pages. Pod sections starting out with =for position XXX, where XXX
 is one of the following will be placed at a specified position. In the case of
 pod that is to be placed after a particular section that doesn't exist, that
 pod will be still be placed there.
@@ -840,7 +928,7 @@ sub preprocess_pod
 				else
 				{
 					carp "\n\nunable to open $2 for inclusion, at ".
-					     $_->{filename}.':'.$_->{line};
+					     $pod->{filename}.':'.$pod->{line};
 				}
 			}
 		}

@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.44.2.1 2004/03/12 03:32:54 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.46 2004/09/11 19:23:39 muppetman Exp $
 #
 
 use 5.008;
