@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.31.2.3 2004/04/09 03:02:44 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.31.2.4 2004/06/04 17:00:17 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -358,7 +358,6 @@ filename_from_uri (...)
 	GError * error = NULL;
     PPCODE:
 	/* support multiple call syntaxes. */
-	//uri = items < 2 ? SvGChar (ST (0)) : SvGChar (ST (1));
 	uri = items < 2 ? SvPVutf8_nolen (ST (0)) : SvPVutf8_nolen (ST (1));
 	filename = g_filename_from_uri (uri,
 	                                GIMME_V == G_ARRAY ? &hostname : NULL, 
@@ -381,7 +380,7 @@ filename_to_uri (...)
 	char * hostname = NULL;
 	GError * error = NULL;
     CODE:
-	// FIXME FIXME this is broken somehow
+	/* FIXME FIXME this is broken somehow */
 	if (items == 2) {
 		filename = SvPV_nolen (ST (0));
 		hostname = SvOK (ST (1)) ? SvPV_nolen (ST (1)) : NULL;
