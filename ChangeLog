@@ -1,3 +1,33 @@
+2004/04/11 22:57 (-0400) muppetman
+
+	* Glib.pm, README, NEWS: stable release 1.042
+
+2004/04/11 22:40 (-0400) muppetman
+
+	* GenPod.pm: document the __hide__, __gerror__, and __function__
+	modifiers for the apidoc directive.  Add $MAIN_MOD to the head of the
+	see alsos list if it's set, so that the generated pages link to the
+	correct extension.  Clean up the semantics of the copyright
+	generation stuff, and make the docs a little clearer.
+
+	* MakeHelper.pm: set $Glib::GenPod::MAIN_MOD with the module name in
+	Glib::MakeHelper::postamble_docs_full, either from the depends object
+	or the NAME key.
+
+2004/04/12 01:25 (+0200) kaffeetisch
+
+	* GenPod.pm
+	* Glib.pm
+	* MakeHelper.pm
+	* ParseXSDoc.pm: Fix a spelling error here, adjust some grammar there.
+
+2004/04/11 19:16 (-0400) muppetman
+
+	* GClosure.xs: don't clobber $_ when warning of unhandled exceptions.
+	apparently the SAVE_DEFSV trick from a while back doesn't work.
+
+	* Subclass.pm: beef up the docs.
+
 2004/04/08 23:22 (-0400) muppetman
 
 	* Glib.pm, README, NEWS: stable release 1.041

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.28 2004/02/28 03:06:25 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.28.2.1 2004/04/11 23:02:50 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -575,11 +575,14 @@ warn_of_ignored_exception (const char * message)
 {
 	/* there's a bit of extra nastiness here to strip the trailing
 	 * newline from the contents of ERRSV for printing.
-	 * TODO verify that this is not clobbering $_.
 	 */
+	/*
+	 * don't clobber $_.  for some reason, SAVE_DEFSV doesn't work here.
+	 * so we do it by hand.
+	 */
+	SV * saved_defsv = newSVsv (DEFSV);
 	ENTER;
 	SAVETMPS;
-	SAVESPTR (DEFSV);
 	sv_setsv (DEFSV, ERRSV);
 	eval_pv ("s/^/***   /mg", FALSE);
 	eval_pv ("s/\n$//s", FALSE);
@@ -591,6 +594,8 @@ warn_of_ignored_exception (const char * message)
 
 	FREETMPS;
 	LEAVE;
+	sv_setsv (DEFSV, saved_defsv);
+	SvREFCNT_dec (saved_defsv);
 }
 
 =item void gperl_run_exception_handlers (void)

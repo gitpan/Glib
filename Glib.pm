@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.62.2.4 2004/04/09 03:09:10 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.62.2.6 2004/04/12 02:43:46 muppetman Exp $
 #
 
 package Glib;
@@ -61,7 +61,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.041';
+our $VERSION = '1.042';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -288,7 +288,7 @@ operators:
   >=       contains-operator ("is the left set a superset of the right set?")
   ==       equality
 
-In addition, flags in boolean context indicate wether they are empty or
+In addition, flags in boolean context indicate whether they are empty or
 not, which allows you to write common operations naturally:
 
   $widget->set_events ($widget->get_events - "motion_notify_mask");
@@ -306,13 +306,13 @@ not, which allows you to write common operations naturally:
   if ($event->state >= ["shift-mask", "control-mask"]) { ...
 
 In general, C<+> and C<-> work as expected to add or remove flags. To test
-wether I<any> bits are set in a mask, you use C<$mask * ...>, and to test
-wether I<all> bits are set in a mask, you use C<$mask >= ...>.
+whether I<any> bits are set in a mask, you use C<$mask * ...>, and to test
+whether I<all> bits are set in a mask, you use C<$mask E<gt>= ...>.
 
 When dereferenced as an array C<@$flags> or C<$flags->[...]>, you can
 access the flag values directly as strings (but you are not allowed to
 modify the array), and when stringified C<"$flags"> a flags value will
-output a human-readable version of it's contents.
+output a human-readable version of its contents.
 
 =head2 It's All the Same
 
