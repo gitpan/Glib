@@ -1,0 +1,104 @@
+#
+# Copyright (c) 2003 by the gtk2-perl team (see the file AUTHORS)
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the 
+# Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
+# Boston, MA  02111-1307  USA.
+#
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.5 2003/06/16 19:25:16 muppetman Exp $
+#
+
+TYPEMAP
+
+gboolean	T_BOOL
+gint		T_IV
+guint		T_UV
+gint8		T_IV
+guint8		T_UV
+gint16		T_IV
+guint16		T_UV
+gint32		T_IV
+guint32		T_UV
+gint64		T_IV
+guint64		T_UV
+glong		T_IV
+gulong		T_UV
+gchar		T_IV
+gchar *		T_GCHAR
+const gchar *	T_GCHAR
+guchar		T_UV
+guchar *	T_PV
+const guchar *	T_PV
+gfloat		T_FLOAT
+gdouble		T_DOUBLE
+
+GObject*	T_G_TYPE_OBJECT
+GObject_ornull*	T_G_TYPE_OBJECT_ORNULL
+GObject_noinc*	T_G_TYPE_OBJECT_NOINC
+
+GIOCondition	T_G_TYPE_IO_CONDITION
+
+GMainContext*	T_G_MAIN_CONTEXT
+GMainLoop*	T_G_MAIN_LOOP
+
+#####
+INPUT
+
+T_GCHAR
+	/* same as SvGChar(), but not in a function */
+	sv_utf8_upgrade ($arg);
+	$var = ($type)SvPV_nolen ($arg);
+
+T_G_TYPE_OBJECT
+	$var = SvGObject ($arg);
+
+T_G_TYPE_OBJECT_ORNULL
+	$var = SvGObject_ornull ($arg);
+
+T_G_TYPE_IO_CONDITION
+	$var = gperl_convert_flags (G_TYPE_IO_CONDITION, $arg);
+
+T_G_MAIN_CONTEXT
+	if (!$arg || !SvTRUE ($arg) || !SvROK ($arg)) {
+		$var = NULL;
+	} else {
+		$var = ($type) SvIV (SvRV ($arg));
+	}
+T_G_MAIN_LOOP
+	$var = ($type) SvIV (SvRV ($arg))
+
+######
+OUTPUT
+
+T_GCHAR
+	/* same as newSVGChar(), but not in a function */
+	sv_setpv ((SV*)$arg, $var);
+	SvUTF8_on ($arg);
+
+T_G_TYPE_OBJECT
+	$arg = newSVGObject ($var);
+
+T_G_TYPE_OBJECT_NOINC
+	$arg = newSVGObject_noinc ($var);
+
+T_G_TYPE_IO_CONDITION
+	$arg = gperl_convert_back_flags (G_TYPE_IO_CONDITION, $var);
+
+T_G_MAIN_CONTEXT
+	sv_setref_pv ($arg, \"Glib::MainContext\", $var);
+	g_main_context_ref ($var);
+T_G_MAIN_LOOP
+	sv_setref_pv ($arg, \"Glib::MainLoop\", $var);
+	g_main_loop_ref ($var);
+
