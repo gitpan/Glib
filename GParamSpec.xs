@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.20 2004/06/09 01:58:44 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.22 2005/01/02 15:34:38 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -237,6 +237,7 @@ BOOT:
 	                            "Glib::ParamFlags");
 	gperl_register_param_spec (G_TYPE_PARAM_CHAR, "Glib::Param::Char");
 	gperl_register_param_spec (G_TYPE_PARAM_UCHAR, "Glib::Param::UChar");
+	gperl_register_param_spec (G_TYPE_PARAM_UNICHAR, "Glib::Param::Unichar");
 	gperl_register_param_spec (G_TYPE_PARAM_BOOLEAN, "Glib::Param::Boolean");
 	gperl_register_param_spec (G_TYPE_PARAM_INT, "Glib::Param::Int");
 	gperl_register_param_spec (G_TYPE_PARAM_UINT, "Glib::Param::UInt");
@@ -491,7 +492,6 @@ g_param_spec_string (class, name, nick, blurb, default_value, flags)
 
 =for apidoc
 =for arg package name of the class, derived from Glib::ParamSpec, of the objects this property will hold.
-NOTE: this binding is currently not implemented.
 =cut
 GParamSpec*
 param_spec (class, name, nick, blurb, package, flags)
@@ -978,6 +978,18 @@ get_default_value (GParamSpec * pspec_string)
 ##  char substitutor
 ##  bool null_fold_if_empty
 ##  bool ensure_non_null
+
+MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Unichar
+
+=for see_also Glib::ParamSpec
+=cut
+
+gunichar
+get_default_value (GParamSpec * pspec_unichar)
+    CODE:
+	RETVAL = G_PARAM_SPEC_UNICHAR (pspec_unichar)->default_value;
+    OUTPUT:
+	RETVAL
 
 ##MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::ValueArray
 

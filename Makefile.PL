@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.47 2004/10/14 19:28:37 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.51 2005/03/07 20:34:23 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -128,7 +128,6 @@ WriteMakefile(
     $glib ? $glib->get_makefile_vars : (),
 );
 
-
 package MY;
 
 # rule to build the documentation
@@ -164,7 +163,7 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 
 __END__
 
-Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
 the full list)
 
 This library is free software; you can redistribute it and/or modify it under

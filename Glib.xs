@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.38.2.1 2005/01/29 20:54:14 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.39 2005/01/10 04:17:09 muppetman Exp $
  */
 
 =head2 Miscellaneous

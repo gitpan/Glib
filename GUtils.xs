@@ -17,7 +17,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GUtils.xs,v 1.6 2004/03/21 04:50:33 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GUtils.xs,v 1.7 2005/01/02 15:34:38 kaffeetisch Exp $
  */
 #include "gperl.h"
 
@@ -91,6 +91,77 @@ g_get_user_name ()
 	}
     OUTPUT:
 	RETVAL
+
+#if GLIB_CHECK_VERSION (2, 6, 0)
+
+=for apidoc Glib::get_user_config_dir __function__
+Gets the base directory in which to store user-specific application
+configuration information such as user preferences and settings.
+=cut
+
+=for apidoc Glib::get_user_cache_dir __function__
+Gets the base directory in which to store non-essential, cached data specific
+to particular user.
+=cut
+
+=for apidoc __function__
+Get the base directory for application data such as icons that is customized
+for a particular user.
+=cut
+const gchar *
+g_get_user_data_dir ()
+    ALIAS:
+	Glib::get_user_config_dir = 1
+	Glib::get_user_cache_dir  = 2
+    CODE:
+	switch (ix) {
+	    case 0: RETVAL = g_get_user_data_dir (); break;
+	    case 1: RETVAL = g_get_user_config_dir (); break;
+	    case 2: RETVAL = g_get_user_cache_dir (); break;
+	    default:
+		RETVAL = NULL;
+		g_assert_not_reached ();
+	}
+    OUTPUT:
+	RETVAL
+
+=for apidoc Glib::get_system_config_dirs __function__
+Returns an ordered list of base directories in which to access system-wide
+configuration information.
+=cut
+
+=for apidoc Glib::get_language_names __function__
+Computes a list of applicable locale names, which can be used to e.g. construct
+locale-dependent filenames or search paths. The returned list is sorted from
+most desirable to least desirable and always contains the default locale "C".
+=cut
+
+=for apidoc __function__
+Returns an ordered list of base directories in which to access system-wide
+application data.
+=cut
+void
+g_get_system_data_dirs ()
+    ALIAS:
+	Glib::get_system_config_dirs = 1
+	Glib::get_language_names     = 2
+    PREINIT:
+	const gchar * const * strings;
+	int i;
+    PPCODE:
+	switch (ix) {
+	    case 0: strings = g_get_system_data_dirs ();   break;
+	    case 1: strings = g_get_system_config_dirs (); break;
+	    case 2: strings = g_get_language_names ();     break;
+	    default:
+		strings = NULL;
+		g_assert_not_reached ();
+	}
+
+	for (i = 0; strings[i]; i++)
+		XPUSHs (sv_2mortal (newSVGChar (strings[i])));
+
+#endif
 
 ##=for apidoc __function__
 ##Set GLib's global program name.  Glib will set this to the value of $0 for

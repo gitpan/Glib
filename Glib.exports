@@ -1,5 +1,5 @@
-# Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
-# list)
+# Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
+# the full list)
 # 
 # This library is free software; you can redistribute it and/or modify it under
 # the terms of the GNU Library General Public License as published by the Free
@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.12.2.1 2005/01/29 20:54:06 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.14 2005/02/08 04:29:05 muppetman Exp $
 #
 
 @exports = qw(
@@ -92,5 +92,6 @@ newSVGParamFlags
 newSVGParamSpec
 newSVGSignalFlags
 newSVGSignalInvocationHint
+newSVGSignalQuery
 );
 1;

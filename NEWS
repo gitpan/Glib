@@ -1,3 +1,67 @@
+Overview of changes in Glib 1.080
+=================================
+
+ Since 1.06x (the previous stable series)
+ ----------------------------------------
+  * Support for GParamSpecUnichar and GStrv.
+  * Timely delivery of Perl's asynchronous signals.
+  * Fatal log messages call abort() rather than croak().
+  * Glib::MainLoop's are properly freed after use.
+  * New API:
+    - Glib::get_user_data_dir,
+    - Glib::get_user_config_dir,
+    - Glib::get_user_cache_dir,
+    - Glib::get_system_data_dirs,
+    - Glib::get_system_config_dirs,
+    - Glib::get_language_names,
+    - Glib::Object::signal_query.
+
+ Since 1.074
+ -----------
+  * Nothing.
+
+Overview of changes in Glib 1.074
+=================================
+
+* Fix a reference counting bug that prevented Glib::MainLoop's from ever being
+  freed.  [Ross]
+
+Overview of changes in Glib 1.073
+=================================
+
+* Bind, doc, and test g_signal_query as Glib::Object::signal_query. [muppet]
+* Fatal log messages call abort() rather than croak().  Croaking wasn't
+  all that useful (didn't stop in the perl debugger as expected), and 
+  aborting allows you to get a C backtrace in gdb.  [muppet]
+* Fix Glib::MakeHelper::select_files_by_version on Win32.  [muppet]
+* Implement missing support for the boxed type GStrv as a native perl
+  anonymous array of strings.  [muppet]
+* Docgen fixes.  [muppet]
+* Test suite updates and fixes.  [Ross, muppet]
+
+Overview of changes in Glib 1.072
+=================================
+
+* Ensure that asynchronous signals, deferred by perl's safe signal handling,
+  are delivered on time when a main loop is running.  [Jan Hudec, muppet]
+* Fix win32 linkage.  [muppet, thanks to Tyler Hepworth]
+* Test fixes.  [Ross]
+* Bind and test g_get_user_data_dir, g_get_user_config_dir,
+  g_get_user_cache_dir, g_get_system_data_dirs, g_get_system_config_dirs,
+  and g_get_language_names.  [Torsten]
+* Documentation updates.  [Torsten, muppet]
+
+Overview of changes in Glib 1.071
+=================================
+
+* Correct a warning message.  [Torsten]
+
+Overview of changes in Glib 1.070
+=================================
+
+* Add support for GParamSpecUnichar.  [Torsten]
+* Generate a correct META.yml.  [muppet]
+
 Overview of Changes in Glib 1.062
 =================================
 

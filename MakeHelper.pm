@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.33 2004/09/19 21:34:55 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.34 2005/02/05 04:38:46 muppetman Exp $
 #
 
 package Glib::MakeHelper;
@@ -106,7 +106,7 @@ sub select_files_by_version {
 	$minor++ if ($minor % 2);
 
 	my @files = ();
-	foreach (glob $stem . '-*\.*') {
+	foreach (glob $stem . '-*.*') {
 		if (/$stem-(\d+)\.(\d+)/) {
 			push @files, $_
 				if  $1 <= $major

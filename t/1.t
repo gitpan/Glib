@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.9 2004/05/04 22:11:23 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.11 2005/01/04 20:19:01 rwmcfa1 Exp $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.
@@ -13,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 16;
+use Test::More tests => 22;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -48,6 +48,19 @@ SKIP: {
   my $appname = 'Flurble Foo 2, Electric Boogaloo';
   Glib::set_application_name ($appname);
   is (Glib::get_application_name (), $appname);
+}
+
+SKIP: {
+  skip "new 2.6 stuff", 6
+    unless Glib->CHECK_VERSION (2,6,0);
+
+  ok (defined Glib::get_user_data_dir ());
+  ok (defined Glib::get_user_config_dir ());
+  ok (defined Glib::get_user_cache_dir ());
+
+  ok (defined Glib::get_system_data_dirs ());
+  ok (defined Glib::get_system_config_dirs ());
+  ok (defined Glib::get_language_names ());
 }
 
 __END__

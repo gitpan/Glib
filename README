@@ -1,6 +1,6 @@
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.43.2.1 2005/01/31 18:51:37 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.49 2005/03/07 20:34:23 kaffeetisch Exp $
 
-Glib version 1.062
+Glib version 1.080
 ==================
 
 This module provides perl access to Glib and GLib's GObject libraries.
@@ -56,7 +56,7 @@ ways:
 
   in the code of your perl script:
     use lib '/some/other/place/lib/perl5/site_perl';
-  
+
 
 DEPENDENCIES
 

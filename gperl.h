@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.38 2004/08/01 16:02:57 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.39 2005/02/08 04:29:05 muppetman Exp $
  */
 
 #ifndef _GPERL_H_
@@ -234,6 +234,7 @@ typedef GPerlFilename GPerlFilename_ornull;
 SV * newSVGSignalFlags (GSignalFlags flags);
 GSignalFlags SvGSignalFlags (SV * sv);
 SV * newSVGSignalInvocationHint (GSignalInvocationHint * ihint);
+SV * newSVGSignalQuery (GSignalQuery * query);
 
 void gperl_signal_set_marshaller_for (GType             instance_type,
                                       char            * detailed_signal,

@@ -1,22 +1,134 @@
-2005/01/31 19:50 (+0100) kaffeetisch
+2005/03/07	kaffeetisch
 
-	* Glib.pm, META.yml, NEWS, README: stable release 1.062.
+	* Glib.pm, Makefile.PL, META.yml, NEWS, README: Stable release
+	1.080.
 
-2005/01/29 15:49 (-0400) muppetman
+2005/03/06	kaffeetisch
 
-	Backport several fixes from HEAD.
+	* GBoxed.xs: Fix a typo.
 
-	* Glib.exports: Export gperl_format_variable_for_output properly.
+2005/02/28	kaffeetisch
 
-	* Glib.xs: Improve docs.
+	* Glib.pm, META.yml, Makefile.PL, NEWS, README: Unstable release
+	1.074.
 
-	* MANIFEST.SKIP: Updated.
+2005/02/15 15:48 (-0500) rwmcfa1
+
+	* GMainLoop.xs: likely type-o on Glib::MainLoop->new causing ref count
+	to start out at 2 and thus main loops never die, should of been unref.
+
+2005/02/07 23:40 (-0500) muppetman
+
+	* Glib.pm, NEWS, README: Unstable release 1.073
+
+2005/02/07 23:30 (-0500) muppetman
+
+	* t/9.t: Disable the async signal test on win32.
+
+2005/02/07 23:20 (-0500) muppetman
+
+	* GSignal.xs, gperl.h, Glib.exports: Bind and document g_signal_query
+	as Glib::Object::signal_query.  Add newSVGSignalQuery to marshal a
+	GSignalQuery to perl.
+
+	* GType.xs: Move guts of list_signals to newSVGSignalQuery, and call
+	that function instead.
+
+	M MANIFEST
+	A t/signal_query.t: New test for signal_query and list_signals.
+
+2005/02/07 23:20 (-0500) muppetman
+
+	* GLog.xs: Call abort() rather than croak() on G_LOG_LEVEL_ERROR
+	messages.  croak()ing didn't do anything useful, and abort()ing
+	allows you to stop gdb on an error and get a backtrace.
+
+2005/02/04 22:36 (-0500) muppetman
+
+	* MakeHelper.pm: (select_files_by_version) do not escape . in glob
+	patterns; it is unnecessary on unix and win32 thinks the \ is a path
+	separator.  This one-character change fixes an intermittent win32
+	build problem.
+
+2005/01/29 21:22 (-0500) muppetman
+
+	* ParseXSDoc.pm: better handling for xsubs with continuation lines.
+
+2005/01/29 13:45 (-0500) muppetman
+
+	* copyright.pod: update for the new year.
+
+2005/01/29 01:38 (-0500) muppetman
+
+	* GBoxed.xs, GenPod.pm: implement support for the boxed type GStrv
+	as a native perl anonymous array of strings
+
+2005/01/25 23:34 (-0500) rwmcfa1
+
+	* t/c.t: remove [] around test 12. caused failures on newer
+	Test::More's
+
+2005/01/09 23:50 (-0400) muppetman
+
+	* Glib.pm, META.yml, NEWS, README: Unstable release 1.072
+
+2005/01/09 23:08 (-0400) muppetman
+
+	* Glib.xs: minor documentation updates
+
+2005/01/09 16:29 (-0400) muppetman
+
+	* Glib.exports: add gperl_format_variable_for_output, which needs to
+	be exported but got missed somehow for 1.060.
+
+2005/01/08 23:45 (-0400) muppetman
+
+	* GMainLoop.xs, t/9.t: Ensure that asynchronous signals, deferred by
+	perl's safe signal handling, are delivered on time when a main loop
+	is running.  Thanks to Jan Hudec.
+
+2005/01/04 15:15 (-0400) rwmcfa1
+
+	* t/1.t: we need to make it clear to perl that g_get_user_data_dir and
+	friends are functions or we'll get syntax errors and test failures when
+	no symbols with those names are found (even though they'll be skipped.)
+
+2005/01/02 16:31 (+0100) kaffeetisch
+
+	* GParamSpec.xs, TODO: Remove documentation that doesn't apply
+	anymore.
+
+	* GUtils.xs, t/1.t: Bind and test g_get_user_data_dir,
+	g_get_user_config_dir, g_get_user_cache_dir,
+	g_get_system_data_dirs, g_get_system_config_dirs, and
+	g_get_language_names.
+
+2004/11/29 21:28 (+0100) kaffeetisch
+
+	* Makefile.PL: Correct the unstable warning message to say 1.06x
+	instead of 1.04x.
+
+	* Glib.pm, META.yml, NEWS, README: Unstable release 1.071.
+
+2004/11/01 21:22 (+0100) kaffeetisch
+
+	* Glib.pm, META.yml, Makefile.PL, NEWS, README: Unstable release
+	1.070.
+
+2004/10/24 11:55 (-0400) rwmcfa1
+
+	* MANIFEST.SKIP: updates
 
 	* perl-Glib.spec.in: new scheme that addresses x86_64 problems
 	found by Carl Nygard
 
-	* t/c.t: remove [] around test 12. caused failures on newer
-	Test::More's
+2004/10/20 19:32 (+0200) kaffeetisch
+
+	* GParamSpec.xs, e.t: Add and test support for GParamSpecUnichar.
+
+2004/10/17 12:27 (+0200) kaffeetisch
+
+	* doctypes: Add a description for gunichar.
 
 2004/10/14 15:27 (-0400) muppetman
 
