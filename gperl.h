@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.10 2003/07/05 08:21:24 pcg Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.11 2003/07/31 23:44:55 muppetman Exp $
  */
 
 #ifndef _GPERL_H_
@@ -25,6 +25,14 @@
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
+
+#ifdef WIN32
+  /* perl and glib disagree on a few macros... let the wookie win. */
+# undef pipe
+# undef malloc
+# undef realloc
+# undef free
+#endif
 
 #include <glib-object.h>
 

@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.6 2003/07/17 15:53:27 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.7 2003/07/31 23:44:55 muppetman Exp $
 #
 
 use 5.008;
@@ -61,6 +61,9 @@ if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') })
                   'GClosure.xs', 'GSignal.xs', 'GMainLoop.xs', 'GParamSpec.xs');
 }
 
+# exports list needed for win32, unused on others
+require 'Glib.exports';
+
 WriteMakefile(
     NAME		=> 'Glib',
     VERSION_FROM	=> 'Glib.pm', # finds $VERSION
@@ -71,6 +74,8 @@ WriteMakefile(
     ABSTRACT_FROM	=> 'Glib.pm', # retrieve abstract from module
     XSPROTOARG		=> '-noprototypes',
     MAN3PODS		=> $glib ? \%pod_files : {},
+    FUNCLIST		=> \@exports,
+    DL_FUNCS		=> { Glib => [] },
     $glib ? $glib->get_makefile_vars : (),
 );
 

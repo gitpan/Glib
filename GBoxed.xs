@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.5 2003/07/17 15:53:27 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.6 2003/07/30 13:23:07 rwmcfa1 Exp $
  */
 
 #include "gperl.h"
@@ -282,7 +282,12 @@ gperl_new_boxed (gpointer boxed,
 	GPerlBoxedWrapFunc wrap;
 
 	if (!boxed)
-		croak ("NULL pointer made it into gperl_new_boxed");
+	{
+#ifdef NOISY
+		warn ("NULL pointer made it into gperl_new_boxed");
+#endif
+		return &PL_sv_undef;
+	}
 
 	G_LOCK (info_by_gtype);
 

@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.10 2003/07/17 15:53:27 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.12 2003/07/30 13:23:17 rwmcfa1 Exp $
  */
 
 #include "gperl.h"
@@ -394,7 +394,9 @@ gperl_new_object (GObject * object,
 
 	/* take the easy way out if we can */
 	if (!object) {
+#ifdef NOISY
 		warn ("gperl_new_object (NULL) => undef"); 
+#endif
 		return &PL_sv_undef;
 	}
 
