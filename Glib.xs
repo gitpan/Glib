@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.7 2003/08/29 02:15:42 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.8 2003/09/05 04:54:06 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -154,6 +154,7 @@ BOOT:
 #endif
 	/* boot all in one go.  other modules may not want to do it this
 	 * way, if they prefer instead to perform demand loading. */
+	GPERL_CALL_BOOT (boot_Glib__Log);
 	GPERL_CALL_BOOT (boot_Glib__Type);
 	GPERL_CALL_BOOT (boot_Glib__Boxed);
 	GPERL_CALL_BOOT (boot_Glib__Object);

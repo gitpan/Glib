@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.14 2003/08/14 03:46:10 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.15 2003/09/12 03:16:32 rwmcfa1 Exp $
  */
 
 /* 
@@ -790,6 +790,7 @@ g_object_get (object, ...)
 	GValue value = {0,};
 	int i;
     PPCODE:
+	UNUSED(ix);
 	EXTEND (SP, items-1);
 	for (i = 1; i < items; i++) {
 		char *name = SvPV_nolen (ST (i));
@@ -809,6 +810,7 @@ g_object_set (object, ...)
 	GValue value = {0,};
 	int i;
     CODE:
+	UNUSED(ix);
 	if (0 != ((items - 1) % 2))
 		croak ("set method expects name => value pairs "
 		       "(odd number of arguments detected)");
@@ -863,6 +865,7 @@ new_from_pointer (class, pointer, noinc=FALSE)
 	guint32 pointer
 	gboolean noinc
     CODE:
+	UNUSED(class);
 	RETVAL = gperl_new_object (G_OBJECT (pointer), noinc);
     OUTPUT:
 	RETVAL

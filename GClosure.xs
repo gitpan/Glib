@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.10 2003/08/29 02:15:42 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.11 2003/09/12 03:16:32 rwmcfa1 Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -687,11 +687,15 @@ int
 gperl_install_exception_handler (SV * class, SV * func, SV * data=NULL)
     C_ARGS:
 	gperl_closure_new (func, data, 0)
+    CLEANUP:
+	UNUSED(class);
 
 void
 gperl_remove_exception_handler (SV * class, int tag)
     C_ARGS:
 	tag
+    CLEANUP:
+	UNUSED(class);
 
 
  ##

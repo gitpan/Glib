@@ -1,3 +1,72 @@
+2003/09/11 23:33 muppetman
+
+	* Glib.pm, MANIFEST, META.yml, README, debian/changelog: updated
+	for 1.00rc1 release
+
+2003/09/11 23:10 rwmcfa1
+
+        * gperl.h: added UNUSED macro
+
+        * ChangeLog, GClosure.xs, GLog.xs, GMainLoop.xs, GObject.xs,
+        GParamSpec.xs, GType.xs: make use of UNUSED macro to quite warnings
+        about class and/or ix being unused, other slight/small warnings fixed
+        when -Wall
+
+2003/09/11 22:30 muppetman
+
+	* Subclass.pm: documentation about creating properties, creating
+	signals, and overriding class closures.
+
+	* gperl.h: more than one file needs gperl_type_class
+
+	* GType.xs: unused variable
+
+2003/09/11 21:50 muppetman
+
+	* GSignal.xs, Glib.exports, gperl.h: implement
+	g_signal_chain_from_overridden and a wrapper for GSignalFlags;
+	make signal_emit actually catch return values and give them back
+	to perl; add output-only wrapper for GSignalInvocationHint.
+
+	* GType.xs, t/7.t, t/8.t: make class closures optional for new
+	signals; allow the creation of signals that have return values;
+	allow perl to supply custom accumulators for valued signals;
+	make overriding class closures actually work.
+
+2003/09/11 13:27 muppetman
+
+	* t/7.t: use strict and warnings in this one, too.
+
+2003/09/11 10:35 rwmcfa1
+
+	* t/[1234568a].t: use strict and warnings, fixes to make doing so work.
+
+2003/09/06 19:23 rwmcfa1
+
+	* Makefile.PL: dist-rpms build target added
+
+	* perl-Glib.spec.in: initial import
+
+2003/09/05 01:50 muppetman
+
+	* README, debian/changelog: update for 0.97 release
+
+2003/09/05 00:51 muppetman
+
+	* Glib.pm: more pod (too much?  should it be in a separate doc?)
+
+	* t/a.t, Glib.exports, Glib.xs, Makefile.PL, gperl.h, MANIFEST:
+	add support for routing g_log messages through perl
+
+2003/09/01 19:52 muppetman
+
+	* Glib.pm: don't set dl_load_flags on darwin, it generates a warning.
+	also bump version so that cvs versions of Gtk2 which depend on 
+	T_GPERL_GENERIC_WRAPPER will force upgrades.
+
+	* typemap: use a new generic typemap for all the types which follow
+	the SvMyType/newSVMyType naming convention.
+
 2003/08/28 23:30 muppetman
 
 	* gperl.h, GClosure.xs, Glib.xs: merged changes from the exceptions

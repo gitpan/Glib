@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 
+use strict;
+use warnings;
+
 =comment
 
 test some GSignal stuff...
@@ -10,9 +13,12 @@ we do not use Test::More or even Test::Simple because we need to test
 order of execution...  the ok() funcs from those modules assume you
 are doing all your tests in order, but our stuff will jump around.
 
+
+my apologies for the extreme density and ugliness of this code.
+
 =cut
 
-print "1..20\n";
+print "1..33\n";
 
 use Glib;
 
@@ -24,41 +30,94 @@ use Glib::Object::Subclass
    Glib::Object::,
    signals    =>
       {
+          # a simple void-void signal
           something_changed => {
-             flags       => [qw(run-first)],
-             return_type => undef,
-             param_types => [],
+             class_closure => undef, # disable the class closure
+             flags         => [qw/run-last action/],
+             return_type   => undef,
+             param_types   => [],
           },
+          # test the marshaling of parameters
           test_marshaler => {
-###### FIXME FIXME FIXME something is broken here...
-             flags       => [qw(run-first run-last run-cleanup)],
-             ##return_type => 'Glib::Double',
-             return_type => undef,
+             flags       => 'run-last',
              param_types => [qw/Glib::String Glib::Boolean Glib::Uint Glib::Object/],
           },
+          # one that returns a value
+          returner => {
+             flags       => 'run-last',
+             return_type => 'Glib::Double',
+             # using the default accumulator, which just returns the last
+             # value
+          },
+          # more complicated/sophisticated value returner
+          list_returner => {
+             class_closure => sub {
+                       print "ok 31 # hello from the class closure\n";
+                       -1
+             },
+             flags         => 'run-last',
+             return_type   => 'Glib::Scalar',
+             accumulator   => sub {
+                 # the accumulator gets (ihint, return_accu, handler_return)
+                 # let's turn the return_accu into a list of all the handlers'
+                 # return values.  this is weird, but the sort of thing you
+                 # might actually want to do.
+                 print "# in accumulator, got $_[2], previously "
+		      . (defined ($_[1]) ? $_[1] : 'undef')
+		      . "\n";
+                 if ('ARRAY' eq ref $_[1]) {
+                        push @{$_[1]}, $_[2];
+                 } else {
+                        $_[1] = [$_[2]];
+                 }
+                 # we must return two values --- a boolean that says whether
+                 # the signal keeps emitting, and the accumulated return value.
+                 # we'll stop emitting if the handler returns the magic 
+                 # value 42.
+                 ($_[2] != 42, $_[1])
+	     },
+	  },
       },
    ;
 
-sub do_something_changed {
-	print "# do_something_changed\n";
-}
 sub do_test_marshaler {
-	#print "@_\n";
+	print "# do_test_marshaller: @_\n";
 	return 2.718;
 }
 
-sub something_changed { $_[0]->signal_emit ('something_changed'); }
-sub test_marshaler    { shift->signal_emit ('test-marshaler', @_); }
+sub do_emit {
+	my $name = shift;
+	print "\n\n".("="x79)."\n";
+	print "emitting: $name"
+	   . (__PACKAGE__->can ("do_$name") ? " (closure exists)" : "")
+	   . "\n";
+	my $ret = shift->signal_emit ($name, @_);
+	#use Data::Dumper;
+	#print Dumper( $ret );
+	print "\n".("-"x79)."\n";
+	return $ret;
+}
 
+sub do_returner {
+	print "ok 23\n";
+	-1.5;
+}
+
+sub something_changed { do_emit 'something_changed', @_ }
+sub test_marshaler    { do_emit 'test_marshaler', @_ }
+sub list_returner     { do_emit 'list_returner', @_ }
+sub returner          { do_emit 'returner', @_ }
+
+#############
 package main;
 
-$a = 0;
-$b = 0;
+my $a = 0;
+my $b = 0;
 
 sub func_a {
-	print (0==$a++
+	print 0==$a++
 	       ? "ok 4 # func_a\n"
-	       : "not ok # func_a called after being removed\n");
+	       : "not ok # func_a called after being removed\n";
 }
 sub func_b {
 	if (0==$b++) {
@@ -88,25 +147,25 @@ sub func_b {
    # this is part of the emission process going wrong, not a handler,
    # so it's a bug in the calling code, and thus we shouldn't eat it.
    eval { $my->test_marshaler (); };
-   print ($@ =~ m/Incorrect number/
+   print $@ =~ m/Incorrect number/
           ? "ok 10 # signal_emit barfs on bad input\n"
-	  : "not ok 10 # expected to croak but didn't\n");
+	  : "not ok 10 # expected to croak but didn't\n";
 
-   $my->test_marshaler (qw/foo bar baz/, $my);
+   $my->test_marshaler (qw/foo bar 15/, $my);
    print "ok 11\n";
-   $id = $my->signal_connect (test_marshaler => sub {
-	   print ($_[0] == $my   &&
+   my $id = $my->signal_connect (test_marshaler => sub {
+	   print $_[0] == $my   &&
 	          $_[1] eq 'foo' &&
 		  $_[2]          && # string bar is true
-		  $_[3] == 0     && # string baz converts to int of 0
+		  $_[3] == 15    && # expect an int
 		  $_[4] == $my   && # object passes unmolested
 		  $_[5][1] eq 'two' # user-data is an array ref
 		  ? "ok 13 # marshaled as expected\n"
-		  : "not ok 13 # bad params in callback\n");
+		  : "not ok 13 # bad params in callback\n";
 	   return 77.1;
    	}, [qw/one two/, 3.1415]);
    print ($id ? "ok 12\n" : "not ok\n");
-   $my->test_marshaler (qw/foo bar baz/, $my);
+   $my->test_marshaler (qw/foo bar/, 15, $my);
    print "ok 14\n";
 
    $my->signal_handler_disconnect ($id);
@@ -118,6 +177,7 @@ sub func_b {
    # exception handler.
    $id = $my->signal_connect (test_marshaler => sub { die "ouch" });
 
+   my $tag;
    $tag = Glib->install_exception_handler (sub {
 	   	if ($tag) {
 		   	print "ok 16 # caught exception $_[0]\n";
@@ -125,14 +185,14 @@ sub func_b {
 			print "not ok # handler didn't uninstall itself\n";
 		}
 	   	0  # returning FALSE uninstalls
-	   }, [qw/foo bar baz/]);
+	   }, [qw/foo bar/, 0]);
    print ""
        . ($tag
           ? "ok 15 # installed exception handler with tag $tag"
 	  : "not ok 15 # got no tag back from install_exception_handler?!?")
        . "\n";
 
-   $my->test_marshaler (qw/foo bar baz/, $my);
+   $my->test_marshaler (qw/foo bar/, 4154, $my);
    print "ok 17 # still alive after an exception in a callback\n";
    $tag = 0;
 
@@ -140,17 +200,41 @@ sub func_b {
    {
    local $SIG{__WARN__} = sub {
 	   if ($_[0] =~ m/unhandled/m) {
-	   	print "ok 18 # unhandled exception just warns\n"
+	   	print "ok 19 # unhandled exception just warns\n"
+	   } elsif ($_[0] =~ m/isn't numeric/m) {
+	   	print "ok 18 # string value isn't numeric\n"
 	   } else {
 		print "not ok # got something unexpected in __WARN__: $_[0]\n";
 	   }
 	};
    $my->test_marshaler (qw/foo bar baz/, $my);
-   print "ok 19\n";
+   print "ok 20\n";
    }
+
+   use Data::Dumper;
+   $my->signal_connect (returner => sub { print "ok 22\n"; 0.5 });
+   # the class closure should be called in between these two
+   $my->signal_connect_after (returner => sub { print "ok 24\n"; 42.0 });
+   print "ok 21\n";
+   my $ret = $my->returner;
+   # we should have the return value from the last handler
+   print $ret == 42.0 ? "ok 25\n" : "not ok # expected 42.0, got $ret\n";
+
+   # now with our special accumulator
+   $my->signal_connect (list_returner => sub { print "ok 27\n"; 10 });
+   $my->signal_connect (list_returner => sub { print "ok 28\n"; '15' });
+   $my->signal_connect (list_returner => sub { print "ok 29\n"; [20] });
+   $my->signal_connect (list_returner => sub { print "ok 30\n"; {thing => 25} });
+   # class closure should before the "connect_after" ones,
+   # and this one will stop everything by returning the magic value.
+   $my->signal_connect_after (list_returner => sub { print "ok 32 # stopper\n"; 42 });
+   # if this one is called, the accumulator isn't working right
+   $my->signal_connect_after (list_returner => sub { print "not ok # shouldn't get here\n"; 0 });
+   print "ok 26\n";
+   print Dumper( $my->list_returner );
 }
 
-print "ok 20\n";
+print "ok 33\n";
 
 
 

@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.15 2003/08/29 02:15:42 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.19 2003/09/12 03:16:32 rwmcfa1 Exp $
  */
 
 #ifndef _GPERL_H_
@@ -40,6 +40,11 @@
  * miscellaneous
  */
 
+/* make the compiler shut up about unused variables */
+#ifndef USUSED
+# define UNUSED(var)   ((var)=(var))
+#endif
+
 /* never use this function directly.  use GPERL_CALL_BOOT. */
 void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
 
@@ -62,6 +67,9 @@ void gperl_croak_gerror (const char * prefix, GError * err);
 
 gpointer gperl_alloc_temp (int nbytes);
 
+
+/* internal trickery */
+gpointer gperl_type_class (GType type);
 /*
  * enums and flags
  */
@@ -190,6 +198,9 @@ typedef GObject GObject_noinc;
 /*
  * GSignal.xs
  */
+SV * newSVGSignalFlags (GSignalFlags flags);
+GSignalFlags SvGSignalFlags (SV * sv);
+SV * newSVGSignalInvocationHint (GSignalInvocationHint * ihint);
 
 gulong gperl_signal_connect (SV            * instance,
                              char          * detailed_signal,
@@ -251,6 +262,10 @@ int  gperl_install_exception_handler (GClosure * closure);
 void gperl_remove_exception_handler  (int tag);
 void gperl_run_exception_handlers    (void);
 
+/*
+ * to be used by extensions...
+ */
+gint gperl_handle_logs_for (const gchar * log_domain);
 
 /*
  * gparamspec.h / GParamSpec.xs

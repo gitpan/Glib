@@ -1,7 +1,9 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/6.t,v 1.1 2003/08/14 21:22:30 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/6.t,v 1.2 2003/09/11 14:35:03 rwmcfa1 Exp $
 #
 
+use strict;
+use warnings;
 
 #########################
 

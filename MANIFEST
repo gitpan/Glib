@@ -4,6 +4,7 @@ Changes
 GBoxed.xs
 GClosure.xs
 GIOChannel.xs
+GLog.xs
 GMainLoop.xs
 GObject.xs
 GParamSpec.xs
@@ -17,6 +18,7 @@ LICENSE
 MANIFEST
 MANIFEST.SKIP
 Makefile.PL
+perl-Glib.spec.in
 PkgConfig.pm
 README
 README.api-changes
@@ -35,6 +37,7 @@ t/6.t
 t/7.t
 t/8.t
 t/9.t
+t/a.t
 typemap
 xsapi.pod.head
 xsapi.pod.foot

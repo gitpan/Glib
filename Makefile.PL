@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.13 2003/08/20 01:25:45 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.15 2003/09/06 23:53:09 rwmcfa1 Exp $
 #
 
 use 5.008;
@@ -41,6 +41,7 @@ if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') })
    # appear in Glib::xsapi
    @xs_files = qw(
 	Glib.xs
+	GLog.xs
 	GType.xs
 	GBoxed.xs
 	GObject.xs
@@ -99,14 +100,29 @@ WriteMakefile(
 );
 
 package MY;
+use Cwd;
 
 # rule to build the documentation
 sub postamble {
+	my @dirs = qw{rpms rpms/BUILD rpms/RPMS rpms/SOURCES
+		      rpms/SPECS rpms/SRPMS};
+	my $cwd = getcwd();
+
 	return "
 build/xsapi.pod: @main::xs_files xsapi.pod.head xsapi.pod.foot apidoc.pl
 	$^X apidoc.pl xsapi.pod.head xsapi.pod.foot @main::xs_files > \$@
 
 realclean ::
 	-rm -Rf build
+
+rpms/:
+	-mkdir @dirs
+
+perl-\$(DISTNAME).spec: perl-\$(DISTNAME).spec.in
+	sed -e \"s/\@VERSION\@/\$(VERSION)/g\" -e \"s/\@SOURCE\@/\$(DISTNAME)-\$(VERSION).tar.gz/g\" \$< > \$@
+
+dist-rpms: Makefile dist perl-\$(DISTNAME).spec rpms/
+	cp \$(DISTNAME)-\$(VERSION).tar.gz rpms/SOURCES/
+	rpmbuild -ba --define \"_topdir $cwd/rpms\" perl-\$(DISTNAME).spec
 ";
 }
