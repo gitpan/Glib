@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.31 2004/02/27 02:39:08 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.31.2.3 2004/04/09 03:02:44 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -135,7 +135,7 @@ gperl_sv_from_filename (const gchar *filename)
 	gssize len;
         gchar *str = g_filename_to_utf8 (filename, -1, NULL, &len, &error);
 
-        if (!filename)
+        if (!str)
         	gperl_croak_gerror (NULL, error);
 
         sv = newSVpv (str, len);
@@ -304,14 +304,14 @@ BOOT:
 	GPERL_CALL_BOOT (boot_Glib__IO__Channel);
 	/* make sure that we're running/linked against a version at least as 
 	 * new as we built against, otherwise bad things will happen. */
-	if ((glib_major_version < GLIB_MAJOR_VERSION)
+	if ((((int)glib_major_version) < GLIB_MAJOR_VERSION)
 	    ||
 	    (glib_major_version == GLIB_MAJOR_VERSION && 
-	     glib_minor_version < GLIB_MINOR_VERSION)
+	     ((int)glib_minor_version) < GLIB_MINOR_VERSION)
 	    ||
 	    (glib_major_version == GLIB_MAJOR_VERSION && 
 	     glib_minor_version == GLIB_MINOR_VERSION &&
-	     glib_micro_version < GLIB_MICRO_VERSION))
+	     ((int)glib_micro_version) < GLIB_MICRO_VERSION))
 		warn ("*** This build of Glib was compiled with glib %d.%d.%d,"
 		      " but is currently running with %d.%d.%d, which is too"
 		      " old.  We'll continue, but expect problems!\n",
@@ -327,7 +327,9 @@ BOOT:
 =for apidoc __hide__
 =cut
 const char *
-filename_from_unicode (const char * class_or_filename, const char *filename=NULL)
+filename_from_unicode (class_or_filename, filename=NULL)
+	GPerlFilename_const class_or_filename
+	GPerlFilename_const filename
     PROTOTYPE: $
     CODE:
 	RETVAL = items < 2 ? class_or_filename : filename;
