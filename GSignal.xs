@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.2 2003/05/22 14:23:11 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.3 2003/07/06 20:51:39 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -197,6 +197,8 @@ g_signal_emit (instance, name, ...)
 ##					     GQuark		  detail);
 ##void	g_signal_stop_emission_by_name	    (gpointer		  instance,
 ##					     const gchar	 *detailed_signal);
+void g_signal_stop_emission_by_name (GObject * instance, const gchar * detailed_signal);
+
 ##gulong	g_signal_add_emission_hook	    (guint		  signal_id,
 ##					     GQuark		  quark,
 ##					     GSignalEmissionHook  hook_func,

@@ -1,3 +1,30 @@
+2003/07/18 12:05 muppetman
+
+	* Glib.pm, README, META.yml
+
+2003/07/17 11:44 muppetman
+
+	* GBoxed.xs, GObject.xs, GTypes.xs, Glib.xs, Makefile.PL: add the
+	necessary locking to make the perl bindings thread-safe.  thanks go
+	to Brett Kosinski for contributing the initial patch and bugging me
+	about it, which he needed for work on GStreamer	bindings.
+
+2003/07/10 09:50 muppetman
+
+	* Glib.pm: $VERSION is actually treated as a string, write it as one
+	to avoid bootstrap problems when using a locale that writes numbers
+	differently.  (thanks to thierry for finding that.)
+
+2003/07/06 16:48 muppetman
+
+	* GSignal.xs: add g_signal_stop_emission_by_name
+
+2003/07/05 06:37 pcg
+
+	* typemap: add gchar_own*, for functions that return allocated
+        strings and gchar_length* for functions expecting a length() input.
+        * gperl.h: add gchar_own and gchar_len typedefs.
+
 2003/07/04 13:35 muppetman
 
 	* Makefile.PL: patch from Thierry Vignaud fixed my copy and paste
@@ -10,7 +37,7 @@
 	* GType.xs: remove superfluous gperl_object_new call.
 
         * GObject.xs: important bugfix: the calls with own==FALSE in
-        GType.xs caused premature death of the perl wrapper. The fix is
+        GType.xs caused premature death of the perl wrapper. The fix
         incurs a slight performance hit, so only do it when own==TRUE, as
         this should be the only case where it is ever required.
 

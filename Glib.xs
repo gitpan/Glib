@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.3 2003/06/27 17:02:29 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.4 2003/07/17 15:53:27 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -76,6 +76,11 @@ MODULE = Glib		PACKAGE = Glib
 
 BOOT:
 	g_type_init ();
+#if defined(G_THREADS_ENABLED) && !defined(GPERL_DISABLE_THREADSAFE)
+	/*warn ("calling g_thread_init (NULL)");*/
+	if (!g_thread_supported ())
+		g_thread_init (NULL);
+#endif
 	/* boot all in one go.  other modules may not want to do it this
 	 * way, if they prefer instead to perform demand loading. */
 	GPERL_CALL_BOOT (boot_Glib__Type);

@@ -1,7 +1,7 @@
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.6 2003/07/05 05:36:26 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.7 2003/07/18 16:13:50 muppetman Exp $
 
-Glib version 0.26
-==============
+Glib version 0.90
+=================
 
 This module provides perl access to Glib and GLib's GObject libraries.
 GLib is a portability and utility library; GObject provides a generic

@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.8 2003/06/27 17:02:41 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.10 2003/07/05 08:21:24 pcg Exp $
  */
 
 #ifndef _GPERL_H_
@@ -450,6 +450,8 @@ GObject * gperl_get_object_check (SV * sv, GType gtype);
 SV * gperl_object_check_type (SV * sv, GType gtype);
 
 /* typedefs and macros for use with the typemap */
+typedef gchar gchar_length;
+typedef gchar gchar_own;
 typedef GObject GObject_ornull;
 typedef GObject GObject_noinc;
 
