@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.29 2003/11/12 20:46:28 pcg Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.34.2.1 2004/03/17 16:01:32 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -57,9 +57,6 @@ void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
 		_gperl_call_XS (aTHX_ name, cv, mark);	\
 	}
 
-
-void gperl_croak_gerror (const char * prefix, GError * err);
-
 gpointer gperl_alloc_temp (int nbytes);
 gchar *gperl_filename_from_sv (SV *sv);
 SV *gperl_sv_from_filename (const gchar *filename);
@@ -67,6 +64,15 @@ SV *gperl_sv_from_filename (const gchar *filename);
 gboolean gperl_str_eq (const char * a, const char * b);
 guint    gperl_str_hash (gconstpointer key);
 
+typedef struct {
+  int argc;
+  char **argv;
+  char **shadow;
+} GPerlArgv;
+
+GPerlArgv * gperl_argv_new ();
+void gperl_argv_update (GPerlArgv *pargv);
+void gperl_argv_free (GPerlArgv *pargv);
 
 /* internal trickery */
 gpointer gperl_type_class (GType type);
@@ -88,6 +94,19 @@ void gperl_register_fundamental (GType gtype, const char * package);
 
 GType gperl_fundamental_type_from_package (const char * package);
 const char * gperl_fundamental_package_from_type (GType gtype);
+
+/*
+ * GErrors as exception objects
+ */
+/* it is rare that you should ever want or need these two functions. */
+SV * gperl_sv_from_gerror (GError * error);
+void gperl_gerror_from_sv (SV * sv, GError ** error);
+
+void gperl_register_error_domain (GQuark domain,
+                                  GType error_enum,
+                                  const char * package);
+
+void gperl_croak_gerror (const char * ignored, GError * err);
 
 /*
  * inheritance management
@@ -192,16 +211,18 @@ SV * gperl_object_check_type (SV * sv, GType gtype);
 typedef gchar gchar_length;
 typedef gchar gchar_own;
 typedef gchar gchar_ornull;
+typedef char char_ornull;
 typedef GObject GObject_ornull;
 typedef GObject GObject_noinc;
 typedef gchar *GPerlFilename;
 typedef const gchar *GPerlFilename_const;
 typedef gchar *GPerlFilename_own;
+typedef GPerlFilename GPerlFilename_ornull;
 
 #define newSVGObject(obj)	(gperl_new_object ((obj), FALSE))
 #define newSVGObject_noinc(obj)	(gperl_new_object ((obj), TRUE))
 #define SvGObject(sv)		(gperl_get_object (sv))
-#define SvGObject_ornull(sv)	((sv && SvTRUE (sv)) ? SvGObject (sv) : NULL)
+#define SvGObject_ornull(sv)	((sv && SvOK (sv)) ? SvGObject (sv) : NULL)
 
 
 /*

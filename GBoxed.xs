@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.12.2.2 2004/02/05 04:51:08 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.17.2.2 2004/03/22 15:55:04 muppetman Exp $
  */
 
 =head2 GBoxed
@@ -333,7 +333,7 @@ default_boxed_unwrap (GType        gtype,
 	if (!sv_derived_from (sv, package))
 		croak ("variable is not of type %s", package);
 
-	boxed_wrapper = (BoxedWrapper*) SvIV (SvRV (sv));
+	boxed_wrapper = INT2PTR (BoxedWrapper*, SvIV (SvRV (sv)));
 	if (!boxed_wrapper)
 		croak ("internal nastiness: boxed wrapper contains NULL pointer");
 	return boxed_wrapper->boxed;
@@ -351,7 +351,7 @@ default_boxed_destroy (SV * sv)
 	      wrapper ? wrapper->boxed : NULL);
 	}
 #endif
-	boxed_wrapper_destroy ((BoxedWrapper*) SvIV (SvRV (sv)));
+	boxed_wrapper_destroy (INT2PTR (BoxedWrapper*, SvIV (SvRV (sv))));
 }
 
 
@@ -520,6 +520,9 @@ BOOT:
 	gperl_set_isa ("Glib::String", "Glib::Boxed");
 
 =for object Glib::Boxed Generic wrappers for C structures
+=cut
+
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 
@@ -582,7 +585,7 @@ DESTROY (sv)
 	char * class;
 	GPerlBoxedDestroyFunc destroy;
     CODE:
-	if (!sv && !SvOK (sv) && !SvROK (sv) && !SvRV (sv))
+	if (!sv || !SvOK (sv) || !SvROK (sv) || !SvRV (sv))
 		croak ("DESTROY called on a bad value");
 
 	/* we need to find the wrapper class associated with whatever type

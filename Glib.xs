@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.18.2.1 2004/01/14 04:39:02 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.31 2004/02/27 02:39:08 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -64,59 +64,6 @@ _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark)
 }
 
 
-
-=item void gperl_croak_gerror (const char * prefix, GError * err)
-
-Croak with the message in I<err>.  I<prefix> may be NULL, but I<err> may not.
-
-Use this when wrapping a function that uses #GError for reporting runtime
-errors.  The bindings map the concept of #GError to runtime exceptions;
-thus, where a C programmer would wrap a function call with code that
-checks for a #GError and bails out when one is found, the perl developer
-simply wraps a block of code in an eval(), and the bindings croak() when
-a #GError is found.
-
-Since croak() does not return, this function handles the magic behind 
-not leaking the memory associated with the #GError.  To use this you'd
-do something like
-
- PREINIT:
-   GError * error = NULL;
- CODE:
-   if (!funtion_that_can_fail (something, &error))
-      gperl_croak_gerror (NULL, error);
-
-it's just that simple!
-
-=cut
-void
-gperl_croak_gerror (const char * prefix, GError * err)
-{
-	/* croak does not return, which doesn't give us the opportunity
-	 * to free the GError.  thus, we create a copy of the croak message
-	 * in an SV, which will be garbage-collected, and free the GError
-	 * before croaking. */
-	SV * svmsg;
-	
-	/* this really could only happen if there's a problem with XS bindings
-	 * so we'll use a assertion to catch it, rather than handle null */
-	g_return_if_fail (err != NULL);
-	
-	if (prefix && strlen (prefix)) {
-		svmsg = newSV(0);
-		sv_catpvf (svmsg, "%s: %s", prefix, err->message);
-	} else {
-		svmsg = newSVpv (err->message, 0);
-	}
-	/* don't need this */
-	g_error_free (err);
-	/* mark it as ready to be collected */
-	sv_2mortal (svmsg);
-	croak (SvPV_nolen (svmsg));
-}
-
-
-
 =item gpointer gperl_alloc_temp (int nbytes)
 
 Allocate and return a pointer to an I<nbytes>-long temporary buffer that will
@@ -136,8 +83,11 @@ gpointer
 gperl_alloc_temp (int nbytes)
 {
 	dTHR;
+	SV * s;
 
-	SV * s = sv_2mortal (NEWSV (0, nbytes));
+	g_return_val_if_fail (nbytes > 0, NULL);
+
+	s = sv_2mortal (NEWSV (0, nbytes));
 	memset (SvPVX (s), 0, nbytes);
 	return SvPVX (s);
 }
@@ -154,7 +104,7 @@ gperl_filename_from_sv (SV *sv)
 {
         dTHR;
 
-        GError *error = 0;
+        GError *error = NULL;
         gchar *lname;
         STRLEN len;
         gchar *filename = SvPVutf8 (sv, len);
@@ -163,7 +113,7 @@ gperl_filename_from_sv (SV *sv)
 	 * will be the length of the output when this call finishes. */
         lname = g_filename_from_utf8 (filename, len, 0, &len, &error);
         if (!lname)
-        	gperl_croak_gerror (filename, error);
+        	gperl_croak_gerror (NULL, error);
 
         filename = gperl_alloc_temp (len + 1);
         memcpy (filename, lname, len);
@@ -180,13 +130,13 @@ Convert the filename into an utf8 string as used by gtk/glib and perl.
 SV *
 gperl_sv_from_filename (const gchar *filename)
 {
-	GError *error = 0;
+	GError *error = NULL;
         SV *sv;
 	gssize len;
         gchar *str = g_filename_to_utf8 (filename, -1, NULL, &len, &error);
 
         if (!filename)
-        	gperl_croak_gerror (str, error);
+        	gperl_croak_gerror (NULL, error);
 
         sv = newSVpv (str, len);
         g_free (str);
@@ -234,6 +184,97 @@ gperl_str_hash (gconstpointer key)
 	return h;
 }
 
+=item GPerlArgv * gperl_argv_new ()
+
+Creates a new Perl argv object whose members can then be passed to functions
+that request argc and argv style arguments.
+
+If the called function(s) modified argv, you can call L<gperl_argv_update> to
+update Perl's @ARGV in the same way.
+
+Remember to call L<gperl_argv_free> when you're done.
+
+=cut
+GPerlArgv*
+gperl_argv_new ()
+{
+	AV * ARGV;
+	SV * ARGV0;
+	int len, i;
+	GPerlArgv *pargv;
+
+	pargv = g_new (GPerlArgv, 1);
+
+	/*
+	 * heavily borrowed from gtk-perl.
+	 *
+	 * given the way perl handles the refcounts on SVs and the strings
+	 * to which they point, i'm not certain that the g_strdup'ing of
+	 * the string values is entirely necessary; however, this compiles
+	 * and runs and doesn't appear either to leak or segfault, so i'll
+	 * leave it.
+	 */
+
+	ARGV = get_av ("ARGV", FALSE);
+	ARGV0 = get_sv ("0", FALSE);
+
+	/* 
+	 * construct the argv argument... we'll have to prepend @ARGV with $0
+	 * to make it look real.  an important wrinkle: client code may strip
+	 * arguments it processes without freeing them (argv is statically
+	 * allocated in conventional usage).  thus, we need to keep a shadow
+	 * copy of argv so we can keep from leaking the stripped strings.
+	 */
+
+	len = av_len (ARGV) + 1;
+
+	pargv->argc = len + 1;
+	pargv->shadow = g_new0 (char*, pargv->argc);
+	pargv->argv = g_new0 (char*, pargv->argc);
+
+	pargv->argv[0] = SvPV_nolen (ARGV0);
+
+	for (i = 0 ; i < len ; i++) {
+		SV ** sv = av_fetch (ARGV, i, 0);
+		if (sv && SvOK (*sv))
+			pargv->shadow[i] = pargv->argv[i+1]
+			                 = g_strdup (SvPV_nolen (*sv));
+	}
+
+	return pargv;
+}
+
+=item void gperl_argv_update (GPerlArgv *pargv)
+
+Updates @ARGV to resemble the stored argv array.
+
+=cut
+void
+gperl_argv_update (GPerlArgv *pargv)
+{
+	AV * ARGV;
+	int i;
+
+	ARGV = get_av ("ARGV", FALSE);
+
+	/* clear and refill @ARGV with whatever gtk_init didn't steal. */
+	av_clear (ARGV);
+	for (i = 1 ; i < pargv->argc ; i++)
+		av_push (ARGV, newSVpv (pargv->argv[i], 0));
+}
+
+=item void gperl_argv_free (GPerlArgv *pargv)
+
+Frees any resources associated with I<pargv>.
+
+=cut
+void
+gperl_argv_free (GPerlArgv *pargv)
+{
+	g_strfreev (pargv->shadow);
+	g_free (pargv->argv);
+	g_free (pargv);
+}
 
 =back
 
@@ -250,6 +291,8 @@ BOOT:
 #endif
 	/* boot all in one go.  other modules may not want to do it this
 	 * way, if they prefer instead to perform demand loading. */
+	GPERL_CALL_BOOT (boot_Glib__Utils);
+	GPERL_CALL_BOOT (boot_Glib__Error);
 	GPERL_CALL_BOOT (boot_Glib__Log);
 	GPERL_CALL_BOOT (boot_Glib__Type);
 	GPERL_CALL_BOOT (boot_Glib__Boxed);
@@ -259,6 +302,21 @@ BOOT:
 	GPERL_CALL_BOOT (boot_Glib__MainLoop);
 	GPERL_CALL_BOOT (boot_Glib__ParamSpec);
 	GPERL_CALL_BOOT (boot_Glib__IO__Channel);
+	/* make sure that we're running/linked against a version at least as 
+	 * new as we built against, otherwise bad things will happen. */
+	if ((glib_major_version < GLIB_MAJOR_VERSION)
+	    ||
+	    (glib_major_version == GLIB_MAJOR_VERSION && 
+	     glib_minor_version < GLIB_MINOR_VERSION)
+	    ||
+	    (glib_major_version == GLIB_MAJOR_VERSION && 
+	     glib_minor_version == GLIB_MINOR_VERSION &&
+	     glib_micro_version < GLIB_MICRO_VERSION))
+		warn ("*** This build of Glib was compiled with glib %d.%d.%d,"
+		      " but is currently running with %d.%d.%d, which is too"
+		      " old.  We'll continue, but expect problems!\n",
+		    GLIB_MAJOR_VERSION, GLIB_MINOR_VERSION, GLIB_MICRO_VERSION,
+		    glib_major_version, glib_minor_version, glib_micro_version);
 
 ##
 ## NOTE: in order to avoid overwriting the docs for the main Glib.pm, 
@@ -269,20 +327,72 @@ BOOT:
 =for apidoc __hide__
 =cut
 const char *
-filename_from_unicode (GPerlFilename filename)
-	PROTOTYPE: $
-	CODE:
-        RETVAL = filename;
-	OUTPUT:
+filename_from_unicode (const char * class_or_filename, const char *filename=NULL)
+    PROTOTYPE: $
+    CODE:
+	RETVAL = items < 2 ? class_or_filename : filename;
+    OUTPUT:
         RETVAL
-        
+
 =for apidoc __hide__
 =cut
 GPerlFilename_const
-filename_to_unicode (const char *filename)
-	PROTOTYPE: $
-	CODE:
-        RETVAL = filename;
-	OUTPUT:
+filename_to_unicode (const char * class_or_filename, const char *filename=NULL)
+    PROTOTYPE: $
+    CODE:
+	RETVAL = items < 2 ? class_or_filename : filename;
+    OUTPUT:
         RETVAL
- 
+
+=for apidoc __hide__
+=cut
+void
+filename_from_uri (...)
+    PROTOTYPE: $
+    PREINIT:
+	gchar * filename;
+	const char * uri;
+	char * hostname;
+	GError * error = NULL;
+    PPCODE:
+	/* support multiple call syntaxes. */
+	//uri = items < 2 ? SvGChar (ST (0)) : SvGChar (ST (1));
+	uri = items < 2 ? SvPVutf8_nolen (ST (0)) : SvPVutf8_nolen (ST (1));
+	filename = g_filename_from_uri (uri,
+	                                GIMME_V == G_ARRAY ? &hostname : NULL, 
+	                                &error);
+	if (!filename)
+		gperl_croak_gerror (NULL, error);
+	PUSHs (sv_2mortal (newSVpv (filename, 0)));
+	if (GIMME_V == G_ARRAY && hostname)
+		XPUSHs (sv_2mortal (newSVpv (hostname, 0)));
+	g_free (filename);
+	if (hostname) g_free (hostname);
+
+=for apidoc __hide__
+=cut
+gchar_own *
+filename_to_uri (...)
+    PROTOTYPE: $$
+    PREINIT:
+	char * filename = NULL;
+	char * hostname = NULL;
+	GError * error = NULL;
+    CODE:
+	// FIXME FIXME this is broken somehow
+	if (items == 2) {
+		filename = SvPV_nolen (ST (0));
+		hostname = SvOK (ST (1)) ? SvPV_nolen (ST (1)) : NULL;
+	} else if (items == 3) {
+		filename = SvPV_nolen (ST (1));
+		hostname = SvOK (ST (2)) ? SvPV_nolen (ST (2)) : NULL;
+	} else {
+		croak ("Usage: Glib::filename_to_uri (filename, hostname)\n"
+		       " -or-  Glib->filename_to_uri (filename, hostname)\n"
+		       "  wrong number of arguments");
+	}
+	RETVAL = g_filename_to_uri (filename, hostname, &error);
+	if (!RETVAL)
+		gperl_croak_gerror (NULL, error);
+    OUTPUT:
+	RETVAL

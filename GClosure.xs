@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.26 2003/11/17 01:37:26 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.28 2004/02/28 03:06:25 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -579,6 +579,7 @@ warn_of_ignored_exception (const char * message)
 	 */
 	ENTER;
 	SAVETMPS;
+	SAVESPTR (DEFSV);
 	sv_setsv (DEFSV, ERRSV);
 	eval_pv ("s/^/***   /mg", FALSE);
 	eval_pv ("s/\n$//s", FALSE);
@@ -665,7 +666,7 @@ gperl_run_exception_handlers (void)
 
 MODULE = Glib::Closure	PACKAGE = Glib	PREFIX = gperl_
 
-=for object Glib::Signal
+=for object Glib::Signal Object customization and general purpose notification
 
 =cut
 

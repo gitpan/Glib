@@ -1,5 +1,5 @@
-#
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.3 2003/09/21 16:59:16 rwmcfa1 Exp $
+##
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.7.2.1 2004/03/16 18:10:18 muppetman Exp $
 #
 
 use strict;
@@ -10,15 +10,42 @@ use warnings;
 
 #########################
 
-# change 'tests => 1' to 'tests => last_test_to_print';
-
-use Test::More tests => 1;
+use Test::More tests => 16;
 BEGIN { use_ok('Glib') };
 
 #########################
 
-# Insert your test code below, the Test::More module is use()ed here so read
-# its man page ( perldoc Test::More ) for help writing this test script.
+ok (defined (Glib::major_version), 'major_version');
+ok (defined (Glib::minor_version), 'minor_version');
+ok (defined (Glib::micro_version), 'micro_version');
+ok (Glib->CHECK_VERSION(0,0,0), 'CHECK_VERSION pass');
+ok (!Glib->CHECK_VERSION(50,0,0), 'CHECK_VERSION fail');
+my @version = Glib->GET_VERSION_INFO;
+print "Glib was compiled for glib version ".join(".",@version)."\n";
+is (scalar (@version), 3, 'version info list is 3 items long');
+is (Glib::MAJOR_VERSION, $version[0], 'MAJOR_VERSION');
+is (Glib::MINOR_VERSION, $version[1], 'MINOR_VERSION');
+is (Glib::MICRO_VERSION, $version[2], 'MICRO_VERSION');
+
+print "user name: ".Glib::get_user_name."\n";
+print "real name: ".Glib::get_real_name."\n";
+print "home dir: ".Glib::get_home_dir."\n";
+print "tmp dir: ".Glib::get_tmp_dir."\n";
+ok (defined (Glib::get_user_name), "Glib::get_user_name");
+ok (defined (Glib::get_real_name), "Glib::get_real_name");
+ok (defined (Glib::get_home_dir), "Glib::get_home_dir");
+ok (defined (Glib::get_tmp_dir), "Glib::get_tmp_dir");
+
+SKIP: {
+  skip "set_application_name is new in glib 2.2.0", 2
+    unless Glib->CHECK_VERSION (2,2,0);
+  # this will not hold after Gtk2::init, since gtk_init() calls
+  # gdk_parse_args() which calls g_set_prgname(argv[0]).
+  is (Glib::get_application_name (), undef, 'before any calls to anything');
+  my $appname = 'Flurble Foo 2, Electric Boogaloo';
+  Glib::set_application_name ($appname);
+  is (Glib::get_application_name (), $appname);
+}
 
 __END__
 

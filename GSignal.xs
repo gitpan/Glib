@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.19 2003/11/10 18:30:25 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.23 2004/02/23 06:44:21 muppetman Exp $
  */
 
 =head2 GSignal
@@ -149,6 +149,13 @@ Use the helper macros in gperl_marshal.h to help write your marshaller
 function.  That header, which is installed with the Glib module but not
 #included through gperl.h, includes commentary and examples which you
 should follow closely to avoid nasty bugs.  Use the Source, Luke.
+
+WARNING: Bend over backwards and turn your head around 720 degrees before
+attempting to write a GPerlClosure marshaller without using the macros in
+gperl_marshal.h.  If you absolutely cannot use those macros, be certain to
+understand what those macros do so you can get the semantics correct, and
+keep your code synchronized with them, or you may miss very important
+bugfixes.
 
 =cut
 static GHashTable * marshallers = NULL;
@@ -386,11 +393,11 @@ BOOT:
 
 =for apidoc
 
-=signature retval = $object->signal_emit ($name, ...)
+=for signature retval = $object->signal_emit ($name, ...)
 
-=arg name (string) the name of the signal
+=for arg name (string) the name of the signal
 
-=arg ... (list) any arguments to pass to handlers.
+=for arg ... (list) any arguments to pass to handlers.
 
 Emit the signal I<name> on I<$object>.  The number and types of additional
 arguments in I<...> are determined by the signal; similarly, the presence
@@ -522,9 +529,9 @@ void g_signal_stop_emission_by_name (GObject * instance, const gchar * detailed_
 
 =for apidoc Glib::Object::signal_connect
 
-=arg callback (subroutine) 
+=for arg callback (subroutine) 
 
-=arg data (scalar) arbitrary data to be passed to each invocation of I<callback>
+=for arg data (scalar) arbitrary data to be passed to each invocation of I<callback>
 
 Register I<callback> to be called on each emission of I<$detailed_signal>.
 Returns an identifier that may be used to remove this handler with

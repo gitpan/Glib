@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.10.2.1 2003/12/02 23:38:59 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.16 2004/03/09 04:48:54 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -79,7 +79,7 @@ SvGParamSpec (SV * sv)
 
 MODULE = Glib::ParamSpec	PACKAGE = Glib::ParamSpec	PREFIX = g_param_spec_
 
-=for apidoc
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 
@@ -322,15 +322,27 @@ g_param_spec_string (class, name, nick, blurb, default_value, flags)
 ###  GParamSpec* g_param_spec_param (const gchar *name, const gchar *nick, const gchar *blurb, GType param_type, GParamFlags flags) 
 ##  GParamSpec* g_param_spec_boxed (const gchar *name, const gchar *nick, const gchar *blurb, GType boxed_type, GParamFlags flags) 
 ##  GParamSpec* g_param_spec_object (const gchar *name, const gchar *nick, const gchar *blurb, GType object_type, GParamFlags flags) 
+
+=for apidoc object
+=for arg package name of the class, derived from Glib::Object, of the objects this property will hold.
+=cut
+
+=for apidoc boxed
+=for arg package name of the class, derived from Glib::Boxed, of the objects this property will hold.
+=cut
+
+=for apidoc
+=for arg package name of the class, derived from Glib::ParamSpec, of the objects this property will hold.
+NOTE: this binding is currently not implemented.
+=cut
 GParamSpec*
-typed (class, name, nick, blurb, package, flags)
+param_spec (class, name, nick, blurb, package, flags)
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
 	const char * package
 	GParamFlags flags
     ALIAS:
-	param_spec = 0
 	boxed = 1
 	object = 2
     PREINIT:
@@ -352,6 +364,21 @@ typed (class, name, nick, blurb, package, flags)
 		RETVAL = g_param_spec_object (name, nick, blurb, type, flags);
 		break;
 	}
+    OUTPUT:
+	RETVAL
+
+=for apidoc
+ParamSpec to be used for any generic perl scalar, including references to
+complex objects.
+=cut
+GParamSpec*
+scalar (class, name, nick, blurb, flags)
+	const gchar *name
+	const gchar *nick
+	const gchar *blurb
+	GParamFlags flags
+    CODE:
+	RETVAL = g_param_spec_boxed (name, nick, blurb, GPERL_TYPE_SV, flags);
     OUTPUT:
 	RETVAL
 

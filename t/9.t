@@ -71,10 +71,11 @@ $loop->run;
 use Data::Dumper;
 
 # There's a bug in glib which prevents io channels from marshalling
-# properly here.  we don't have versioning API in Glib-1.02x, so
+# properly here.  we don't have versioning API in Glib (yet), so
 # we can't do much but just skip this.
 
-if ($Config{archname} =~ m/^x86_64/) {
+if ($Config{archname} =~ m/^(x86_64|mipsel|mips|alpha)/
+    and not Glib->CHECK_VERSION (2,2,4)) {
 	print "not ok 12 # skip bug in glib\n";
 	print "not ok 13 # skip bug in glib\n";
 	print "not ok 14 # skip bug in glib\n";

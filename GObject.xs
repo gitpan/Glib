@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.24.2.3 2004/02/05 04:51:08 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.37.2.1 2004/03/17 02:56:07 muppetman Exp $
  */
 
 /* 
@@ -143,7 +143,7 @@ gperl_register_object (GType gtype,
 	}
 	class_info = class_info_new (gtype, package);
 	g_hash_table_insert (types_by_type,
-	                     ((gpointer) (class_info->gtype)), class_info);
+	                     (gpointer) class_info->gtype, class_info);
 	g_hash_table_insert (types_by_package, class_info->package, class_info);
 	/* warn ("registered class %s to package %s\n", class_info->class, class_info->package); */
 
@@ -186,7 +186,7 @@ gperl_register_object (GType gtype,
 			class_info = (ClassInfo*)(i->data);
 
 			parent_class_info = (ClassInfo *) 
-			              g_hash_table_lookup (types_by_type,
+			         g_hash_table_lookup (types_by_type,
 			                    (gpointer) g_type_parent
 			                               (class_info->gtype));
 
@@ -327,7 +327,8 @@ gperl_object_set_no_warn_unreg_subclass (GType gtype,
 		nowarn_by_type = g_hash_table_new (g_direct_hash,
 		                                   g_direct_equal);
 	}
-	g_hash_table_insert (nowarn_by_type, (gpointer) gtype,
+	g_hash_table_insert (nowarn_by_type,
+	                     (gpointer) gtype,
 	                     GINT_TO_POINTER (nowarn));
 
 	G_UNLOCK (nowarn_by_type);
@@ -343,8 +344,9 @@ gperl_object_get_no_warn_unreg_subclass (GType gtype)
 	if (!nowarn_by_type)
 		result = FALSE;
 	else
-		result = PTR2IV (g_hash_table_lookup (nowarn_by_type,
-                                                      (gpointer) gtype));
+		result = GPOINTER_TO_INT
+		              (g_hash_table_lookup (nowarn_by_type,
+		                                    (gpointer) gtype));
 
 	G_UNLOCK (nowarn_by_type);
 
@@ -698,9 +700,14 @@ init_property_value (GObject * object,
 	GParamSpec * pspec;
 	pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (object), 
 	                                      name);
-	if (!pspec)
-		croak ("property %s not found in object class %s",
-		       name, G_OBJECT_TYPE_NAME (object));
+	if (!pspec) {
+		const char * classname =
+			gperl_object_package_from_type (G_OBJECT_TYPE (object));
+		if (!classname)
+			classname = G_OBJECT_TYPE_NAME (object);
+		croak ("type %s does not support property '%s'",
+		       classname, name);
+	}
 	g_value_init (value, G_PARAM_SPEC_VALUE_TYPE (pspec));
 }
 
@@ -725,6 +732,9 @@ init_property_value (GObject * object,
 MODULE = Glib::Object	PACKAGE = Glib::Object	PREFIX = g_object_
 
 =for object Glib::Object Bindings for GObject
+=cut
+
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 
@@ -780,7 +790,7 @@ DESTROY (SV *sv)
 
 =for signature object = $class->new (...)
 
-=for arg ... (key/value pairs) property values to set on creation
+=for arg ... of key/value pairs, property values to set on creation
 
 Instantiate a Glib::Object of type I<$class>.  Any key/value pairs in
 I<...> are used to set properties on the new object; see C<set>.
@@ -817,18 +827,26 @@ g_object_new (class, ...)
 			const char * key = SvPV_nolen (ST (FIRST_ARG+i*2+0));
 			GParamSpec * pspec;
 			pspec = g_object_class_find_property (oclass, key);
-			if (!pspec) 
-				/* FIXME this bails out, but does not clean up 
-				 * properly.  is there any way we can? */
-				croak ("type %s does not support property %s, skipping",
+			if (!pspec) {
+				/* clean up... */
+				int j;
+				for (j = 0 ; j < i ; j++)
+					g_value_unset (&params[j].value);
+				g_free (params);
+				/* and bail out. */
+				croak ("type %s does not support property '%s'",
 				       class, key);
+			}
 			g_value_init (&params[i].value,
 			              G_PARAM_SPEC_VALUE_TYPE (pspec));
-			if (!gperl_value_from_sv (&params[i].value, 
-			                          ST (FIRST_ARG+i*2+1)))
-				/* FIXME and neither does this */
-				croak ("could not convert value for property %s",
-				       key);
+			/* note: this croaks if there is a problem.  this is
+			 * usually the right thing to do, because if it
+			 * doesn't know how to convert the value, then there's
+			 * something seriously wrong; however, it means that
+			 * if there is a problem, all non-trivial values we've
+			 * converted will be leaked. */
+			gperl_value_from_sv (&params[i].value,
+			                     ST (FIRST_ARG+i*2+1));
 			params[i].name = key; /* will be valid until this
 			                       * xsub is finished */
 		}
@@ -934,6 +952,22 @@ g_object_set (object, ...)
 
 =for apidoc
 
+Stops emission of "notify" signals on I<$object>. The signals are queued
+until C<thaw_notify> is called on I<$object>.
+
+=cut
+void g_object_freeze_notify (GObject * object)
+
+=for apidoc
+
+Reverts the effect of a previous call to C<freeze_notify>. This causes all
+queued "notify" signals on I<$object> to be emitted.
+
+=cut
+void g_object_thaw_notify (GObject * object)
+
+=for apidoc
+
 List all the object properties for I<$object_or_class_name>; returns them as
 a list of hashes, containing these keys:
 
@@ -955,7 +989,6 @@ g_object_list_properties (object_or_class_name)
 	SV * object_or_class_name
     PREINIT:
 	GType type;
-	GObjectClass * object_class = NULL;
 	GParamSpec ** props;
 	guint n_props = 0, i;
     PPCODE:
@@ -973,13 +1006,28 @@ g_object_list_properties (object_or_class_name)
 			croak ("package %s is not registered with GPerl",
 			       SvPV_nolen (object_or_class_name));
 	}
-	/* classes registered by perl are kept alive by the bindings.
-	 * those coming straight from C are not.  if we had an actual
-	 * object, the class will be alive, but if we just had a package,
-	 * the class may not exist yet.  thus, we'll have to do an honest
-	 * ref here, rather than a peek. */
-	object_class = g_type_class_ref (type);
-	props = g_object_class_list_properties (object_class, &n_props);
+	if (G_TYPE_IS_OBJECT (type))
+	{
+		/* classes registered by perl are kept alive by the bindings.
+		 * those coming straight from C are not.  if we had an actual
+		 * object, the class will be alive, but if we just had a
+		 * package, the class may not exist yet.  thus, we'll have to
+		 * do an honest ref here, rather than a peek. 
+		 */
+		GObjectClass * object_class = g_type_class_ref (type);
+		props = g_object_class_list_properties (object_class, &n_props);
+		g_type_class_unref (object_class);
+	}
+#if GLIB_CHECK_VERSION(2,4,0)
+	else if (G_TYPE_IS_INTERFACE (type))
+	{
+		gpointer iface = g_type_default_interface_ref (type);
+		props = g_object_interface_list_properties (iface, &n_props);
+		g_type_default_interface_unref (iface);
+	}
+#endif
+	else
+		XSRETURN_EMPTY;
 #ifdef NOISY
 	warn ("list_properties: %d properties\n", n_props);
 #endif
@@ -1007,7 +1055,6 @@ g_object_list_properties (object_or_class_name)
 		XPUSHs (sv_2mortal (newRV_noinc((SV*)property)));
 	}
 	g_free(props);
-	g_type_class_unref (object_class);
 
 
 =for apidoc
@@ -1089,4 +1136,30 @@ get_pointer (object)
 	RETVAL = object;
     OUTPUT:
 	RETVAL
+
+#if 0
+=for apidoc
+=for arg all if FALSE (or omitted) tie only properties for this object's class, if TRUE tie the properties of this and all parent classes.
+
+A special method avaiable to Glib::Object derivatives, it uses perl's tie
+facilities to associate hash keys with the properties of the object. For
+example:
+
+  $button->tie_properties;
+  # equivilent to $button->set (label => 'Hello World');
+  $button->{label} = 'Hello World';
+  print "the label is: ".$button->{label}."\n";
+
+Attempts to write to read-only properties will croak, reading a write-only
+property will return '[write-only]'.
+
+Care must be taken when using tie_properties with objects of types created with
+Glib::Object::Subclass as there may be clashes with existing hash keys that
+could cause infinite loops. The solution is to use custom property get/set
+functions to alter the storage locations of the properties.
+=cut
+void
+tie_properties (GObject * object, gboolean all=FALSE)
+
+#endif
 

@@ -1,6 +1,6 @@
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.22.2.4 2004/02/06 02:11:07 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.35.2.3 2004/03/24 01:09:54 muppetman Exp $
 
-Glib version 1.022
+Glib version 1.040
 ==================
 
 This module provides perl access to Glib and GLib's GObject libraries.
@@ -19,10 +19,12 @@ place of GSList or GList objects.  Some concepts have been eliminated;
 you need never worry about reference-counting on GObjects or GBoxed
 structures.  Other concepts have been converted to a perlish analogy;
 the GType id will never be seen in perl, as the package name serves
-that purpose.  [FIXME link to a document describing this stuff in detail.]
+that purpose.  See the main Glib manpage for more information.
 
 This module also provides facilities for creating wrappers for other
-GObject-based libraries.  [FIXME link to a developer's doc]
+GObject-based libraries.  The documentation page of the gtk2-perl
+project's website has information about this stuff; see
+http://gtk2-perl.sourceforge.net/
 
 INSTALLATION
 
@@ -45,7 +47,9 @@ perl how to get to this library directory so you can use it; there are three
 ways:
 
   in your environment (the easiest):
-    PERL5LIB=/some/other/place/lib/perl5/site_perl:$PERL5LIB
+    # assuming a bourne-style shell
+    PERL5LIB=/some/other/place/lib/perl5/site_perl
+    export PERL5LIB
 
   on the perl command line:
     perl -I /some/other/place/lib/perl5/site_perl yourscript
@@ -59,7 +63,7 @@ DEPENDENCIES
 In order to use perl bindings for glib, you must have glib 2.x and its
 prerequisites (pkg-config and a decent standard c library) installed.
 glib-2.x is available from http://www.gtk.org, http://www.gnome.org,
-and etc.
+etc.
 
 Glib uses unicode internally; therefore this module requires perl 5.8.0
 or newer.
@@ -67,12 +71,12 @@ or newer.
 You'll also need the following modules in order to build the Glib module
 from source:
 
-  ExtUtils::Depends >= 0.100
+  ExtUtils::Depends >= 0.200
   ExtUtils::PkgConfig >= 1.00
 
-COPYRIGHT AND LICENCE
+COPYRIGHT AND LICENSE
 
-Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the
+Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for the
 full list)
 
 This library is free software; you can redistribute it and/or modify it under

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.10 2003/11/10 00:09:10 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.16.2.1 2004/03/17 02:56:07 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -63,24 +63,28 @@ of gmain.h in here, commented out.
 
 */
 
-#if 0
+MODULE = Glib::MainLoop	PACKAGE = Glib	PREFIX = g_
 
-###MODULE = Glib::MainLoop	PACKAGE = Glib	PREFIX = g_
+=for object Glib::MainLoop
+=cut
 
-## FIXME we could probably create a GEnum for these if anybody really cared
-##/* Standard priorities */
-##
-###define G_PRIORITY_HIGH            -100
-###define G_PRIORITY_DEFAULT          0
-###define G_PRIORITY_HIGH_IDLE        100
-###define G_PRIORITY_DEFAULT_IDLE     200
-###define G_PRIORITY_LOW	            300
+#if GLIB_CHECK_VERSION(2,4,0)
+
+=for apidoc __function__
+Find the current main loop recursion level.  This is handy in fringe
+situations, but those are very rare; see the C API reference for a more
+in-depth discussion.
+=cut
+int g_main_depth ()
 
 #endif
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::MainContext	PREFIX = g_main_context_
 
-=for object Glib::MainLoop
+=for object Glib::MainLoop An event source manager
+=cut
+
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 
@@ -217,6 +221,10 @@ gboolean g_main_loop_is_running (GMainLoop * loop);
 
 GMainContext * g_main_loop_get_context (GMainLoop * loop);
 
+ ### NOTE: stuff behind G_DISABLE_DEPRECATED shall not be bound.
+ ###       i've left their declarations here as a reminder that we didn't
+ ###       forget them, they're just not supposed to be included.
+ ###
  ##/* ============== Compat main loop stuff ================== */
  ##
  ###ifndef G_DISABLE_DEPRECATED

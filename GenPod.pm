@@ -4,16 +4,21 @@
 
 package Glib::GenPod;
 
-# FIXME/TODO
-#use strict;
-#use warnings;
-use Carp;
-use Glib;
-use Data::Dumper;
+our $VERSION = '0.02';
 
-use base Exporter;
+use strict;
+use warnings;
+use Carp;
+use File::Spec;
+use Data::Dumper;
+use POSIX qw(strftime);
+
+use Glib;
+
+use base 'Exporter';
 
 our @EXPORT = qw(
+	add_types
 	xsdoc2pod
 	podify_properties
 	podify_values
@@ -26,7 +31,10 @@ our @EXPORT = qw(
 our $COPYRIGHT = undef;
 our $AUTHORS = 'Gtk2-Perl Team';
 our $MAIN_MOD = 'L<Gtk2>';
+our $YEAR = strftime "%Y", gmtime;
 
+our ($xspods, $data);
+	
 =head1 NAME
 
 Glib::GenPod - POD generation utilities for Glib-based modules
@@ -90,6 +98,13 @@ This causes xsdoc2pod to call C<podify_values> on I<Package::Name> when
 writing the pod for the current package (as set by an object directive or
 MODULE line).  Any text in this paragraph, to the next C<=cut>, is included
 in that section.
+
+=item =for see_also L<some_thing_to_see>
+
+Used to add extra see alsos onto the end of the parents, if any, for a given
+object. Anything following the space behind see_also up to the end of the line
+will be placed onto the list of see also's. There may be any number of these in
+each package.
 
 =item =for apidoc
 
@@ -160,7 +175,6 @@ this function's code as a starting point for your own pretty-printer.
 =cut
 sub xsdoc2pod
 {
-	use File::Spec;
 	my $datafile = shift();
 	my $outdir   = shift() || 'blib/lib';
 	my $index    = shift;
@@ -170,7 +184,6 @@ sub xsdoc2pod
 	die "usage: $0 datafile [outdir]\n"
 		unless defined $datafile;
 
-	our ($xspods, $data);
 	require $datafile;
 
 	my @files = ();
@@ -204,50 +217,46 @@ sub xsdoc2pod
 		print ' - '.$pkgdata->{blurb} if (exists ($pkgdata->{blurb}));
 		print "\n\n";
 
-		print "=head1 DESCRIPTION\n\n".$pkgdata->{desc}."\n\n"
-			if (exists ($pkgdata->{desc}));
+		#                   pods            , position 
+		$ret = podify_pods ($pkgdata->{pods}, 'SYNOPSIS');
+		print "$ret\n\n" if ($ret);
+		
+		$ret = podify_pods ($pkgdata->{pods}, 'DESCRIPTION');
+		print "$ret\n\n" if ($ret);
 		
 		my $parents;
 		($ret, $parents) = podify_ancestors ($package);
-		if ($ret)
-		{
-			print "=head1 HIERARCHY\n\n$ret";
-		}
+		print "=head1 HIERARCHY\n\n$ret" if ($ret);
+		
+		$ret = podify_pods ($pkgdata->{pods}, 'post_hierarchy');
+		print "$ret\n\n" if ($ret);
 		
 		$ret = podify_interfaces ($package);
-		if ($ret)
-		{
-			print "=head1 INTERFACES\n\n$ret";
-		}
+		print "=head1 INTERFACES\n\n$ret" if ($ret);
+		
+		$ret = podify_pods ($pkgdata->{pods}, 'post_interfaces');
+		print "$ret\n\n" if ($ret);
 
-		my $pods = $pkgdata->{pods};
-		if ($pods) {
-			foreach my $pod (@$pods) {
-				# TODO: this step could be moved to be run once
-				# before starting, up top
-				preprocess_pod ($pod);
-				print join("\n", @{$pod->{lines}})
-				    . "\n\n";
-			}
-		}
+		$ret = podify_pods ($pkgdata->{pods});
+		print "$ret\n\n" if ($ret);
 
 		$ret = podify_methods ($package, $pkgdata->{xsubs});
-		if ($ret)
-		{
-			print "\n=head1 METHODS\n\n$ret";
-		}
+		print "\n=head1 METHODS\n\n$ret" if ($ret);
 		
+		$ret = podify_pods ($pkgdata->{pods}, 'post_methods');
+		print "$ret\n\n" if ($ret);
+
 		$ret = podify_properties ($package);	
-		if ($ret)
-		{
-			print "\n=head1 PROPERTIES\n\n$ret";
-		}
+		print "\n=head1 PROPERTIES\n\n$ret" if ($ret);
+
+		$ret = podify_pods ($pkgdata->{pods}, 'post_properties');
+		print "$ret\n\n" if ($ret);
 
 		$ret = podify_signals ($package);	
-		if ($ret)
-		{
-			print "\n=head1 SIGNALS\n\n$ret";
-		}
+		print "\n=head1 SIGNALS\n\n$ret" if ($ret);
+
+		$ret = podify_pods ($pkgdata->{pods}, 'post_signals');
+		print "$ret\n\n" if ($ret);
 
 		if ($pkgdata->{enums}) {
 			print "\n=head1 ENUMS AND FLAGS\n\n";
@@ -268,16 +277,35 @@ sub xsdoc2pod
 			}
 		}
 
-		$ret = podify_see_alsos ($parents);
+		$ret = podify_pods ($pkgdata->{pods}, 'post_enums');
+		print "$ret\n\n" if ($ret);
+
+		$ret = podify_pods ($pkgdata->{pods}, 'SEE_ALSO');
 		if ($ret)
 		{
-			print "\n=head1 SEE ALSO\n\n$ret";
+			print "$ret\n\n";
+		}
+		else
+		{
+			pop @$parents; # don't link to yourself
+			$ret = podify_see_alsos (@$parents,
+			                         $pkgdata->{see_alsos}
+						 ? @{ $pkgdata->{see_alsos} }
+			                         : ());
+			print "\n=head1 SEE ALSO\n\n$ret" if ($ret);
 		}
 
-		$ret = get_copyright ();
+		$ret = podify_pods ($pkgdata->{pods}, 'COPYRIGHT');
 		if ($ret)
 		{
-			print "\n=head1 COPYRIGHT\n\n$ret";
+			# copyright over-ridden
+			print "$ret\n\n" 
+		}
+		else
+		{
+			# use normal copyright system
+			$ret = get_copyright ();
+			print "\n=head1 COPYRIGHT\n\n$ret" if ($ret);
 		}
 
 		print "\n=cut\n\n";
@@ -290,9 +318,10 @@ sub xsdoc2pod
 			or die "can't open $index for writing: $!\b";
 		select INDEX;
 
-		foreach (@files) {
+		foreach (sort {$a->{name} cmp $b->{name}} @files) {
 			print join("\t", $_->{file},
-			                  $_->{name}, $_->{blurb}) . "\n";
+				   $_->{name},
+				   $_->{blurb} ? $_->{blurb} : () ) . "\n";
 		}
 		
 		close INDEX;
@@ -317,13 +346,15 @@ our %basic_types = (
 	string     => 'string',
 
 	# other C names which may sneak through
-	boolean => 'boolean',
-	int     => 'integer',
-	char    => 'integer',
-	uint    => 'unsigned',
-	float   => 'double',
-	double  => 'double',
-	char    => 'string',
+	bool     => 'boolean', # C++ keyword, but provided by the perl api
+	boolean  => 'boolean',
+	int      => 'integer',
+	char     => 'integer',
+	uint     => 'unsigned',
+	float    => 'double',
+	double   => 'double',
+	char     => 'string',
+	unsigned => 'unsigned',
 
 	gboolean => 'boolean',
 	gint     => 'integer',
@@ -334,8 +365,9 @@ our %basic_types = (
 	guint16  => 'unsigned',
 	guint32  => 'unsigned',
 	gulong   => 'unsigned',
-	gchar    => 'integer',
+	gshort   => 'integer',
 	guint    => 'integer',
+	gushort  => 'unsigned',
 	gfloat   => 'double',
 	gdouble  => 'double',
 	gchar    => 'string',
@@ -343,24 +375,56 @@ our %basic_types = (
 	SV       => 'scalar',
 	UV       => 'unsigned',
 	IV       => 'integer',
+	CV       => 'subroutine',
 
 	gchar_length => 'string',
 
-	# there are a little special -- they don't actually get 
-	# registered with the GType system.
-	GMainContext	=> 'Glib::MainContext',
-	GMainLoop	=> 'Glib::MainLoop',
-	GParamSpec	=> 'Glib::ParamSpec',
-	GParamFlags	=> 'Glib::ParamFlags',
+	FILE => 'file handle',
+	time_t => 'unix timestamp',
 
 	GPerlFilename	=> 'localized file name',
-
-## TODO/FIXME:
-	GtkTargetList   => 'Gtk2::TargetList',
-	GdkAtom         => 'Gtk2::Gdk::Atom',
-	GdkBitmap       => 'Gtk2::Gdk::Bitmap',
-	GdkNativeWindow => 'Gtk2::Gdk::NativeWindow',
+	GPerlFilename_const	=> 'localized file name',
 );
+
+=item add_types (@filenames)
+
+Parse the given I<@filenames> for entries to add to the C<%basic_types> used
+for C type name to Perl package name mappings of types that are not registered
+with the Glib type system.  The file format is dead simple: blank lines are
+ignored; /#.*$/ is stripped from each line as comments; the first token on
+each line is considered to be a C type name, and the remaining tokens are the
+description of that type.  For example, a valid file may look like this:
+
+  # a couple of special types
+  FooBar      Foo::Bar
+  Frob        localized frobnicator
+
+C type decorations such as "const" and "*" are implied (do not include them),
+and the _ornull variant is handled for you.
+
+=cut
+sub add_types {
+	my @files = @_;
+	foreach my $f (@files) {
+		open IN, $f or die "can't open types file $f: $!\n";
+		my $n = 0;
+		while (<IN>) {
+			chomp;
+			s/#.*//;
+			next if m/^\s*$/;
+			my ($c_name, @bits) = split;
+			if (@bits) {
+				$basic_types{$c_name} = join ' ', @bits;
+				$n++;
+			} else {
+				warn "$f:$.: no description for $c_name\n"
+			}
+		}
+		print "loaded $n extra types from $f\n";
+		close IN;
+	}
+}
+
 
 =item $string = podify_properties ($packagename)
 
@@ -372,7 +436,7 @@ are no properties or I<$package> is not a Glib::Object.
 sub podify_properties {
 	my $package = shift;
 	my @properties;
-	eval { @properties = $package->list_properties; 1; };
+	eval { @properties = Glib::Object::list_properties($package); 1; };
 	return undef unless (@properties or not $@);
 
 	# we have a non-zero number of properties, but there may still be
@@ -440,6 +504,92 @@ sub podify_signals {
     return $str
 }
 
+=item $string = podify_pods ($pods, $position)
+
+Helper function to allow specific placement of generic pod within the auto
+generated pages. Pod sections starting out with =for posistion XXX, where XXX
+is one of the following will be placed at a specified position. In the case of
+pod that is to be placed after a particular section that doesn't exist, that
+pod will be still be placed there.
+
+This function is called at all of the specified points throught the process of
+generated pod for a page. Any pod matching the I<position> passed will be
+returned, undef if no matches were found.  If I<position> is undef all pods
+without sepcific postion information will be returned. I<pods> is a reference
+to an array of pod hashes.
+
+=over
+
+=item * SYNOPSIS
+
+After the NAME section
+
+=item * DESCRIPTION
+
+After the SYNOPSIS section.
+
+=item * post_hierarchy
+
+After the HIERARCHY section.
+
+=item * post_interfaces
+
+After the INTERFACE section.
+
+=item * post_methods
+
+After the METHODS section.
+
+=item * post_properties
+
+After the PROPERTIES section.
+
+=item * post_signals
+
+After the SIGNALS section.
+
+=item * post_enums
+
+After the ENUMS AND FLAGS section.
+
+=item * SEE_ALSO
+
+Replacing the autogenerated SEE ALSO section completely.
+
+=item * COPYRIGHT
+
+Replacing the autogenerated COPYRIGHT section completely.
+
+=back
+
+=cut
+sub podify_pods
+{
+	my $pods = shift;
+	my $position = shift;
+
+	my $ret = '';
+
+	if ($position)
+	{
+		foreach (@$pods)
+		{
+			$ret .= join ("\n", @{$_->{lines}})."\n\n"
+				if (exists ($_->{position}) and 
+				    $_->{position} eq $position);
+		}
+	}
+	else
+	{
+		foreach (@$pods)
+		{
+			$ret .= join ("\n", @{$_->{lines}})."\n\n"
+				unless ($_->{position});
+		}
+	}
+	return $ret ne '' ? $ret : undef;
+}
+
 =item $string = podify_ancestors ($packagename)
 
 Pretty-prints the ancestry of I<$packagename> from the Glib type system's
@@ -503,9 +653,30 @@ sub podify_methods
 	my $nused  = 0;
 	my $method;
 
+	# based on rm's initial thought and then code/ideas by Marc 'HE'
+	# Brockschmidt, and Peter Haworth
+	@$xsubs = sort { 
+		my ($at, $bt);
+		for ($at=$a->{symname}, $bt=$b->{symname})
+		{
+			# remove prefixes
+			s/^.+:://;
+			# new's goto the front
+			s/^new/\x00/;
+			# group set's/get'ss
+			s/^(get|set)_(.+)/$2_$1/;
+			# put \<set\>'s with \<get\>'s
+			s/^(get|set)$/get_$1/;
+		}
+		# now actually do the sorting compare
+		$at cmp $bt; 
+	} @$xsubs;
+
 	#$str .= "=over\n\n";
 	foreach (@$xsubs) {
-		# skip unless the method is avaiable
+		# skip if the method is hidden
+		next if ($_->{hidden});
+		
 		$_->{symname} =~ m/^(?:([\w:]+)::)?([\w]+)$/;
 		$package = $1 || $_->{package};
 		$method = $2;
@@ -547,27 +718,30 @@ library versions against which this module was compiled.
 	$str;
 }
 
-=item $string = podify_see_alsos ($parents)
+=item $string = podify_see_alsos (@entries)
 
 Creates a list of links to be placed in the SEE ALSO section of the page.
-$parents should be a reference to an array of parents, as returned from
-podify_ancestors. Returns undef if no parents will be placed in the list.
+Returns undef if nothing is in the input list.
 
 =cut
 
 sub podify_see_alsos
 {
-	my $parents = shift;
-	
-	# get rid of ourself
-	unshift (@$parents);
-	
-	# if there are no parents
-	return undef unless (scalar (@$parents));
+	my @entries = @_;
+
+	return undef unless scalar @entries;
 	
 	# create the see also list
-	'L<'.join ('>, L<', @$parents).">
-"
+	join (', ',
+		map {
+			if (/^\s*L</) {
+				$_;
+			} else {
+				"L<$_>";
+			}
+		}
+		@entries)
+	    . "\n";
 }
 
 =item $string = get_copyright
@@ -577,17 +751,30 @@ variable COPYRIGHT can be used to override the text placed here. The package
 global variable AUTHORS should be set to the text to appear just after the year
 of the Copyright line, it defaults to Gtk2-Perl Team. The package gloabal
 variable MAIN_MOD should be set to a pod link pointing towards the main file
-for a package in which the full copyright appears.
+for a package in which the full copyright appears. Finally the package global
+YEAR maybe set to the year to place in the copyright, default is to use current
+year.
+
+To set AUTHORS, COPYRIGHT, and/or MAIN_MOD do something similar to the
+following in the first part of your postamble section in Makefile.PL. All of
+the weird escaping is require because this is going through several levels of
+variable expansion. All occurances of <br> are replaced with newlines.
+
+  POD_SET=\\\$\$Glib::GenPod::COPYRIGHT='Copyright 1999 team-foobar<br>LGPL';
 
 =cut
 
 sub get_copyright
 {
-	return $COPYRIGHT || "
-Copyright (C) 2003 $AUTHORS
+	my $str = $COPYRIGHT || "
+Copyright (C) $YEAR $AUTHORS
 
 This software is licensed under the LGPL; see $MAIN_MOD for a full notice.
-"
+";
+
+	# a way to make returns	
+	$str =~ s/<br>/\n/g;
+	return $str."\n";
 }
 
 sub preprocess_pod
@@ -614,7 +801,7 @@ sub preprocess_pod
 				else
 				{
 					carp "\n\nunable to open $2 for inclusion, at ".
-					     $parser->{filename}.':'.($. - @lines);
+					     $_->{filename}.':'.$_->{line};
 				}
 			}
 		}
@@ -770,7 +957,10 @@ sub xsub_to_pod {
 	#
 	# list all the arg types.
 	#
-	my (undef, @args) = @{ $xsub->{args} };
+	my @args;
+	@args = @{ $xsub->{args} } if ($xsub->{args});
+	shift @args unless $xsub->{function};
+
 	$str .= "=over\n\n" if @args;
 	foreach my $a (@args) {
 		my $type;
@@ -800,6 +990,9 @@ sub xsub_to_pod {
 		$str .= join("\n", @podlines)."\n\n";
 	}
 
+	$str .= "May croak with a L<Glib::Error> in \$@ on failure.\n\n"
+		if ($xsub->{gerror});
+
 	$str .= "=back\n\n";
 
 	$str
@@ -814,20 +1007,28 @@ xsub.
 sub compile_signature {
 	my $xsub = shift;
 
-	if (not defined $xsub->{args}) {
-		warn "*** xsub contains no args key:\n   ".Dumper($xsub);
-	}
-	my ($instance, @args) = @{ $xsub->{args} };
+	my @args;
+	@args = @{ $xsub->{args} } if ($xsub->{args});
 
-	# find the method's short name
-	my $method = $xsub->{symname};
-	$method =~ s/^(.*):://;
-	my $package = $1 || $xsub->{package};
-	my $obj;
-	if (defined $instance->{type}) {
-		$obj = '$'.$instance->{name};
+	my $call;
+
+	if ($xsub->{function}) {
+		$call = $xsub->{symname};
 	} else {
-		$obj = $package;
+		# find the method's short name
+		my $method = $xsub->{symname};
+		$method =~ s/^(.*):://;
+
+		my $package = $1 || $xsub->{package};
+
+		# methods always eat the first arg as the instance.
+		my $instance = shift @args;
+
+		my $obj = defined ($instance->{type})
+		        ? '$'.$instance->{name}
+			: $package;
+
+		$call = "$obj\-E<gt>$method";
 	}
 
 	# compile the arg list string
@@ -855,8 +1056,8 @@ sub compile_signature {
 		      ? 'list = '
 		      : ''
 		     );
-
-	"$retstr$obj\-E<gt>$method ".($argstr ? "($argstr)" : "");
+	
+	"$retstr$call ".($argstr ? "($argstr)" : "");
 }
 
 =item $string = fixup_arg_name ($name)
@@ -905,7 +1106,6 @@ sub convert_return_type_to_name {
 }
 
 sub mkdir_p {
-	use File::Spec;
 	my $path = shift;
 	my @dirs = File::Spec->splitdir ($path);
 	my $p = shift @dirs;
@@ -932,7 +1132,7 @@ mcfarland hacked this module together via irc and email over the next few days.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by the gtk2-perl team
+Copyright (C) 2003-2004 by the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For 

@@ -1,5 +1,5 @@
-# Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
-# list)
+# Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+# the full list)
 # 
 # This library is free software; you can redistribute it and/or modify it under
 # the terms of the GNU Library General Public License as published by the Free
@@ -15,10 +15,12 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Subclass.pm,v 1.5 2003/09/21 16:59:12 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Subclass.pm,v 1.10 2004/02/17 20:26:31 muppetman Exp $
 #
 
 package Glib::Object::Subclass;
+
+our $VERSION = '0.02';
 
 use Glib;
 
@@ -202,9 +204,6 @@ sub import {
    my ($self, $superclass, %arg) = @_;
    my $class = caller;
 
-   my $signals    = $arg{signals}    || {};
-   my $properties = $arg{properties} || [];
-
    # the CHECK callback will be executed after the module is compiled
    my $check = sub {
       # "optionally" supply defaults
@@ -215,10 +214,9 @@ sub import {
    };
    eval "package $class; CHECK { &\$check }";
 
-   Glib::Type->register(
+   Glib::Type->register_object(
       $superclass, $class,
-      signals    => $signals,
-      properties => $properties,
+      %arg,
    );
 }
 
@@ -228,9 +226,8 @@ sub import {
 
 To create gobject properties, supply a list of Glib::ParamSpec objects as the
 value for the key 'properties'.  There are lots of different paramspec
-constructors, documented in the C API reference's Parameters and Values page.
-
-TODO:  put a list here with the proper perl syntax for each
+constructors, documented in the C API reference's Parameters and Values page,
+as well as L<Glib::ParamSpec>.
 
 =head1 SIGNALS
 
@@ -243,11 +240,11 @@ keys are allowed to default.
 
 =item flags => GSignalFlags
 
-If not present, assumed to be run-first
+If not present, assumed to be 'run-first'.
 
 =item param_types => reference to a list of package names
 
-If not present, assumed to be empty (no parameters)
+If not present, assumed to be empty (no parameters).
 
 =item class_closure => reference to a subroutine to call as the class closure.
 
@@ -336,7 +333,7 @@ Marc Lehmann E<lt>pcg@goof.comE<gt>, muppet E<lt>scott at asofyet dot orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by muppet and the gtk2-perl team
+Copyright 2003-2004 by muppet and the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For 

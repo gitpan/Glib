@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.35 2003/11/25 04:41:02 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.44.2.1 2004/03/12 03:32:54 muppetman Exp $
 #
 
 use 5.008;
@@ -9,22 +9,17 @@ use ExtUtils::MakeMaker;
 use File::Spec;
 use Cwd;
 
-# minimum required version of dependancies we need to build
+# minimum required version of dependencies we need to build
 our %build_reqs = (
-	'perl-ExtUtils-Depends'   => '0.1',
+	'perl-ExtUtils-Depends'   => '0.200',
 	'perl-ExtUtils-PkgConfig' => '1.00',
 	'Glib'                    => '2.0.0',
 );
 
-# minimum required version of dependancies we need to run
-our %runtime_reqs = (
-	'Glib'	=> undef,
-);
-
 # Writing a fake Makefile ensures that CPAN will pick up the correct
 # dependencies and install them.
-unless (eval "use ExtUtils::Depends;"
-           . "use ExtUtils::PkgConfig;"
+unless (eval "use ExtUtils::Depends '$build_reqs{'perl-ExtUtils-Depends'}';"
+           . "use ExtUtils::PkgConfig '$build_reqs{'perl-ExtUtils-PkgConfig'}';"
            . "1") {
    warn "$@\n";
    WriteMakefile(
@@ -47,6 +42,8 @@ mkdir 'build', 0777;
 # appear in Glib::xsapi
 our @xs_files = qw(
 	Glib.xs
+	GError.xs
+	GUtils.xs
 	GLog.xs
 	GType.xs
 	GBoxed.xs
@@ -65,22 +62,19 @@ our %pm_files = (
      'GenPod.pm'       => '$(INST_LIBDIR)/Glib/GenPod.pm',
      'MakeHelper.pm'   => '$(INST_LIBDIR)/Glib/MakeHelper.pm',
      'devel.pod'       => '$(INST_LIBDIR)/Glib/devel.pod',
-#     'build/xsapi.pod' => '$(INST_LIBDIR)/Glib/xsapi.pod',
 );
 our %pod_files = (
    'Glib.pm'         => '$(INST_MAN3DIR)/Glib.$(MAN3EXT)',
    'Subclass.pm'     => '$(INST_MAN3DIR)/Glib::Object::Subclass.$(MAN3EXT)',
    'ParseXSDoc.pm'   => '$(INST_MAN3DIR)/Glib::ParseXSDoc.$(MAN3EXT)',
    'GenPod.pm'       => '$(INST_MAN3DIR)/Glib::GenPod.$(MAN3EXT)',
+   'MakeHelper.pm'   => '$(INST_MAN3DIR)/Glib::MakeHelper.$(MAN3EXT)',
    'devel.pod'       => '$(INST_MAN3DIR)/Glib::devel.$(MAN3EXT)',
    '$(INST_LIB)/$(FULLEXT)/xsapi.pod' => '$(INST_MAN3DIR)/Glib::xsapi.$(MAN3EXT)',
    Glib::MakeHelper->do_pod_files (@xs_files),
 );
 
-
 my %glibcfg = ExtUtils::PkgConfig->find ('gobject-2.0 >= '.$build_reqs{Glib});
-
-$runtime_reqs{Glib} = $glibcfg{modversion};
 
 # optional thread-safety
 my $nothreads = grep /disable[-_]threadsafe/i, @ARGV;
@@ -102,7 +96,7 @@ else
 	);
 }
 
-my $glib = ExtUtils::Depends->new ('Glib');
+our $glib = ExtUtils::Depends->new ('Glib');
 
 # add -I. and -I./build to the include path so we can find our own files.
 # this will be inherited by dependant modules, so they can find their
@@ -111,11 +105,11 @@ $glib->set_inc ($glibcfg{cflags} . $gthreadcfg{cflags} . ' -I. ');
 $glib->set_libs ($glibcfg{libs} . $gthreadcfg{libs});
 my $cwd = cwd();
 $glib->add_typemaps (map {File::Spec->catfile($cwd,$_)} 'typemap');
-$glib->add_headers ('"gperl.h"');
-$glib->install (qw(gperl.h gperl_marshal.h));
-$glib->save_config ('build/IFiles.pm');
 $glib->add_pm (%pm_files);
 $glib->add_xs (@xs_files);
+$glib->add_c (qw(gperl-gtypes.c));
+$glib->install (qw(gperl.h gperl_marshal.h doctypes));
+$glib->save_config ('build/IFiles.pm');
 
 # exports list needed for win32, unused on others
 our @exports;
@@ -131,6 +125,7 @@ WriteMakefile(
     DL_FUNCS		=> { Glib => [] },
     $glib ? $glib->get_makefile_vars : (),
 );
+
 
 package MY;
 
@@ -150,9 +145,12 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 
 "
 	     . Glib::MakeHelper->postamble_clean ()
-	     . Glib::MakeHelper->postamble_docs (@main::xs_files)
+	     . Glib::MakeHelper->postamble_docs_full (
+			DEPENDS => $main::glib,
+			DOCTYPES => 'doctypes',
+			COPYRIGHT_FROM => 'copyright.pod',
+	       )
 	     . Glib::MakeHelper->postamble_rpms (
-			'GLIB_RUN' => $runtime_reqs{'Glib'},
 			'GLIB' => $build_reqs{'Glib'},
 			'PERL_EXTUTILS_DEPENDS' => 
 				$build_reqs{'perl-ExtUtils-Depends'},
@@ -161,10 +159,11 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 		);
 }
 
+
 __END__
 
-Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the
-full list)
+Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+the full list)
 
 This library is free software; you can redistribute it and/or modify it under
 the terms of the GNU Library General Public License as published by the Free

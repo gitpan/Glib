@@ -1,0 +1,159 @@
+Overview of Changes in 1.040
+============================
+
+  Since 1.02x (the previous stable series)
+  ----------------------------------------
+  * Updated build requirement
+    - ExtUtils::Depends >= 0.2
+  * Support for a few new API features in glib-2.4.x.
+  * Functions that use GErrors in C throw magical Glib::Error exception
+    objects; these objects overload the stringification operator, so old code
+    won't be broken, but new code can match errors without worrying about
+    translated error messages.  User code and other extensions can register
+    their own error domains.  See the Glib::Error manpage for more info.
+  * Glib::Type enhancements
+    - Perl code can register enum and flags types for use as Glib::Object
+      property types.
+    - During Glib::Object class initialization, invoke INIT_BASE in the
+      object's package, if it exists.  (Analogue for GTypeClass's base_init.)
+    - It is now possible to add GInterface implementations to Glib::Object
+      types derived in Perl code.
+    - New param spec, Glib::ParamSpec::scalar
+  * Glib::MakeHelper is generally more helpful.
+  * The POD generation tools allow specification of cumulative data type
+    descriptions, and much finer control over the format and content of the
+    generated documentation.
+  * Glib can now export useful constants on request.
+  * New versioning API, see Glib::version.
+
+  Since 1.0391
+  ------------
+  * Nothing.  :-)
+
+Overview of Changes in 1.0391
+=============================
+
+* Bump 2.3.x version checks to 2.4.0.
+* Portability fixes for Glib::MakeHelper.
+* Add, document, and test Glib::GET_VERSION_INFO.
+* Documentation fixes.
+
+Overview of Changes in Glib 1.039
+=================================
+
+* Add missing symbols to the exports list, so we have half a hope of not
+  totally barfing on win32.  [muppet]
+* Code sweep for FIXMEs resulted in miscellaneous bugfixes and cleanups.
+  - Clean up properly when croaking on bad property name in Glib::Object::new.
+  - Use the same 'bad property' message in Glib::Object::set and "::new.
+  - Document the fact that Glib::ParamSpec::param_spec is unimplemented.
+* Document functions that can throw Glib::Error exceptions.  [Ross]
+* Glib::MakeHelper enhancements  [muppet]
+  - verify that ExtUtils::Depends is >= 0.2
+  - Don't generate broken makefiles if there are no C or XS files to compile.
+* Using Data::Dumper on an object with tied write-only properties no longer
+  results in an crash.  [Ross]
+
+Overview of Changes in Glib 1.038
+=================================
+
+* The API is frozen at this release for the 1.04x series.
+* g_main_depth (new in 2.3.5) bound as Glib::main_depth.  [Ross]
+* Glib::GenPod now works with strict, no user-visible changes.  [Ross]
+* POD updates.  [muppet]
+
+Overview of Changes in Glib 1.037
+=================================
+
+* Added bindings for missing utility functions, with tests and doc:
+  g_get_user_name, g_get_real_name, g_get_home_dir, g_get_tmp_dir,
+  g_get_application_name, g_set_application_name.  [muppet]
+* Decided on versioning API, implemented, used, and documented it.  There's
+  more documentation on the versioning stuff than code to implement it.
+  New functions:  Glib->CHECK_VERSION, Glib::MAJOR_VERSION,
+  Glib::MINOR_VERSION, Glib::MICRO_VERSION, Glib->check_version,
+  Glib::major_version, Glib::minor_version, Glib::micro_version.
+  [Ross, muppet]
+* GPerlClosure's exception handlers no longer clobber $_.  [muppet]
+* Add the ability to register new error domains and throw Glib::Errors from
+  Perl.  New utility function, Glib::Error::matches (binding for
+  g_error_matches), makes it easy to test errors.  New xs utility function
+  for parsing a perl data structure into a GError.  [muppet]
+* POD generation cleanups and fixes and enhancements.  [Ross]
+  - Methods are now sorted for readability
+  - Plain functions get proper non-method signatures
+  - Hiding works better, more extensibly
+  - Can now specify where in the file the POD should code.
+* Miscellaneous bug fixes.  [Torsten, Ross, muppet]
+
+Overview of Changes in Glib 1.036
+=================================
+
+* GErrors are now translated into exception objects instead of plain,
+  translatable strings; this is implemented as an additional functionality, 
+  so there is no break in either API or ABI.  [muppet]
+* gperl_alloc_temp() now complains but does not crash when requested to
+  allocate less than 1 byte.  [Torsten]
+* Quell some doc generation noisiness.  [muppet]
+* Updated copyright information in source code.  [muppet]
+
+Overview of Changes in Glib 1.035
+=================================
+
+* Updated ExtUtils::Depends requirement to 0.200.
+* Added Glib::MakeHelper::postamble_docs_full(), a more featureful, easier
+  to use, and more scalable front-end to the pod documentation generation
+  tools.  [muppet]
+* Extended Glib::Type::list_properties to handle properties on GInterfaces,
+  which is a new feature in gtk+ 2.4.  [Ross]
+* Added Glib::ParamSpec::scalar() for creating SV properties without needing
+  to know about boxed types.  [Ross]
+
+Overview of Changes in Glib 1.034
+=================================
+
+* Added infrastructure for installing Perl implementations of GObject vfuncs.
+  [muppet]
+* Added infrastructure for adding GInterfaces to perl-derived GObject types.
+  [muppet]
+* Added GPerlArgv utilities for unified @ARGV handling.  [Torsten]
+* Added startup-time linked version checking.  [Ross]
+* Several 64-bit portability fixes.  [muppet]
+
+Overview of Changes in Glib 1.033
+=================================
+
+* apidoc improvements, GenPod/ParseXSDoc. ability to add to the list of
+  see_also, and ways to orverride the copyright globals that GenPod uses.
+
+Overview of Changes in Glib 1.031
+=================================
+
+* New typemaps for gshort and gushort. [Torsten]
+* Updates to Glib::MakeHelper fix some build issues. [Ross]
+* Robustness fixes in the doc system's xs parser. [muppet]
+* Added $object->freeze_notify and $object->thaw_notify. [muppet]
+* Added a few new exportable constants. [muppet]
+
+Overview of Changes from Glib 1.02x to 1.030
+============================================
+
+* MakeHelper's utilities now allow "disable-doc" on a Makefile.PL command-line
+  to disable doc generation.  This works for all Glib::MakeHelper-based
+  projects.
+* It is now possible to register new GFlags and GEnum types from Perl.
+  These are typically useful as types for object properties of perl-derived
+  GObjects.
+* We now compile cleanly and pass tests on x86_64 platforms.  Some
+  tests are skipped until bugfixes in glib hit mainstream.
+  Thanks to Jacek Konieczny.
+* Added documentation for tie_properties.
+* ParseXSDoc now supports continuation lines in xsubs, and properly hides
+  things that want to be hidden.
+* Invocation of signal and event handlers no longer clobbers $@ at the
+  application level.  Thanks to Thierry Vignaud.
+* Added version information APIs.
+* Added filename_to_uri and filename_from_uri, but they have problems with
+  localization.  Need help debugging this.
+* Glib is now a proper Exporter, and can export the filename utilities.
+  We also allow method invocation of those functions to quell controversy.

@@ -1,66 +1,778 @@
-2004/02/05 21:21 (-0500) muppetman
+2004/03/23 20:20 (-0500) muppetman
 
-	* Glib.pm, README: stable bugfix release 1.022
+	* Glib.pm, README, NEWS: stable release 1.040
 
-2004/02/04 23:46 (-0500) muppetman
+2004/03/22 11:02 (-0500) muppetman
 
-	* GBoxed.xs, GObject.xs, GType.xs, GValue.xs, t/2.t:
-	more portability fixes, backported from HEAD.  the previous fixes for
-	using GUINT_TO_POINTER were a little overzealous; it's inappropriate
-	for GType, which is the same size as a pointer (a gulong, not a
-	guint).  also ensure that g_object_[sg]et_data and G_TYPE_POINTER
-	GValues are handled properly.
+	* typemap, GBoxed.xs: use INT2PTR to hush warnings about improper
+	casting on cygwin.
 
-2004/01/15 23:20 (-0500) muppetman
+2004/03/19 03:35 (-0500) muppetman
 
-	* Glib.pm, README: stable bugfix release 1.021
+	* Glib.pm, NEWS, README: 1.040 release candidate 1  (1.0391)
+
+2004/03/17 17:09 (+0100) kaffeetisch
+
+	* gperl.h (SvGObject_ornull): Use SvOK instead of SvTRUE.
+
+	* gperl.h
+	* typemap: Add typemaps for "const char_ornull *" and
+	"char_ornull *".
+
+2004/03/17 01:10 (-0500) muppetman
+
+	* MakeHelper.pm: d'oh!  bad escaping makes your code not working.
+
+2004/03/16 22:05 (-0500) muppetman
+
+	* GMainLoop.xs, GObject.xs: bump version checks from 2.3 to 2.4; we
+	don't claim to work with unstable gtk+.
+
+2004/03/16 13:17 (-0500) muppetman
+
+	* GUtils.xs: rename Glib::Version manpage to Glib::version, for
+	consistency with other modules and the fact that it's really a
+	'meta' manpage.
+	
+	* GUtils.xs, t/1.t: Add, document, and test Glib::GET_VERSION_INFO.
+
+	* GenPod.pm: sort the names going into podindex, which has the effect
+	of sorting the items listed in the <package>::index pod page.
+
+2004/03/13 22:05 (-0500) muppetman
+
+	* MakeHelper.pm: portability fixes; ask Config what make program we're
+	using and generate the proper conditional syntax, lest we generate bogus
+	makefiles.  we now work with Gnu Make and NMake.
+
+2004/03/11 22:40 (-0500) muppetman
+
+	* Glib.pm, NEWS, README, Makefile.PL: beta release 1.039
+
+	* Glib.exports: sort the list, to make it easier to spot missing
+	symbols.  add missing symbols.
+
+	* GBoxed.xs: fix dubious logic in parameter test.
+
+2004/03/11 21:51 (-0500) muppetman
+
+	* README: minor fixups.
+
+2004/03/10 11:30 (-0500) muppetman
+
+	D Changes
+	M MANIFEST
+	  remove the grossly-out-of-date and unused Changes file.
+
+2004/03/08 23:52 (-0500) muppetman
+
+	FIXME sweep:
+
+	* GMainLoop.xs, GType.xs: cleanup and commentary
+
+	* GObject.xs, t/5.t: make the 'bad property' message from set() match
+	the one from new().  clean up properly before croaking if new()
+	encounters a bad property name.  verify this behavior with tests.
+
+	* GParamSpec.xs: fix ALIAS on param_spec/boxed/object to remove
+	invalid symbol; document the fact that param_spec is unimplemented.
+
+	* GValue.xs: fix a nasty bug in gperl_value_from_sv that would've
+	resulted in a segfault when trying to read the C pointer out of an
+	SV containing a GParamSpec; implement the other direction in
+	gperl_sv_from_value.  there's currently no way to trigger these in
+	Glib or Gtk2, but it would be conceivable to run across GParamSpec
+	properties in other GObject-based bindings, so we don't want to barf
+	on them.
+
+	* GenPod.pm: rework and simplify internal function podify_see_alsos()
+
+	* t/9.t, t/a.t: use version guards on tests that suffer from GLib
+	bugs that are now fixed.
+
+	* TODO: updated
+
+2004/03/07 23:54 (-0500) muppetman
+
+	* GenPod.pm: don't add L<> around items that already have it in
+	podify_see_alsos
+
+2004/03/07 03:33 (-0500) rwmcfa1
+
+	* GenPod.pm, ParseXSDoc.pm: added support for the __gerror__ keyword on
+	=for apidoc lines. to be used at a latter date.
+
+2004/03/05 00:28 (-0500) muppetman
+
+	* Makefile.PL: add version checks to the import attempts for our
+	black-sheep ExtUtils modules; more recent versions actually support
+	the version checks.
+
+	* MakeHelper.pm: use almost excessive validation to detect whether
+	ExtUtils::Depends is of sufficient vintage, and bail out if not,
+	using the same trick as Makefile.PL to coax CPAN into updating.
+
+2004/03/04 09:52 (-0500) muppetman
+
+	* MakeHelper.pm: fix a bug in the MY::const_cccmd override which
+	rendered makefiles broken and useless when there were no C or XS
+	files to compile.
+
+	* Makefile.PL: install the MakeHelper manpage.
+
+2004/03/02 20:59 (-0500) rwmcfa1
+
+	* Glib.pm: alter the behavior of read only/write only tied properites.
+	setting a read only croaks, reading a write only returns
+	'[write-only]'.  shouldn't affect anything/anyone, just make things
+	work a little better with Dumper and stuff like that.
+
+	* GObject.xs: doc changes ^
+
+2004/03/02 00:42 (-0500) muppetman
+
+	* README, Glib.pm, NEWS: API-frozen unstable release 1.038
+
+	* GMainLoop.xs: change version guard on g_main_depth() to 2.3.5,
+	which was released today; minor cleanup and doc.
+
+2004/03/01 12:17 (-0500) rwmcfa1
+
+	* GMainLoop.xs: g_main_depth bound as Glib::main_depth (ver 2.4)
+
+2004/02/27 22:12 (-0500) muppetman
+
+	* GClosure.xs, GLog.xs, GMainLoop.xs, GType.xs: short descriptions
+	for the NAME sections
+
+2004/02/27 14:38 (-0500) rwmcfa1
+
+	* GenPod.pm: mystery solved, Exporter needed quotes around it in the use
+	base call. as to why it died the way it was with "Unknown error" i don't
+	yet know, looking into it. use stict is now uncommented, and this issue
+	is closed so far as Glib is concerned. 
+
+2004/02/27 13:58 (-0500) rwmcfa1
+
+	* GenPod.pm: use warnings now used. Also turned on strict to get rid of
+	all of it's complaints, but even after all of them are gone it dies
+	with Unknown error, so use strict is commented out.  lots and lots and 
+	lots of warnings fixed, some of which were flat out bugs. one of which 
+	was user visible, SEE ALSO's was wrong.
+
+2004/02/27 02:00 (-0500) muppetman
+
+	* Glib.pm, README, NEWS: unstable release 1.037
+
+2004/02/26 10:16 (-0500) muppetman
+
+	* t/1.t: correct the skip count.  bad muppet.
+
+2004/02/26 21:45 (-0500) muppetman
+
+	* README: fix the spelling of license; update the sandbox instructions.
+
+	* GUtils.xs, t/1.t: add more pod than code.  enable, document, and test
+	various utility functions (get|set_application_name, get_user_name,
+	get_real_name, get_tmp_dir, get_home_dir).
+
+	* Glib.xs: correct the semantics of the boot-time version check
+
+2004/02/26 22:59 (+0100) kaffeetisch
+
+	* GError.xs: Mark 'file' unused to hush compiler warnings.
+
+	* Glib.xs: Remove debug prints.
+
+	* ParseXSDoc.pm: Check if $firstline is defined before accessing
+	it to hush some warnings.
+
+2004/02/25 19:28 (-0500) rwmcfa1
+
+	* ParseXSDoc.pm, GenPod.pm, GBoxed.xs, GError.xs, GMainLoop.xs,
+	GParamSpec.xs, GType.xs: =pod position=<pos> -> =for position <pos> 
+	some pod parsers don't like text after =pod.
+
+2004/02/25 15:21 (-0500) rwmcfa1
+
+	* GObject.xs: use new positioning pod mech. use #if 0 trick to get 
+	tie_properties to act like a real method
+
+	* MakeHelper.pm: extra =back removed
+
+	* GBoxed.xs, GError.xs, GMainLoop.xs, GParamSpec.xs, GType.xs: use new 
+	positioning pod mech.
+
+	* GenPod.pm, ParseXSDoc.pm: new positioning pod mech put in place
+
+2004/02/23 17:05 (-0500) muppetman
+
+	* GError.xs: allow '' as well as undef when an SV into a GError,
+	as $@ is usually '' to say 'no error'.
+
+2004/02/23 15:16 (-0500) rwmcfa1
+
+	* t/1.t: versions could be 0, which would fail before, check for
+	defined.
+
+2004/02/23 14:38 (-0500) muppetman
+
+	* ParseXSDoc.pm: add hidden pods to the list of things to ignore when
+	checking if a package is empty; this keeps from clobbering the pod in
+	Glib.pm with Glib.pod, among other things.
+
+2004/02/23 01:37 (-0500) muppetman
+
+	* GClosure.xs: don't clobber $_
+
+	* GenPod.pm: if an xsub is marked as a function, generate a
+	function's signature for it.
+
+	* GUtils.xs: mark the functions as functions.
+
+	* GSignal.xs: =arg -> =for arg
+
+	* GError.xs, gperl.h: add the ability to register new error domains
+	and throw Glib::Errors from Perl.  New utility function,
+	Glib::Error::matches, makes it easy to test errors.  New xs utility
+	function for parsing a perl data structure into a GError.
+
+	* t/d.t: bunches of new tests for the new Glib::Error features.
+
+2004/02/22 21:44 (-0500) rwmcfa1
+
+	* GSignal.xs: =arg -> =for arg, apidoc error/type-o fixed.
+
+	* GUtils.xs, t/1.t: implemented CHECK_VERSION and friends with the same
+	scheme that went into Gtk2 eariler today.
+
+	* ParseXSDoc.pm: changed hide_hidden -> preprocess_pod. it now looks for
+	the __function__ keyword. changed the way these keywords are recorded,
+	they now go into xsub keys.
+	
+	* GenPod.pm: use the above by looking for the function key in xsubs
+	and proceeding accordingly.
+
+2004/02/22 15:26 (-0500) rwmcfa1
+
+	* GenPod.pm: removed warning about xsubs with no args, as they're 
+	perfectly legal, and there are now some.
+
+2004/02/22 12:48 (-0500) rwmcfa1
+
+	* GenPod.pm: method sorting implmented with suggestions from Marc and
+	Peter.
+
+2004/02/20 01:18 (-0500) muppetman
+
+	* Glib.pm, README, NEWS: unstable release 1.036
+
+2004/02/19 12:50 (+0100) kaffeetisch
+
+	* Glib.xs (gperl_alloc_temp): Return NULL and complain loudly if
+	the number of bytes is not greater than 0.
+
+2004/02/19 01:18 (-0500) muppetman
+
+	* Glib.pm, GError.xs, TODO: documentation updates.
+
+2004/02/18 01:35 (-0500) muppetman
+
+	A GError.xs
+	A gperl-gtypes.h
+	A gperl-gtypes.c
+	A t/d.t
+	M MANIFEST
+	M Makefile.PL
+	M Glib.exports
+	M Glib.xs
+	M Glib.pm
+	M gperl.h
+	  change gperl_croak_gerror() to turn GErrors into exception objects.
+	  the objects overload the stringify operator to be indistinguishable
+	  from normal exceptions, resulting in no API change for old code.
+	  gperl_croak_gerror()'s prefix argument is now useless, and has
+	  been renamed to ignore, but not removed (to retain ABI and source
+	  API compatibility).  add gperl_register_error_domain(), and use it
+	  for built-ins.  doing this properly requires GEnum GTypes for the
+	  error code enums, which are not provided by GLib, so we provide
+	  just the relevant ones in private files which can be recreated
+	  in the future as needed.
+
+2004/02/18 01:31 (-0500) muppetman
+
+	* ParseXSDoc.pm: quell some doc messages unless NOISYDOC is set in
+	the environment.
+
+2004/02/17 15:32 (-0500) muppetman
+
+	* GBoxed.xs, GObject.xs, GParamSpec.xs, GSignal.xs, GType.xs,
+	GUtils.xs, GValue.xs, Glib.pm, Glib.xs, MakeHelper.pm, Makefile.PL,
+	Subclass.pm, gperl.h, typemap: update copyright notices; add 2004 to
+	the stuff that has been modified this year.
+
+	* GenPod.pm: add time_t to %basic_types.
+
+2004/02/12 19:00 (-0500) muppetman
+
+	* Glib.pm, Makefile.PL, README, NEWS: unstable release 1.035
+
+2004/02/10 01:37 (-0500) muppetman
+
+	Some infrastructure changes allow us to enhance the quality of
+	generated POD.
+
+	* GenPod.pm: add a way to add entries to %basic_types at runtime.
+
+	* MakeHelper.pm: add postamble_docs_full(), and use it to implement
+	postamble_docs().  the new one takes parameters by name, and does a
+	lot more cool stuff than the old one.  this allows us to make it
+	easier to set $Glib::GenPod::COPYRIGHT, provides a way to get
+	filenames through to Glib::GenPod::add_types(), and provides a more
+	extensible API for future expansion.
+
+	* Makefile.PL: use Glib::MakeHelper->postamble_docs_full() instead
+	of postamble_docs().  copyright information comes from new file
+	copyright.pod, and we use and install the new file doctypes, which
+	adds type mappings for stuff that isn't registered with the Glib
+	type system.
+
+	A doctypes
+	A copyright.pod
+	M MANIFEST
+	  add copyright.pod and doctypes
+
+	* README: bump version requirement for ExtUtils::Depends.
+
+2004/02/09 08:09 (-0500) rwmcfa1
+
+	* GObject.xs: needed version guards around the interface_properties 
+	stuff b/c it's new to 2.3.x.
+
+2004/02/08 15:16 (-0500) rwmcfa1
+
+	* GObject.xs, GenPod.pm: list_properties extended to be able to handle
+	interfaces. since interfaces don't inherite from GObject 
+	Glib::Object::list_properties ($package) is required for it to work on
+	an interface. GenPod was updated to call list_properties this way.
+
+2004/02/08 00:05 (-0500) rwmcfa1
+
+	* GParamSpec.xs, t/b.t: added GParamSpec->scalar, and tested it.
+
+2004/02/08 20:46 (-0500) muppetman
+
+	* Glib.pm, README, NEWS: unstable release 1.034
+
+	* GenPod.pm: add bool and CV to %basic_types.
+
+2004/02/07 02:22 (-0500) muppetman
+
+	* GType.xs: add the ability to add GInterfaces to new GObject types
+	with register_object.  new key interfaces => \@list, where @list is a
+	list of package names.  effectively does foreach (@list) {
+	$_->_ADD_INTERFACE ($newtype); }, where the _ADD_INTERFACE method is 
+	supposed to do the actual work of adding and initializing the interface
+	implementation.
+
+2004/02/05 21:10 (-0500) muppetman
+
+	* GType.xs: rework _INSTALL_OVERRIDES handling one more time.  rather
+	than have a mess of inherited methods which chain up,
+	Glib::Type::register_object looks for _INSTALL_OVERRIDES in all
+	classes of the new type's ancestry, calling it if found.  this allows
+	proper overriding behavior and lets us add vfunc implementations
+	without requiring changes to all client code.
+
+	Glib::Type::register_object now *always* instantiates the class upon
+	registration, to avoid problems with it maybe or maybe not existing
+	later.  we also leak the reference to avoid the class needing to be
+	recreated, since we can't properly recreate it later, and perl
+	doesn't let classed die in normal circumstances, anyway.
+
+	* Glib.pm: add G_PARAM_READWRITE to the list of exportable constants.
+
+	* Glib.xs: better message?
+
+2004/02/05 13:38 (-0500) rwmcfa1
+
+	* GObject.xs: fixed apidoc on ... param of Glib::Object->new
+
+2004/02/04 23:44 (-0500) muppetman
+
+	* GObject.xs, GValue.xs: perl's IV is supposed to be as big as a
+	pointer, so we can't use glib's GINT_TO_POINTER family of casts,
+	because they'll truncate the IV on a 64-bit platform.  use the
+	INT2PTR family of macros from the Perl api.  this is important for
+	G_TYPE_POINTER GValues and g_object_[sg]et_data, for which we use
+	IVs to represent the pointer values.
+
+	* t/2.t: add some tests to ensure that we're handling int <=> pointer
+	conversions correctly, and that we can store pointers in object data.
+	as a side-effect, the test verifies that our unique hash wrappers work
+	correctly, as well.
+
+2004/02/04 19:09 (-0500) rwmcfa1
+
+	* Glib.xs: implemented linked version checking in BOOT section
+
+2004/02/04 20:19 (+0100) kaffeetisch
+
+	* gperl.h, Glib.xs: Add the new helper "object" GPerlArgv that
+	encapsulates everything related to argv parsing and thus
+	simplifies the various init xsubs.
+
+2004/02/04 02:33 (-0500) muppetman
+
+	* GBoxed.xs, GObject.xs, GType.xs: GType is not a guint, it's a
+	gulong; therefore, GUINT_TO_POINTER/GPOINTER_TO_UINT are not valid
+	for GTypes.  use direct casts, instead.  this fixes nasty problems
+	on alpha.  thanks to Mark Brockschmidt for finding the bug and
+	loaning me machine time to solve it.
+
+2004/02/04 01:21 (-0500) muppetman
+
+	* GType.xs: call method _INSTALL_OVERRIDES on newly registered
+	Glib::Object subclasses, to allow the new types an opportunity to
+	install vfunc overrides.  This method will typically be provided
+	by the class which introduces the vfuncs, and will install
+	implementations which marshal to inheritable perl methods.
+	Do nothing if no such method can be found; not all classes have
+	pure vfuncs.
+
+2004/02/03 00:57 (-0500) muppetman
+
+	* GType.xs: remove debugging print
+
+	* GenPod.pm: add 'unsigned' to list of built-in mappings
+
+	* t/9.t, t/a.t: add mipsel, mips, and alpha to the list of 64-bit
+	platforms on which to skip tests which exercise glib bugs.
+
+2004/01/30 22:36 (-0500) muppetman
+
+	* Subclass.pm: pass all unknown import parameters through to
+	Glib::Type->register_object.  bump version.
+
+2004/01/29 20:03 (-0500) rwmcfa1
+
+	* Glib.pm, README: unstable release 1.033
+
+	* NEWS: updated
+
+	1.032 isn't going public, was a test failure with no DISPLAY in Gtk2
+
+2004/01/29 18:44 (-0500) rwmcfa1
+
+	* Glib.pm, README: unstable release 1.032
+
+	* NEWS: updated
+
+2004/01/27 11:44 (-0500) rwmcfa1
+
+	* ParseXSDoc.pm, GenPod.pm: added a new =for type, see_also which
+	allows for appending things to see onto the end of the apidoc 
+	autogenerated SEE ALSO sections, much desired/asked for feature. code
+	added to ParseXSDoc to find them and GenPod to use them.
+
+2004/01/27 10:44 (-0500) rwmcfa1
+
+	* MakeHelper.pm: provide a mechinism for over-ridding the global 
+	variables in GenPod.
+
+	* GenPod.pm: doc how to go about over-ridding the global vars.
+
+2004/01/25 03:44 (-0500) muppetman
+
+	* Glib.pm, README: unstable release 1.031
+
+	* NEWS, MANIFEST.SKIP: updated
+
+2004/01/25 01:00 (-0500) muppetman
+
+	A NEWS
+	M MANIFEST
+	  add a file to summarize changes
+	
+	* GObject.xs: add freeze_notify and thaw_notify.
+
+	* GenPod.pm: add gshort and gushort to %basic_types, and FIXME
+	notice on %basic_types to remind me that it needs to be extensible.
+	remove the gchar=>integer mapping, since it conflicts with
+	gchar=>string (the * is implied, you see)
+
+	* Glib.pm: add exportable constants under a 'constants' tag.
+
+2004/01/24 21:44 (-0500) rwmcfa1
+
+	* MakeHelper.pm: added dist-srpms target, removed doc refering to 
+	runtime_reqs as it has been replaced by the pkg-config trick
+
+	* Makefile.PL: removed runtime_reqs stuff, replaced by the pkg-config 
+	trick
+	
+	* perl-Glib.spec.in: use pkg-config for Requires version
+
+2004/01/22 09:44 (-0500) rwmcfa1
+
+	* MakeHelper.pm: and i thought i was done. don't know what i was 
+	thinking with the last one, laying in bed sleepless last night the 
+	problem came to me. this is another attempt at a solution. this one 
+	will work, but depends on makefile conditionals which may not be as 
+	portable as i would like. also a fix to prevent the mkdir change from 
+	a while ago from happening everytime make is done.
+
+2004/01/21 20:56 (-0500) rwmcfa1
+
+	* MakeHelper.pm: yet another attempt at completely clearing up the 
+	issues with the -jx make option and not having the doc rebuild at every
+	single make invocation. uses blib_done file, which depends on all of
+	the @xs_files. hopefully this will do it, i'm about out of ideas. 
+	bascially MakeMaker sucks if you're tyring to do stuff this complicated
+	with it. with plain old make this wouldn't be an issue at all, but 
+	with the hooks we're given this is not going to be easy.
+
+2004/01/21 15:14 (-0500) muppetman
+
+	* ParseXSDoc.pm: allow space padding on either side of the arguments
+	in the xsub declaration.  also make the error messages more 
+	digestable (by removing the __WARN__ handler, was for debug only).
+
+2004/01/21 14:57 (-0500) rwmcfa1
+
+	* MakeHelper.pm: we need to create the directory in which index.pod will
+	be placed under certian circumstances. this doesn't affect any of 
+	Gtk2-Perl, but some modules (with certian structures) will cause 
+	problems that creating the directory if need be will address.
+
+2004/01/16 18:38 (-0500) rwmcfa1
+
+	* typemap: added types for gshort and gushort, patch by kaffee
+
+2004/01/16 11:09 (-0500) rwmcfa1
+
+	* MakeHelper.pm: BLIB_MOD_EXIST -> BLIB_DONE. and set equal to something
+	that 'seems' to ensure that blib has completed. fixes -j make build 
+	problems.
+
+2004/01/16 00:23 (-0500) muppetman
+
+	* README: unstable release 1.030
+
+	* README, Makefile.PL: add emphasis of the unstable nature of this
+	series.
+
+2004/01/16 00:02 (-0500) muppetman
+
+	A GUtils.xs
+	* MANIFEST, Makefile.PL, Glib.xs: add GUtils.xs, with version
+	information functions.
+
+	* ParseXSDoc.pm: don't complain about empty argument lists -- they are
+	legal on pure functions.
+
+	* AUTHORS: updated.
+
+2004/01/15 22:08 (-0500) muppetman
+
+	* Glib.xs, Glib.pm: restore the prototypes on filename_to_unicode and
+	filename_from_unicode, to allow proper support for the function and
+	static method calling conventions.  thanks to cxreg in irc for
+	reminding me that it would work.
+		also add initial implementations of filename_to_uri and
+	filename_from_uri, also callable as pure functions and class methods.
+	as currently implemented, there are issues with utf8 handling, but i
+	don't quite know how to resolve them.
+		make Glib be a full Exporter, so we can add these pure
+	functions to @EXPORT_OK and %EXPORT_TAGS.
+		update the docs accordingly.
+
+2004/01/15 14:31 (-0500) muppetman
+
+	* GenPod.pm: name mapping for GPerlFilename_const
+
+	* gperl.h, typemap: add typedef and input typemap for
+	GPerlFilename_ornull
 
 	* GType.xs, gperl_marshal.h, t/7.t, t/8.t: preserve $@ across
-	closure invocations.  (merged from HEAD)
+	closure invocations.
 
-	* GType.xs: fix some documentation that was woefully incorrect.
+	* GSignal.xs: add words of warning to documentation
 
-2004/01/13 23:56 (-0500) muppetman
+2004/01/14 10:59 (-0500) rwmcfa1
 
-	* GBoxed.xs, GObject.xs, GType.xs, GValue.xs: more 64-bit safety
-	stuff -- use GINT_TO_POINTER and GPOINTER_TO_INT where appropriate.
+	* GObject.xs: added pod documentation for tie_properties
 
-2004/01/13 23:36 (-0500) muppetman
+2004/01/14 00:21 (-0500) muppetman
 
-	* GObject.xs, GType.xs, Glib.xs, typemap, AUTHORS: patch
-	from Jacek Konieczny fixes warnings on x86_64 platforms.
+	* GBoxed.xs, GType.xs, GValue.xs: more spots where we should use
+	GINT_TO_POINTER and friends
 
-	* 9.t, a.t: work around glib bugs on x86_64 platforms.
+	* t/9.t, t/a.t: skip tests that exercise glib bugs on x86_64; we
+	need version API in the bindings to do this correctly.
 
-2003/12/11 22:11 (-0500) muppetman
+2004/01/13 22:41 (-0500) muppetman
 
-	* Glib.pm, README, META.yml: stable release 1.020
+	* AUTHORS, Glib.xs, GObject.xs, GType.xs, typemap: applied
+	patch (with extra fuzz) from Jacek Konieczny <jajcus at bnet dot pl>
+	to clean up warnings on 64-bit platforms.
 
-2003/12/04 22:28 (-0500) muppetman
+2004/01/13 22:20 (-0500) muppetman
 
-	* Glib.pm, README: bump version to 1.014 for release
-	* MANIFEST: t/6.t doesn't exist on this branch
+	* ParseXSDoc.pm: support continuation lines in xsubs.  this borks line
+	number handling, and is far more permissive than xsubpp, but xsubpp
+	will be the thing that causes people's code to break, and to do the
+	line number handling correctly would require far too much code tearup.
+	also, honor __hide__ correctly on =for apidoc comments that supply
+	a symbol name (by removing the end-of-line anchor from the regex).
 
-2003/12/04 13:13 (-0500) rwmcfa1
+2004/01/09 14:33 (-0500) rwmcfa1
 
-	* : Merged from HEAD
+	* AUTHORS: mailing list addr correction.
 
-	* GenPod.pm: @ARGV is now searched for disable-apidoc which, surprise,
-	disables the generation of the api doc pods thus speeding up the build
-	process.
-	
-	* GenPod.pm: put an extra \n after each of the pods to keep pod stuff
-	happy
+2004/01/08 21:22 (-0500) rwmcfa1
 
-2003/12/03 23:38 (-0500) muppetman
+	* Glib.xs: bit the bullet and made filename_to_unicode and 
+	filename_from_bullet work with either :: or -> syntaxes.
+
+	* Glib.pm: doc'd ^ as using the -> syntax.
+
+	there was great discussion on the list about this issue (in a more 
+	general sense) bascially early on the decision/mandate was made that
+	the -> syntax was to be used everywhere. right or wrong it's to late
+	change now that stable stuff has hit the world. the above functions
+	work either way, so we're safe.
+
+2003/12/31 02:03 (-0500) muppetman
+
+	* GValue.xs: paranoia -- check for sv==NULL before passing to SvOK.
+
+2003/12/30 11:49 (-0500) rwmcfa1
+
+	* GenPod.pm, MakeHelper.pm, Subclass.pm: added version numbers
+
+2003/12/30 10:12 (-0500) rwmcfa1
+
+	* MakeHelper.pm: moved the const_cccmd to the bottom of the file so 
+	that the first package isn't MY (caused issues with CPAN and generally
+	wasn't a good idea.) Also converted the comment about it into a pod 
+	NOTICE so that people will be aware that it's being added.
+
+2003/12/29 16:32 (-0500) rwmcfa1
+
+	* MakeHelper.pm: added DATE to the list of replacements, in a format
+	that rpm is happy with
+
+	* perl-Glib.spec.in: use the new DATE replacement in conjunction with
+	VERSION to create the changlog on the fly, which is better.
+
+2003/12/23 23:40 (-0500) muppetman
+
+	* typemap: ouch, there was a typo in the T_GCHAR_ORNULL output
+	typemap, resulting in unknown variable errors.
+
+2003/12/23 00:52 (+0100) kaffeetisch
+
+	* typemap: Add typemaps for gsize and gssize.
+
+2003/12/18 13:54 (-0500) rwmcfa1
+
+	* MakeHelper.pm: rpms now build in HOME/rpms dir, one change to fix
+	them all.
+
+2003/12/16 22:00 (-0500) rwmcfa1
+
+	* GType.xs: warnings fixes, minor (non-problem) bugs
+
+2003/12/16 13:16 (-0500) rwmcfa1
+
+	* MakeHelper.pm: the V deps have now been put under a var 
+	BLIB_MOD_EXISTS which is set to pm_to_blib now. (1 point of change if
+	need be in the future)
+
+2003/12/15 20:37 (-0500) rwmcfa1
+
+	* MakeHelper.pm: added pure_all as a dep on a few things.
+
+2003/12/10 15:18 (-0500) rwmcfa1
+
+	* t/c.t: now that the register_enum|flags stuff is fixed, test it out
+	more thoroughly.
+
+2003/12/10 12:45 (-0500) muppetman
+
+	* Subclass.pm: updated doc
+
+	* GType.xs: fix memory corruption problem in register_enum and 
+	register_flags by duping and leaking the value names.  there appears
+	to be no way to clean up that memory, unfortunately.
+	also moved those two xsubs up in the file to appear immediately
+	after register_object in the docs, and added examples to their docs.
+	move the existing register to register_object, since that's all it
+	does.  created a new function named register, which acts as a 
+	traffic-cop, calling the proper helper function based on the type
+	from which you are attempting to derive.  this would've been easier
+	to do in Perl, but then getting the doc into the right place would
+	require a rather large tearup of Glib::ParseXSDoc.
+
+	* TODO: a few of these are completed, now.
+
+2003/12/10 12:02 (-0500) rwmcfa1
+
+	* t/c.t: initial import, tests out the new register_enums|flags code
+
+2003/12/09 13:26 (-0500) rwmcfa1
+
+	* GType.xs: another pass at getting things going. created 
+	sanitize_package_name, used it where app.
+
+2003/12/08 22:44 (-0500) rwmcfa1
+
+	* GType.xs: implemented first pass at register_enum and register_flags
+
+2003/12/08 11:08 (-0500) muppetman
+
+	* GenPod.pm: add default translation for stdio FILE => "file handle"
+
+2003/12/08 09:44 (-0500) rwmcfa1
+
+	* t/6.t: use strict and warnings, b/c newer Test::More do anyway, 
+	required a few minor syntax changes to work.
+
+2003/12/04 13:07 (-0500) rwmcfa1
+
+	* MakeHelper.pm: @ARGV is now searched for disable-apidoc which,
+	surprise, disables the generation of the api doc pods thus speeding up
+	the build process.
+
+2003/12/04 00:12 (-0500) muppetman
 
 	* Glib.pm: credit where credit is due
+	* Glib.pm: bump version to 1.030 to keep cvs head ahead of the
+	stable series.
 
 2003/12/02 23:49 (-0500) rwmcfa1
 
+	* : Merged from rel-1-02-branch
+
 	* GenPod.pm: implement a sorter function that pushes GObject based pkgs
 	to the front, instead of alpha. this is so that all classes will be
-	instantiated by the time we do the interfaces.
+	instantiaed (sp?) by the time we do the interfaces.
+
+2003/12/02 18:30 (-0500) muppetman
+
+	* t/b.t: inexplicitly missing a test
+
+2003/12/02 18:30 (-0500) muppetman
+
+	* GType.xs: base_init support for perl-derived GObjects.  during
+	class initialization, invoke the method INIT_BASE in the object's
+	package if it exists.  see http://lists.gnome.org/archives/gtk-\
+	perl-list/2003-November/msg00194.html (and indeed the rest of that
+	thread) for discussion.
+
+	* t/6.t, MANIFEST: test the base_init stuff by ensuring multiple
+	derivation works as expected.
 
 2003/12/02 18:26 (-0500) muppetman
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.10 2003/11/10 00:09:10 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.11 2004/02/28 03:06:25 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -157,6 +157,9 @@ gperl_handle_logs_for (const gchar * log_domain)
 =cut
 
 MODULE = Glib::Log	PACKAGE = Glib::Log	PREFIX = g_log_
+
+=for object Glib::Log A flexible logging mechanism
+=cut
 
 BOOT:
 	gperl_handle_logs_for (NULL);

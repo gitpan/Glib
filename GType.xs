@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.41.2.4 2004/02/05 04:51:08 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.59 2004/03/09 04:48:23 muppetman Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -599,6 +599,24 @@ newSVGChar (const gchar * str)
  * lots of boilerplate translations and such.
  */
 
+/* TODO/FIXME: utf8 safe??? */
+/* muppetman: no, it's not utf8-safe, as it treats the string like ascii.
+ *            we implicitly assume in many places that package names will
+ *            be ascii; in practice this is the case, but it *is* possible
+ *            to get non-ascii package names. */
+static char *
+sanitize_package_name (const char * pkg_name)
+{
+	char * s;
+	char * ctype_name;
+
+	ctype_name = g_strdup (pkg_name);
+	for (s = ctype_name; *s != '\0' ; s++)
+		if (*s == ':')
+			*s = '_';
+	return ctype_name;
+}
+			
 static void
 gperl_signal_class_closure_marshal (GClosure *closure,
 				    GValue *return_value,
@@ -1015,6 +1033,81 @@ add_properties (GType instance_type, AV * properties)
 	g_type_class_unref (oclass);
 }
 
+/*
+ * look for a function named _INSTALL_OVERRIDES in each package of the
+ * ancestry of type, and call it if it exists.  these are done from root
+ * down to type, so that later classes may override what ancestors installed.
+ * the package name corresponding to type is passed to each one, so the
+ * (typically xs) implementations can find the right object class.
+ */
+static void
+install_overrides (GType type)
+{
+	GSList * types = NULL, * i;
+	GType t;
+	const char * name = NULL;
+
+	for (t = type ; t != 0 ; t = g_type_parent (t))
+		types = g_slist_prepend (types, (gpointer) t);
+
+	for (i = types ; i != NULL ; i = i->next) {
+		HV * stash;
+		SV ** slot;
+		t = (GType) i->data;
+		stash = gperl_object_stash_from_type (t);
+		slot = hv_fetch (stash, "_INSTALL_OVERRIDES",
+		                 sizeof ("_INSTALL_OVERRIDES") - 1,
+		                 FALSE);
+	        if (slot && GvCV (*slot)) {
+	                dSP;
+	                ENTER;
+	                SAVETMPS;
+	                PUSHMARK (SP);
+			if (!name)
+				name = gperl_object_package_from_type (type);
+	                XPUSHs (sv_2mortal (newSVpv (name, PL_na)));
+	                PUTBACK;
+	                call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
+	                FREETMPS;
+	                LEAVE;
+	        }
+	}
+
+	g_slist_free (types);
+}
+
+static void
+add_interfaces (GType instance_type, AV * interfaces)
+{
+        int i;
+	SV * class_name =
+		newSVpv (gperl_object_package_from_type (instance_type), 0);
+
+        for (i = 0; i <= av_len (interfaces); i++) {
+		SV ** svp = av_fetch (interfaces, i, FALSE);
+		if (!svp && !SvOK (*svp))
+			croak ("%s is not a valid interface name",
+			       SvPV_nolen (*svp));
+
+		/* call the interface's setup function on this class. */
+		{
+			dSP;
+			ENTER;
+			PUSHMARK (SP);
+			EXTEND (SP, 2);
+			PUSHs (*svp); /* interface type */
+			PUSHs (class_name); /* target type */
+			PUTBACK;
+			/* this will fail if _ADD_INTERFACE is not defined. */
+			call_method ("_ADD_INTERFACE", G_VOID|G_DISCARD);
+			LEAVE;
+		}
+		gperl_prepend_isa (SvPV_nolen (class_name), SvPV_nolen (*svp));
+	}
+
+	SvREFCNT_dec (class_name);
+}
+
 static void
 gperl_type_get_property (GObject * object,
                          guint property_id,
@@ -1185,12 +1278,128 @@ gperl_type_instance_init (GObject * instance)
         }
 }
 
+static GQuark gperl_type_reg_quark (void) G_GNUC_CONST;
+static GQuark
+gperl_type_reg_quark (void)
+{
+	static GQuark q = 0;
+	if (!q)
+		q = g_quark_from_static_string ("__gperl_type_reg");
+	return q;
+}
+
 static void
 gperl_type_class_init (GObjectClass * class)
 {
 	class->finalize     = gperl_type_finalize;
 	class->get_property = gperl_type_get_property;
 	class->set_property = gperl_type_set_property;
+}
+
+static void
+gperl_type_base_init (gpointer class)
+{
+	/*
+	 * tricksey little hobbitses...
+	 * 
+	 * we use the same function pointer for all perl-derived types'
+	 * base_init functions.  since we get the class structure and 
+	 * nothing else, we have no way of knowing which class is actually
+	 * being booted.  thus, we resort to trickery.
+	 * 
+	 * we know that class initialization class class_init for your new
+	 * type, then goes inside out calling the base_inits for the types
+	 * in your ancestry.  that means we'll get into this function once
+	 * for each type in a particular class instance's lineage.
+	 * 
+	 * so, we keep a private hash of class structures we have seen
+	 * before, containing a list of the types remaining to be initialized.
+	 * each time we get in here, we find the first perl-derived type
+	 * (as marked by Glib::Type::register as something which will use
+	 * this function), and look for the INIT_BASE function in that type's
+	 * package.  we pop items from the list so that we don't use them
+	 * twice.  when we've hit the end of the list, we forget that class
+	 * instance to save memory; this is safe because we should never
+	 * get back in here for that instance anyway.
+	 * 
+	 * remember that we must pass to the method the package corresponding
+	 * to the bottom of the hierarchy, so that client code knows what
+	 * class we are actually initializing.  otherwise, INIT_BASE methods
+	 * implemented in XS would find the wrong GTypeClass and mangle things
+	 * rather badly.
+	 * 
+	 * many thanks to Brett Kosinski for devising this evil^Wclever scheme.
+	 */
+	static GStaticRecMutex base_init_lock = G_STATIC_REC_MUTEX_INIT;
+	static GHashTable * seen = NULL;
+	GSList * types;
+	GType t;
+
+	g_static_rec_mutex_lock (&base_init_lock);
+
+	if (!seen)
+		seen = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+	types = g_hash_table_lookup (seen, class);
+
+	if (!types) {
+		/* haven't seen this class instance before */
+		t = G_TYPE_FROM_CLASS (class);
+		do {
+			types = g_slist_prepend (types, (gpointer) t);
+		} while (0 != (t = g_type_parent (t)));
+	}
+
+	g_assert (types);
+
+	/* start at the head of the list of types and find the next 
+	 * perl-created type. */
+	while (types != NULL &&
+	       !g_type_get_qdata ((GType)types->data,
+	                          gperl_type_reg_quark())) {
+		types = g_slist_delete_link (types, types);
+	}
+
+	t = types ? (GType) types->data : 0;
+
+	/* and shift this one off so we don't use it again. */
+	types = g_slist_delete_link (types, types);
+
+	/* clean up now, while we're thinking about it */
+	if (types)
+		g_hash_table_replace (seen, class, types);
+	else
+		g_hash_table_remove (seen, class);
+
+	if (t) {
+		const char * package;
+		HV * stash;
+		SV ** slot;
+
+		package = gperl_package_from_type (t);
+		g_assert (package != NULL);
+
+		stash = gv_stashpv (package, FALSE);
+		g_assert (stash != NULL);
+
+        	slot = hv_fetch (stash, "INIT_BASE", sizeof ("INIT_BASE")-1, 0);
+
+		if (slot && GvCV (*slot)) {
+	                dSP;
+	                ENTER;
+	                SAVETMPS;
+	                PUSHMARK (SP);
+			/* remember, use the bottommost package name! */
+	                XPUSHs (sv_2mortal (newSVpv
+				(g_type_name (G_TYPE_FROM_CLASS (class)), 0)));
+	                PUTBACK;
+	                call_sv ((SV*) GvCV (*slot), G_VOID|G_DISCARD);
+	                FREETMPS;
+	                LEAVE;
+	        }
+	}
+
+	g_static_rec_mutex_unlock (&base_init_lock);
 }
 
 /* make sure we close the open list to keep from freaking out pod readers... */
@@ -1201,17 +1410,20 @@ gperl_type_class_init (GObjectClass * class)
 
 MODULE = Glib::Type	PACKAGE = Glib::Type	PREFIX = g_type_
 
-=for flags Glib::SignalFlags
+=for object Glib::Type Utilities for dealing with the GLib Type system
 
+=for flags Glib::SignalFlags
 =cut
+
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 
 This package defines several utilities for dealing with the GLib type system
 from Perl.  Because of some fundamental differences in how the GLib and Perl
 type systems work, a fair amount of the binding magic leaks out, and you can
-find most of that in C<Glib::Type::register>, which registers new object types
-with the GLib type system.
+find most of that in the C<Glib::Type::register*> functions, which register
+new types with the GLib type system.
 
 Most of the rest of the functions provide introspection functionality, such as
 listing properties and values and other cool stuff that is used mainly by
@@ -1228,6 +1440,90 @@ BOOT:
 
 
 =for apidoc
+=for arg parent_class (package name) type from which to derive
+=for arg new_class (package name) name of new type
+=for arg ... arguments for creation
+Register a new type with the GLib type system.
+
+This is a traffic-cop function.  If I<$parent_type> derives from Glib::Object,
+this passes the arguments through to C<register_object>.  If I<$parent_type>
+is Glib::Flags or Glib::Enum, this strips I<$parent_type> and passes the
+remaining args on to C<register_enum> or C<register_flags>.  See those
+functions' documentation for more information.
+=cut
+void
+g_type_register (class, const char * parent_class, new_class, ...)
+    PREINIT:
+	GType parent_type, base_type;
+	char * sym;
+	int n;
+	SV ** oldargs;
+    CODE:
+	/*
+	 * we originally had just Glib::Type::register, and it only did
+	 * GObjects.  the name implies that it can do anything, so it
+	 * should be able to.  to make the code managable we broke the
+	 * actual work into separate functions, and do make the documentation
+	 * intelligible, we made those helpers public.  this one, then,
+	 * exists to retain backward compatibility, and acts as a traffic
+	 * cop, farming out the work to the right helper function.
+	 * 
+	 * i had written this traffic cop in Glib.pm, but getting the pod
+	 * to show up in Glib/Type.pod would've required a good amount of
+	 * tear-up in Glib::ParseXSDoc.  So, here it is as an xsub.
+	 */
+
+	/* check for flags and enum specially, since those aren't registered
+	 * in the fundamentals hash (causes problems if they are) */
+	if (strEQ (parent_class, "Glib::Enum")) {
+		parent_type = G_TYPE_ENUM;
+	} else if (strEQ (parent_class, "Glib::Flags")) {
+		parent_type = G_TYPE_FLAGS;
+	} else {
+		parent_type = gperl_type_from_package (parent_class);
+		if (!parent_type)
+			croak ("package %s is not registered with the GLib type system",
+			       parent_class);
+	}
+
+	base_type = G_TYPE_FUNDAMENTAL (parent_type);
+	switch (base_type) {
+	    case G_TYPE_OBJECT: sym = "Glib::Type::register_object"; break;
+	    case G_TYPE_ENUM:   sym = "Glib::Type::register_enum";   break;
+	    case G_TYPE_FLAGS:  sym = "Glib::Type::register_flags";  break;
+
+	    default:
+		croak ("sorry, don't know how to derive from a %s in Perl",
+		       g_type_name (base_type));
+	}
+	/*
+	 * because we need to strip an arg from the stack for register_enum
+	 * and register_flags, we can't just call_* right here.
+	 */
+	oldargs = & ST (0);
+	n = items - 3;
+	{
+		gint i;
+		ENTER;
+		SAVETMPS;
+		PUSHMARK (SP);
+		EXTEND (SP, 3+n);
+		PUSHs (oldargs[0]);
+		if (base_type == G_TYPE_OBJECT)
+			PUSHs (oldargs[1]);
+		PUSHs (oldargs[2]);
+		for (i = 0 ; i < n ; i++)
+			PUSHs (oldargs[3+i]);
+		PUTBACK;
+		call_method (sym, G_VOID);
+		SPAGAIN;
+		FREETMPS;
+		LEAVE;
+	}
+	
+
+
+=for apidoc
 
 =arg parent_package () name of the parent package, which must be a derivative of Glib::Object.
 
@@ -1236,8 +1532,8 @@ BOOT:
 =for arg ... (list) key/value pairs controlling how the class is created.
 
 Register I<new_package> as an officially GLib-sanctioned derivative of
-I<parent_package>.  This automatically sets up an @ISA entry for you,
-and creates a new GObjectClass under the hood.
+the (GObject derivative) I<parent_package>.  This automatically sets up
+an @ISA entry for you, and creates a new GObjectClass under the hood.
 
 The I<...> parameters are key/value pairs, currently supporting:
 
@@ -1314,7 +1610,7 @@ FIXME finish this
 
 =cut
 void
-g_type_register (class, parent_package, new_package, ...);
+g_type_register_object (class, parent_package, new_package, ...);
 	char * parent_package
 	char * new_package
     PREINIT:
@@ -1322,10 +1618,11 @@ g_type_register (class, parent_package, new_package, ...);
 	GTypeInfo type_info;
 	GTypeQuery query;
 	GType parent_type, new_type;
-	char * new_type_name, * s;
+	char * new_type_name;
     CODE:
 	/* start with a clean slate */
 	memset (&type_info, 0, sizeof (GTypeInfo));
+	type_info.base_init = (GBaseInitFunc) gperl_type_base_init;
 	type_info.class_init = (GClassInitFunc) gperl_type_class_init;
 	type_info.instance_init = (GInstanceInitFunc) gperl_type_instance_init;
 
@@ -1346,10 +1643,7 @@ g_type_register (class, parent_package, new_package, ...);
 
 	/* and now register with the gtype system */
 	/* mangle the name to remove illegal characters */
-	new_type_name = g_strdup (new_package);
-	for (s = new_type_name ; *s != '\0' ; s++)
-		if (*s == ':')
-			*s = '_';
+	new_type_name = sanitize_package_name (new_package);
 	new_type = g_type_register_static (parent_type, new_type_name,
 	                                   &type_info, 0);
 #ifdef NOISY
@@ -1363,12 +1657,23 @@ g_type_register (class, parent_package, new_package, ...);
 	/* and with the bindings */
 	gperl_register_object (new_type, new_package);
 
+	/* mark this type as "one of ours". */
+	g_type_set_qdata (new_type, gperl_type_reg_quark (), (gpointer) TRUE);
+
+	/* instantiate the class right now.  perl doesn't let classes go
+	 * away once they've been defined, so we'll just leak this ref and
+	 * let the GObjectClass live as long as the program.  in fact,
+	 * because we don't really have class_init handlers like C, we
+	 * really don't want the class to die and be reinstantiated, because
+	 * some of the setup (namely the stuff coming up) will never happen
+	 * again.
+	 * this statement will cause an arbitrary amount of stuff to happen.
+	 */
+	g_type_class_ref (new_type); /* leak */
+
 	/* now look for things we should initialize presently, e.g.
 	 * signals and properties and interfaces and such, things that
-	 * would generally go into a class_init.  if any of these
-	 * actually do any work, the class will be instantiated right
-	 * here, otherwise, it may not happen until somebody actually
-	 * instantiates and object of this type. */
+	 * would generally go into a class_init. */
 	for (i = 3 ; i < items ; i += 2) {
 		char * key = SvPV_nolen (ST (i));
 		if (strEQ (key, "signals")) {
@@ -1376,14 +1681,213 @@ g_type_register (class, parent_package, new_package, ...);
                                 add_signals (new_type, (HV*)SvRV (ST (i+1)));
                         else
                           	croak ("signals must be a hash of signalname => signalspec pairs");
-                }
-		if (strEQ (key, "properties")) {
+                } else if (strEQ (key, "properties")) {
                         if (SvROK (ST (i+1)) && SvTYPE (SvRV (ST (i+1))) == SVt_PVAV)
                                 add_properties (new_type, (AV*)SvRV (ST (i+1)));
                         else
                           	croak ("properties must be an array of GParamSpecs");
-                }
+                } else if (strEQ (key, "interfaces")) {
+			if (SvROK (ST (i+1)) && SvTYPE (SvRV (ST (i+1))) == SVt_PVAV)
+				add_interfaces (new_type, (AV*)SvRV (ST (i+1)));
+			else
+				croak ("interfaces must be an array of package names");
+		}
 	}
+	
+	/* vfuncs cause a bit of a problem, because the normal mechanisms of
+	 * GObject don't give us a predefined way to handle them.  here we
+	 * provide a way to override them in each child class as it is
+	 * derived. */
+	install_overrides (new_type);
+
+	/* fin */
+
+
+=for apidoc
+=for arg name package name for new enum type
+=for arg ... new enum's values; see description.
+=for signature Glib::Type->register_enum ($name, ...)
+Register and initialize a new Glib::Enum type with the provided "values".
+This creates a type properly registered GLib so that it can be used for
+property and signal parameter or return types created with
+C<< Glib::Type->register >> or C<Glib::Object::Subclass>.
+
+The list of values is used to create the "nicknames" that are used in general
+Perl code; the actual numeric values used at the C level are automatically
+assigned, starting with 1.  If you need to specify a particular numeric value
+for a nick, use an array reference containing the nickname and the numeric
+value, instead.  You may mix and match the two styles.
+
+  Glib::Type->register_enum ('MyFoo::Bar',
+          'value-one',            # assigned 1
+          'value-two',            # assigned 2
+          ['value-three' => 15 ], # explicit 15
+          ['value-four' => 35 ],  # explicit 35
+          'value-five',           # assigned 5
+  );
+
+If you use the array-ref form, beware: the code performs no validation
+for unique values.
+=cut
+void
+g_type_register_enum (class, name, ...)
+	const char * name
+    PREINIT:
+	int           i = 0;
+	char       *  ctype_name;
+	SV         *  sv;
+	SV         ** av2sv;
+	GType         type;
+	GEnumValue *  values = NULL;
+    CODE:
+	if (items-2 < 1)
+		croak ("Usage: Glib::Type->register_enums (new_package, LIST)\n"
+		       "   no values supplied");
+	/*
+	 * we create a value table on the fly, and we can't free it without
+	 * causing problems.  the value table is stored in the type
+	 * registration information, which conceivably may be called more
+	 * than once per program (which is why we don't use a class_finalize
+	 * to destroy it).  unfortunately, there doesn't appear to be a
+	 * g_enum_register_dynamic().
+	 * this means we will also leak the nickname strings, which must
+	 * be duplicated to keep them alive (perl will reuse those strings).
+	 *
+	 * note also that we don't clean up very well when things go wrong.
+	 * we build up the structure as we go, and an exception in the middle
+	 * will leak everything done up to that point.  we could clean it up,
+	 * but it will make things uglier than they already are, and if
+	 * your script can't register the enums properly, it probably won't
+	 * live much longer.
+	 */
+	values = g_new0 (GEnumValue, items-1); /* leak (see above) */
+	for (i = 0; i < items-2; i++)
+	{
+		sv = (SV*)ST (i+2);
+		/* default to the i based numbering */
+		values[i].value = i + 1;
+		if (SvROK(sv) && SvTYPE(SvRV(sv))==SVt_PVAV)
+		{
+			/* [ name => value ] syntax */
+			AV * av = (AV*)SvRV(sv);
+			/* value_name */
+			av2sv = av_fetch (av, 0, 0);
+			if (av2sv && *av2sv && SvOK(*av2sv))
+				values[i].value_name = SvPV_nolen (*av2sv);
+			else
+				croak ("invalid enum name and value pair, no name provided");
+			/* custom value */
+			av2sv = av_fetch (av, 1, 0);
+			if (av2sv && *av2sv && SvOK(*av2sv))
+				values[i].value = SvIV (*av2sv);
+		}
+		else if (SvOK (sv))
+		{
+			/* name syntax */
+			values[i].value_name = SvPV_nolen (sv);
+		}
+		else
+			croak ("invalid type flag name");
+
+		/* make sure that the nickname stays alive as long as the
+		 * type is registered. */
+		values[i].value_name = g_strdup (values[i].value_name);
+
+		/* let the nick and name match.  there are few uses for the
+		 * name, anyway. */
+		values[i].value_nick = values[i].value_name;
+	}
+	ctype_name = sanitize_package_name (name);
+	type = g_enum_register_static (ctype_name, values);
+	gperl_register_fundamental (type, name);
+	g_free (ctype_name);
+
+
+=for apidoc
+=for arg name package name of new flags type
+=for arg ... flag values, see discussion.
+=for signature Glib::Type->register_flags ($name, ...)
+Register and initialize a new Glib::Flags type with the provided "values".
+This creates a type properly registered GLib so that it can be used for
+property and signal parameter or return types created with
+C<< Glib::Type->register >> or C<Glib::Object::Subclass>.
+
+The list of values is used to create the "nicknames" that are used in general
+Perl code; the actual numeric values used at the C level are automatically
+assigned, of the form 1<<i, starting with i = 0.  If you need to specify a
+particular numeric value for a nick, use an array reference containing the
+nickname and the numeric value, instead.  You may mix and match the two styles.
+
+  Glib::Type->register_flags ('MyFoo::Baz',
+           'value-one',               # assigned 1<<0
+           'value-two',               # assigned 1<<1
+           ['value-three' => 1<<10 ], # explicit 1<<10
+           ['value-four' => 0x0f ],   # explicit 0x0f
+           'value-five',              # assigned 1<<4
+  );
+
+If you use the array-ref form, beware: the code performs no validation
+for unique values.
+=cut
+void
+g_type_register_flags (class, name, ...)
+	const char * name
+    PREINIT:
+	int           i = 0;
+	char       *  ctype_name;
+	SV         *  sv;
+	SV         ** av2sv;
+	GType          type;
+	GFlagsValue *  values = NULL;
+    CODE:
+	if (items-2 < 1)
+		croak ("Usage: Glib::Type->register_flags (new_package, LIST)\n"
+		       "   no values supplied");
+	/* see the notes about memory management in register_enums -- they
+	 * all apply here.  we can't combine the implementations because
+	 * GEnumValue and GFlagsValue are not typedefed together. */
+	values = g_new0 (GFlagsValue, items-1);
+	for (i = 0; i < items-2; i++)
+	{
+		sv = (SV*)ST (i+2);
+		/* default to the i based numbering */
+		values[i].value = 1 << i;
+		if (SvROK(sv) && SvTYPE(SvRV(sv))==SVt_PVAV)
+		{
+			/* [ name => value ] syntax */
+			AV * av = (AV*)SvRV(sv);
+			/* value_name */
+			av2sv = av_fetch (av, 0, 0);
+			if (av2sv && *av2sv && SvOK(*av2sv))
+				values[i].value_name = SvPV_nolen (*av2sv);
+			else
+				croak ("invalid flag name and value pair, no name provided");
+			/* custom value */
+			av2sv = av_fetch (av, 1, 0);
+			if (av2sv && *av2sv && SvOK(*av2sv))
+				values[i].value = SvIV (*av2sv);
+		}
+		else if (SvOK (sv))
+		{
+			/* name syntax */
+			values[i].value_name = SvPV_nolen (sv);
+		}
+		else
+			croak ("invalid type flag name");
+
+		/* make sure that the nickname stays alive as long as the
+		 * type is registered. */
+		values[i].value_name = g_strdup (values[i].value_name);
+
+		/* let the nick and name match.  there are few uses for the
+		 * name, anyway. */
+		values[i].value_nick = values[i].value_name;
+	}
+	ctype_name = sanitize_package_name (name);
+	type = g_flags_register_static (ctype_name, values);
+	gperl_register_fundamental (type, name);
+	g_free (ctype_name);
+
 
 
 =for apidoc
@@ -1535,17 +2039,6 @@ list_signals (class, package)
 		oclass = g_type_class_ref (package_type);
 		if (!oclass)
 			XSRETURN_EMPTY;
-	} else {
-#if 0
-		/* we need to ensure that the interface's prerequisite types
-		 * have been created, in case any signals in this type depend
-		 * on the prerequisite.  however, this only works on 2.2.x...
-		 * what can we do about that? */
-		int i, n;
-		GType * prereqs = g_type_interface_prerequisites (package_type, &n);
-		for (i = 0 ; i < n ; i++)
-			warn ("  prereq %d : %s\n", i, g_type_name (prereqs[i]));
-#endif
 	}
 	sigids = g_signal_list_ids (package_type, &num);
 	if (!num)
@@ -1660,9 +2153,9 @@ package_from_cname (class, const char * cname)
     OUTPUT:
 	RETVAL
 
-
-
 MODULE = Glib::Type	PACKAGE = Glib::Flags
+
+=for position DESCRIPTION
 
 =head1 DESCRIPTION
 

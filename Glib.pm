@@ -1,5 +1,5 @@
-# Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
-# list)
+# Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+# the full list)
 # 
 # This library is free software; you can redistribute it and/or modify it under
 # the terms of the GNU Library General Public License as published by the Free
@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.45.2.5 2004/02/06 02:11:07 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.62.2.3 2004/03/24 01:09:54 muppetman Exp $
 #
 
 package Glib;
@@ -23,22 +23,45 @@ package Glib;
 use 5.008;
 use strict;
 use warnings;
-
+use Exporter;
 require DynaLoader;
-our @ISA = qw(DynaLoader);
+our @ISA = qw(DynaLoader Exporter);
 
-our $VERSION = '1.022';
+use constant {
+	TRUE  => 1,
+	FALSE => !1, # can't use !TRUE at this point
+	G_PRIORITY_HIGH         => -100,
+	G_PRIORITY_DEFAULT      =>  0,
+	G_PRIORITY_HIGH_IDLE    =>  100,
+	G_PRIORITY_DEFAULT_IDLE =>  200,
+	G_PRIORITY_LOW	        =>  300,
+	G_PARAM_READWRITE       => [qw/readable writable/],
+};
 
-# this is the 'lite' version of what we could get Exporter to do for us.
-# we export nothing, so it seems silly to drag in all of Exporter::Heavy
-# just for a version check.
-sub import {
-	my $pkg = shift;
-	foreach (@_) {
-		no strict;
-		$pkg->VERSION ($_);
-	}
-}
+# export nothing by default.
+# export functions and constants by request.
+our %EXPORT_TAGS = (
+	constants => [qw/
+			TRUE
+			FALSE
+			G_PRIORITY_HIGH
+			G_PRIORITY_DEFAULT
+			G_PRIORITY_HIGH_IDLE
+			G_PRIORITY_DEFAULT_IDLE
+			G_PRIORITY_LOW
+			G_PARAM_READWRITE
+			/],
+	functions => [qw/
+			filename_to_unicode
+			filename_from_unicode
+			filename_to_uri
+			filename_from_uri
+			/],
+);
+our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
+$EXPORT_TAGS{all} = \@EXPORT_OK;
+
+our $VERSION = '1.040';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -57,7 +80,19 @@ use overload
    '@{}'  => \&as_arrayref,
    '""'   => sub { "[ @{$_[0]} ]" },
    fallback => 1;
-   
+
+package Glib::Error;
+
+use overload
+   '""' => sub { $_[0]->message.$_[0]->location },
+   fallback => 1;
+
+sub location { $_[0]->{location} }
+sub message { $_[0]->{message} }
+sub domain { $_[0]->{domain} }
+sub value { $_[0]->{value} }
+sub code { $_[0]->{code} }
+
 package Glib::Object::Property;
 
 use Carp;
@@ -73,7 +108,7 @@ sub TIESCALAR
 
 sub STORE { croak 'property '.$_[0][1].' is read-only'; }
 
-sub FETCH { croak 'property '.$_[0][1].' is write-only'; }
+sub FETCH { '[write-only]'; }
 
 package Glib::Object::Property::Readable;
 
@@ -219,8 +254,9 @@ be allowed (e.g. GtkTreeModel columns):
  Glib::Scalar
 
 Functions that can return false and set a GError in C raise an exception in
-Perl (using the string from the GError for $@).  Exceptions are a sticky issue,
-so they get their own section.
+Perl, using an exception object based on the GError for $@; see L<Glib::Error>.
+Trapping exceptions in signals is a sticky issue, so they get their own
+section; see L<EXCEPTIONS>.
 
 Enumerations and flags are treated as strings and arrays of strings,
 respectively.  GLib provides a way to register nicknames for enumeration
@@ -306,9 +342,15 @@ to manage filenames returned by a GLib/Gtk+ function, or when you feed
 filenames into GLib/Gtk+ functions that have their source outside your
 program (e.g. commandline arguments, readdir results etc.).
 
+These functions are available as exports by request (see L</Exports>),
+and also support method invocation syntax for pathological consistency
+with the OO syntax of the rest of the bindings.
+
 =over 4
 
-=item $filename = Glib::filename_to_unicode $filename_in_local_encoding
+=item $filename = filename_to_unicode $filename_in_local_encoding
+
+=item $filename = Glib->filename_to_unicode ($filename_in_local_encoding)
 
 Convert a perl string that supposedly contains a filename in local
 encoding into a filename represented as unicode, the same way that GLib
@@ -316,16 +358,18 @@ does it internally.
 
 Example:
 
-   $gtkfilesel->set_filename (Glib::filename_to_unicode $ARGV[1]);
+   $gtkfilesel->set_filename (filename_to_unicode $ARGV[1]);
 
-=item $filename_in_local_encoding = Glib::filename_from_unicode $filename
+=item $filename_in_local_encoding = filename_from_unicode $filename
+
+=item $filename_in_local_encoding = Glib->filename_from_unicode ($filename)
 
 Converts a perl string containing a filename into a filename in the local
 encoding in the same way GLib does it.
 
 Example:
 
-   open MY, "<", Glib::filename_from_unicode $gtkfilesel->get_filename;
+   open MY, "<", filename_from_unicode $gtkfilesel->get_filename;
 
 =back
 
@@ -384,6 +428,34 @@ these messages through Perl's native system, warn() and die().  Extensions
 should register the log domains they wrap for this to happen fluidly.
 [FIXME say more here]
 
+=head1 Exports
+
+For the most part, gtk2-perl avoids exporting things.  Nothing is exported by
+default, but some functions and constants in Glib are available by request;
+you can also get all of them with the export tag "all".
+
+=over
+
+=item Tag: constants
+
+  TRUE
+  FALSE
+  G_PRIORITY_HIGH
+  G_PRIORITY_DEFAULT
+  G_PRIORITY_HIGH_IDLE
+  G_PRIORITY_DEFAULT_IDLE
+  G_PRIORITY_LOW
+  G_PARAM_READWRITE
+
+=item Tag: functions
+
+  filename_from_unicode
+  filename_to_unicode
+  filename_from_uri
+  filename_to_uri
+
+=back
+
 =head1 SEE ALSO
 
 L<Glib::Object::Subclass> explains how to create your own gobject subclasses
@@ -430,11 +502,12 @@ the sourcecode of the original gtk-perl and pygtk projects.  Marc Lehmann
 E<lt>pcg at goof dot comE<gt> did lots of great work on the magic of making
 Glib::Object wrapper and subclassing work like they should.  Ross McFarland
 <rwmcfa1 at neces dot com> wrote quite a bit of the documentation generation
-tools.
+tools.  Torsten Schoenfeld <kaffeetisch at web dot de> contributed little
+patches and tests here and there.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003 by muppet and the gtk2-perl team
+Copyright 2003-2004 by muppet and the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For 

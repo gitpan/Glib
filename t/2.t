@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.5.2.1 2004/02/05 04:51:09 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.6 2004/02/05 04:42:17 muppetman Exp $
 #
 
 use strict;
