@@ -1,3 +1,441 @@
+2003/11/13 21:32 (-0500) muppetman
+
+	* Glib.pm, README: bump version to 1.011 for first 1.02 beta
+
+2003/11/13 13:23 (-0500) muppetman
+
+	* GenPod.pm: add a sensible type name mapping for GPerlFilename;
+	will show up in docs as 'localized file name'.
+	Fix podify_methods to take only the package name, and remove the
+	second my $package in the same scope.
+	Minor re-work to logic of when to skip and when to count methods;
+	intent was to support hidden xsubs, but those are caught at the parser
+	level now.
+	Changed the message that gets written when all methods are defined
+	but missing.
+
+	* Glib.pm: fix some typos
+
+	* Glib.xs: hide filename_(to|from)_unicode from the docgen stuff,
+	to keep from overwriting the manpage generated for Glib.pm.  these
+	functions are already documented by hand in Glib.pm, anyway.
+
+	* ParseXSDoc.pm: allow the token \b__hide__\b on the =for apidoc
+	line to hide an xsub.
+
+	* GType.xs: fix a little bug in list_values causes segfaults if you
+	pass in type that's neither a flags nor enum type.
+
+2003/11/12 20:45 pcg
+
+	* gperl.h, typemap: Add GPerlFilename_const.
+        * Glib.xs, Glib.pm: implement and document filename_to_unicode and
+        filename_from_unicode.
+
+2003/11/12 02:48 pcg
+
+        * gperl.h, Glib.xs, typemap: Implement GPerlFilename type and
+        gperl_filename_from_sv & gperl_sv_from_filename utility functions.
+
+2003/11/11 22:25 (-0500) muppetman
+
+	* GClosure.xs, gperl_marshal.h: yeah, that wasn't the right way to
+	handle that.  i forgot the update the non-PERL_IMPLICIT_CONTEXT side
+	of the #ifdef when adding the second arg.  backed out the change to
+	GClosure.xs, fixed gperl_marshal.h.
+
+2003/11/11 10:40 (-0500) rwmcfa1
+	
+	* GClosure.xs: if PERL_IMPLICIT_CONTEXT is not defined then the call 
+	to the macro GPERL_CLOSURE_MARSHAL_INIT has the wrong number of 
+	prarameters. there's probably a better way to handle this, buf for
+	now this will allow things to compile.
+
+2003/11/11 00:36 (-0500) muppetman
+
+	* MANIFEST, debian/*: remove the debian packaging files, since having
+	them in the upstream dist makes it difficult for the maintainers
+
+2003/11/10 13:12 (-0500) muppetman
+
+	* gperl_marshal.h: new file
+	* GClosure.xs, MANIFEST, Makefile.PL: use and install new file.
+	Since client code may install custom marshallers, it is a good idea
+	to provide some macros to tidy up the error-prone boilerplate that
+	needs to go into each of those marshallers.  gperl_marshal.h is
+	installed to the same place as gperl.h, but not #included by default,
+	and should be #included whereever you implement a custom marshaller.
+	it is loaded with commentary and an example marshaller skeleton.
+
+	* GSignal.xs: update commentary on gperl_signal_set_marshaller_for()
+	to pointer binding authors to gperl_marshal.h for guidance.
+
+2003/11/10 01:54 (-0500) muppetman
+
+	* GenPod.pm: be a little smarter about enums and flags package names.
+
+2003/11/09 22:59 (-0500) rwmcfa1
+
+	* GenPod.pm: improved the logic for placement of the no methods exist
+	message, moved it to podify_methods.
+
+2003/11/09 22:30 (-0500) rwmcfa1
+
+	* ParseXSDoc.pm: allow the (Object::To::Doc) construct in =for object
+	directives.
+
+	* GenPod.pm: support the new object directive allowing files to be 
+	named independantly from the objects documented in them.
+
+2003/11/10 00:59 pcg
+
+	* Glib.pm, GType.pm: implement == and eq for flags, the latter
+        because some functions use eq as a generic comparison function.
+        Also enable fallback for flags values, should work just fine.
+
+2003/11/09 18:54 (-0500) muppetman
+
+	writing documentation while mechagodzilla and titanosaur destroy
+	tokyo... again.  http://us.imdb.com/title/tt0073373/
+
+	* GClosure.xs, GLog.xs, GMainLoop.xs, GObject.xs, GParamSpec.xs,
+	GSignal.xs GType.xs: added lots of apidoc pod.  All the packages in
+	GMainLoop.xs go into Glib::MainLoop, and i reordered some of the
+	xsubs in GObject.xs but changed no code.
+
+	* GenPod.pm: pod updates, cleanup; use two =over paragraphs inside
+	xsub docs to make the argument lists indent readably in the generated
+	manpages.
+
+	* Glib.pm: big updates to the SEE ALSO section.
+
+	* Makefile.PL: even yet still more cleanup
+
+	* ParseXSDoc.pm: pod cleanup
+
+	* TODO: updated
+
+2003/11/09 16:29 (-0500) rwmcfa1
+
+	* ParseXSDoc.pm: added the method clean_out_empty_pods to prevent empty
+	entries from the $data member of doc.pl. this prevents completely empty 
+	pod files from being created.
+
+	* GenPod.pm: if no methods are bound to a package then print a message
+	saying it is likely that it doesn't exist in the version the module was
+	compiled against. the message might could stand some improvement.
+
+2003/11/08 12:10 pcg
+
+	The "more evil things?" release.
+
+        * GType.xs: Allow |, & and ^ as operators on flags, too.
+	* GType.xs: GFlags are now represented as blessed IV's, which indeed
+        gave a _substantial_ speed improvement at an unimportant place. But
+        it also saves memory and code, and looks nice, so I just had to do it.
+        * GLog.xs: simplify newSVGLogLevelFlags, as excluding single values
+        should no longer be necessary.
+
+2003/11/08 11:30 pcg
+
+        * GType.xs: In addition to the change yesterday, make sure
+        that gperl_convert_back_flags only ever returns distinct,
+        non-overlapping flag values. This requires an inherent ordering
+        in the flag values, but if this isn't the case we can always sort
+        the values first on bit-count (doh), or use a heuristic such as
+        prefering single bit values.
+
+2003/11/08 01:03 (-0500) muppetman
+
+	* GClosure.xs: simplify, man...  both dSP and the PERL_UNUSED_VAR()
+	should've been outside the conditional.  this may need to be
+	macro-ified to prevent bugs in custom marshallers.
+
+	* Glib.xs, GType.xs, gperl.h: move private function streq_enum
+	to Glib.xs as new public function gperl_str_eq(), string compare that
+	considers dash and underscore equivalent.  add gperl_str_hash(), a
+	hashing function that considers dash and understore equivalent.
+
+	* Glib.exports: updated with new functions
+
+	* GSignal.xs: use custom hash and compare functions for the signal
+	marshallers hash.
+
+	* gperl.h: add prototypes for gperl_fundamental_type_from_package()
+	and gperl_fundamental_package_from_type().
+
+	* GObject.xs: remove unused var (which was shadowing an already-defined
+	var in the parent scope).
+
+2003/11/07 20:13 pcg
+
+        * GType.xs: test SvPOK instead of SVt_PV, as many scalars
+          can be valid strings.
+	* GType.xs: apply muppet's patch to bless flags, modified to
+          - implement overloaded operations on flags.
+          - change the flag test from "set & mask" to "set & mask == mask",
+            which hopefully fixes the GdkModifier problem.
+          - since the testsuites of both glib and gtk work fine, as
+            well as my apps, I checked it in (low-risk-patch).
+        * Glib.pm: add overload glue + documentation.
+        * In a second, future step, we might want to replace GFlags by
+          bless(RV(IV)) while keeping the user-api intact. This might
+          break some obscure parts in Gtk2, so... this is a later step
+          that can be done without user-visible-changes.
+
+2003/11/07 12:57 (-0500) rwmcfa1
+
+	* GenPod.pm: instead of usings methods trick, use ->can, improves 
+	things quite a bit.
+
+2003/11/06 21:29 (-0500) rwmcfa1
+
+	* GenPod.pm: using the old methods trick i've come up with a way to 
+	only have xsubs pod for package methods that are bound. so ifdef'd out
+	code (stuff that's not available in the compiled against version) won't
+	be put into the pods. one more doc issue down.
+
+2003/11/06 16:53 (-0500) muppetman
+
+	* MakeHelper.pm: make the pod index have actual links.
+
+2003/11/06 10:30 (-0500) muppetman
+
+	* ParseXSDoc.pm: handle IN_OUTLIST arguments, which previously got
+	a type of "(!!)".  note: still does not handle IN_OUT or OUT args,
+	as i don't have any of those to test.
+
+2003/11/03 14:03 muppetman
+
+	* GenPod.pm: use the actual instance arg name rather than cutting
+	up the type name.  you'd expect the arg name to be used, anyway.
+
+2003/11/03 12:04 muppetman
+
+	* GType.xs: (list_interfaces) watch out for unregistered interface
+	classes.  complain, but don't blow up.  also, free the returned array
+	of GTypes.  thanks to Bjarne Steinsbø.
+	* AUTHORS: updated contributors
+
+2003/11/02 11:54 muppetman
+
+	* GClosure.xs: the case of the missing ref; refcount bug in
+	gperl_closure_marshal kept complex objects from finalizing properly.
+	kudos and thanks to marc for finding and debugging this one.
+
+2003/11/02 16:55 muppetman
+
+	* ParseXSDoc.pm: match void\s* instead of just void when looking for
+	methods with void return.  use scalar(localtime) instead of the
+	identical strftime format.
+
+2003/11/02 16:17 muppetman
+
+	* Glib.pm: undo my silly "atleast" version-check import stuff, and 
+	do something compatible with the version check supplied by Exporter.
+	we don't use Exporter because, well, we don't export anything.
+
+2003/11/02 02:15 muppetman
+
+	* ParseXSDoc.pm: split_aliases wasn't properly deep-copying args
+	arrays.  since that's not exactly something that you'd want to do
+	unless you are going to generate docs from the parser results,
+	moved the splitting of aliases from parse_file() to xsdocparse()
+	as canonicalize_xsubs().
+
+2003/11/01 01:15 muppetman
+
+	* typemap: input (Perl-to-C) typemap for T_GPERL_GENERIC_WRAPPER
+	now uses a more robust regex -- strip leading const\s+ and ensure
+	that we strip the trailing \s*\* from the very end.  requested
+	by kaffee.  the output typemap is unchanged.
+
+2003/10/30 13:47 rwmcfa1
+
+	* Glib.pm: added tie_properties stuff
+
+	* t/b.t: initial import, test tie_properties stuff
+
+2003/10/30 11:29 muppetman
+
+	* GenPod.pm: make sure that all signatures get the same pod directive.
+	don't add sigils to return type names.
+
+2003/10/30 09:30 rwmcfa1
+	
+	* Glib/MakeHelper.pm: improved/safer rules for building the documentation
+
+	* Glib/Makefile.PL: we have some 'special' dependancies for Glib that we need to make sure happen before xsdoc2pod can proceed
+
+2003/10/29 02:00 muppetman
+
+	* Glib.pm: add a version check to Glib's import.
+
+	* GenPod.pm, MakeHelper.pm: rework package to filename handling to
+	support packages with :: in the name.  use FULLEXT (makefile var that
+	is the full extension path under INST_LIB) and File::Spec."
+
+	* ParseXSDoc.pm: don't clobber package with object; store object
+	separately and use it when retrieving pkgdata, but not in place of
+	the package name.  this allows xsubs to be placed into a different
+	package for doc, but not lose their actual package for the symname.
+
+2003/10/28 23:18 muppetman
+
+	* MakeHelper.pm: don't be an Exporter.  take a shift-off class arg
+	on all subs.  this allows them to be overridden, and removes the
+	requirement for each client package to import the symbols.
+	added pod for just about everything.
+	do_pod_files now returns the generated pod_files hash rather than 
+	fiddling with one in main::.  it still uses the local @gend_pods,
+	though.
+	postamble_clean() takes an optional list of extra clean files.
+	postamble_docs() takes a list of xs files instead of expecting
+	to find @main:xs_files.
+
+	* Makefile.PL: use the new semantics of the MakeHelper functions.
+
+2003/10/28 16:47 rwmcfa1
+
+	* Glib/GClosure.xs, Glib/GLog.xs: put things in the appropriate doc 
+	object
+
+	* Glib/GenPod.pm: eval the list_values call. make sure dir creation 
+	succeeds, other cleanups
+
+	* Glib/MANIFEST: missing files added
+
+	* Glib/Makefile.PL: updates to new system, MakeHelper. use strict and 
+	use warnings safe now
+
+	* Glib/ParseXSDoc.pm: replace the warn handler with what was there 
+	before rather than deleting
+
+	* Glib/MakeHelper.pm: initial import
+
+2003/10/27 29:08 muppetman
+
+	* Makefile.PL: bad quoting kept the build from working...
+
+2003/10/27 19:29 muppetman
+
+	* GenPod.pm: move =for enum parsing to the parser.
+	have xsdoc2pod optionally write a list of the packages it has created,
+	use 'unsigned' instead of 'integer' for unsigned data types.
+	fix podify_signals to print nothing if there are no signals.
+	don't call Glib::Type->package_from_cname on types with :'s in
+	them -- they can't be C type names anyway (shuts up about half of
+	the warnings you get doing Gtk2).  watch for =arg name (__hide__),
+	and don't display the arg having that keyword.
+
+	* Makefile.PL, xsdocparse.pl(removed), ParseXSDoc.pm(new): remove the
+	xsdocparse.pl script; the code in is Glib::ParseXSDoc now.  having
+	xsapi.pod in %pm_files creates a circular dependency; have to take it
+	out (still in man3pods, and we'll put it into blib by hand).
+
+2003/10/27 02:42 muppetman
+
+	* Makefile.PL: manpages have the :: in the filename
+	* GParamSpec.xs, GLog.xs, GMainLoop.xs, GSignal.xs: added some apidoc;
+	register enums and flags as necessary; implement g_param_spec_enum and
+	g_param_spec_flags
+	* GenPod.pm: pod, cleanup, lots of things.  watch for 
+	=for (enums|flags) in package pod and podify their values.
+	change around how we print things to make them a little more
+	visually distinct.
+
+2003/10/26 21:31 rwmcfa1
+	
+	* GenPod.pm: put the pod files in blib using the fully correct paths 
+	and file names
+
+	* Makefile.PL: merge bug, well that and not looking closely.
+
+2003/10/26 17:10 rwmcfa1
+
+	* GObject.xs: test out a blurb
+
+	* GenPod.pm: xsdoc2pod script incorporated, will make it easier for 
+	other modules to use this stuff
+
+	* Makefile.PL: go ahead and include GenPod.pm in the scheme of things.
+	use GenPod in it's current incarnation to do the api docs
+
+2003/10/26 11:36 muppetman
+
+	* GSignal.xs: some apidoc comments to play around with
+	* GenPod.pm: sigils don't go in %basic_types, they're added by
+	convert_return_type as needed.  count the number of properties we
+	find that match this type, to return an empty string if this type
+	has none of its own.  added some developers' pod for the various
+	helper functions.  allow 'for' on signature and arg lines.  show
+	default argument values in call signatures.
+	* Makefile.PL: install GenPod.pm.  its manpage will be nonsense
+	for now.
+	* xsdoc2pod.pl: typo
+	* xsdocparse.pl: split & duplicate aliased xsubs automagically.
+	match up apidoc pods and xsubs.
+
+2003/10/25 21:44 rwmcfa1
+
+        * GType.xs: can't call newSVpv if package name is not valid, shouldn't
+        happen so croak on that error. some improved error checking to make
+        sure that we have a valid interface and that our class is
+        instantiatable, may need to double check.
+
+        * apidoc.pl: get rid of the groups stuff since it's not used
+
+        * xsdocparse.pl: get rid of the groups stuff since it's not used.
+
+        * GenPod.pm: initial import
+        added blurb retrieval
+
+	* xsdoc2pod.pl: initial import
+
+2003/10/24 17:18 muppetman
+
+	* xsdocparse.pl: new file.  program extracts pod and xsub signatures
+	from XS files and dumps a big honkin' data structure to stdout.
+	differentiates between the C section and the xsub section, and looks
+	for a new set of pod directives, e.g. =for apidoc and =for object.
+	this is destined to be the heart of the shiny new automatically
+	generated api reference documentation.  more on this later.
+
+	* apidoc.pl, Makefile.PL: use xsdocparse.pl instead of podselect
+	to extract pod used to build xsapi.pod.
+
+	* GType.xs: new function Glib::Type->package_from_cname() turns
+	a c type name into registered Perl package name, if found.
+	also added some =for apidoc pod to test out xsdocparse.pl.
+
+2003/10/23 16:04 rwmcfa1
+
+	* GType.xs: Glib::Type->list_ancestors, list_interfaces, and
+	list_signals added. with that V commit this starts to bring together
+	some petty powerful magic.
+
+2003/10/23 15:51 muppetman
+
+	* GType.xs: Glib::Type->list_values ($enum_or_flags_package).
+	also takes a C type name, e.g., "GtkWidgetFlags", in case the type
+	is registered with glib but not with the bindings.
+	* GObject.xs: fix list_properties to allow package names instead
+	of just objects.
+
+2003/10/18 02:36 muppetman
+
+	* Glib.pm: bump version for devel series
+	* typemap, gperl.h: new typedef and typemaps for the much-needed
+	gchar_ornull.
+	* GLog.xs: use the new gchar_ornull typemap to clean things up a bit.
+	* GType.xs: commentary
+
+2003/10/12 13:42 rwmcfa1
+
+	* (most).xs, gperl.h: UNUSED is no more, PERL_UNUSED_VAR used where 
+	needed, relies on new ParseXS to prevent the other warnings that were
+	its fault, we now only quite the ones that are ours
+
 2003/10/09 22:23 muppetman
 
 	* Glib.pm, META.yml, README, debian/changelog: 1.00
@@ -102,6 +540,8 @@
 	special marshaller to use for all invocations of a particular named
 	signal on a particular class; this is intended to allow workarounds
 	for unhelpfully defined signal parameter types.
+
+	* Glib.pm: bumped version to rc2, since we export new C-level APIs.
 
 2003/09/11 23:33 muppetman
 

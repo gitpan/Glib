@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.11 2003/09/21 16:59:12 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.15 2003/11/12 20:46:28 pcg Exp $
 #
 
 TYPEMAP
@@ -39,6 +39,8 @@ const gchar *	T_GCHAR
 gchar_own *	T_GCHAR_OWN
 gchar_length *	T_GCHAR_LEN
 const gchar_length *	T_GCHAR_LEN
+gchar_ornull *	T_GCHAR_ORNULL
+const gchar_ornull *	T_GCHAR_ORNULL
 guchar		T_UV
 guchar *	T_PV
 const guchar *	T_PV
@@ -57,17 +59,34 @@ GIOCondition	T_G_TYPE_IO_CONDITION
 GMainContext*	T_G_MAIN_CONTEXT
 GMainLoop*	T_G_MAIN_LOOP
 
+GPerlFilename		T_GPERL_FILENAME
+GPerlFilename_const	T_GPERL_FILENAME
+GPerlFilename_own	T_GPERL_FILENAME_OWN
+
 #####
 INPUT
 
-# a general-purpose typemap...
+# a general-purpose typemap... strips any trailing star and/or leading "const",
+# leaving only the type name in the form SvMyType.  this allows you to make a
+# typedef such as "typedef MyType MyType_ornull", and SvMyType_ornull will be
+# called for those.
 T_GPERL_GENERIC_WRAPPER
-	$var = Sv${(my $ntype = $type) =~ s/\s*\*//; \$ntype} ($arg);
+	$var = Sv${(my $ntype = $type) =~ s/(?:const\s+)?([:\w]+)(?:\s*\*)$/$1/x;
+	           \$ntype} ($arg);
 
 T_GCHAR
 	/* same as SvGChar(), but not in a function */
 	sv_utf8_upgrade ($arg);
 	$var = ($type)SvPV_nolen ($arg);
+
+T_GCHAR_ORNULL
+	/* same as SvGChar(), but allows undef as NULL */
+	if ($arg && SvOK ($arg)) {
+		sv_utf8_upgrade ($arg);
+		$var = ($type)SvPV_nolen ($arg);
+	} else {
+		$var = NULL;
+	}
 
 T_GCHAR_LEN
 	sv_utf8_upgrade ($arg);
@@ -86,6 +105,9 @@ T_G_MAIN_CONTEXT
 T_G_MAIN_LOOP
 	$var = ($type) SvIV (SvRV ($arg))
 
+T_GPERL_FILENAME
+	$var = ($type) gperl_filename_from_sv ($arg)
+
 ######
 OUTPUT
 
@@ -96,6 +118,15 @@ T_GCHAR
 	/* same as newSVGChar(), but not in a function */
 	sv_setpv ((SV*)$arg, $var);
 	SvUTF8_on ($arg);
+
+T_GCHAR_ORNULL
+	/* newSVGChar() allows NULL, but T_GCHAR does not. allow NULL. */
+	if (str) {
+		sv_setpv ((SV*)$arg, $var);
+		SvUTF8_on ($arg);
+	} else {
+		SvSetSV ($arg, &PL_sv_undef);
+	}
 
 T_GCHAR_OWN
 	/* used when we can directly own the returned string. */
@@ -114,4 +145,11 @@ T_G_MAIN_CONTEXT
 T_G_MAIN_LOOP
 	sv_setref_pv ($arg, \"Glib::MainLoop\", $var);
 	g_main_loop_ref ($var);
+
+T_GPERL_FILENAME
+	sv_setsv ($arg, sv_2mortal (gperl_sv_from_filename ($var)));
+
+T_GPERL_FILENAME_OWN
+	sv_setsv ($arg, sv_2mortal (gperl_sv_from_filename ($var)));
+        g_free ($var);
 

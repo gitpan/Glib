@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.16 2003/10/02 07:13:03 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GClosure.xs,v 1.24 2003/11/12 02:25:56 muppetman Exp $
  */
 
 =head2 GClosure / GPerlClosure
@@ -37,12 +37,17 @@ GPerlCallback, below.
 #include "gperl.h"
 #include <gobject/gvaluecollector.h>
 
+#include "gperl_marshal.h"
+
 
 static void
 gperl_closure_invalidate (gpointer data,
 			  GClosure * closure)
 {
 	GPerlClosure * pc = (GPerlClosure *)closure;
+	
+	PERL_UNUSED_VAR (data);
+	
 #ifdef NOISY
 	warn ("Invalidating closure for %s\n", pc->name);
 #endif
@@ -66,20 +71,11 @@ gperl_closure_marshal (GClosure * closure,
 {
 	int flags;
 	guint i;
-	GPerlClosure *pc = (GPerlClosure *)closure;
-	SV * data;
-	SV * instance;
-#ifndef PERL_IMPLICIT_CONTEXT
-	dSP;
-#else
-	SV **SP;
+	dGPERL_CLOSURE_MARSHAL_ARGS;
 
-	/* make sure we're executed by the same interpreter that created
-	 * the closure object. */
-	PERL_SET_CONTEXT (marshal_data);
+	GPERL_CLOSURE_MARSHAL_INIT (closure, marshal_data);
 
-	SPAGAIN;
-#endif
+	PERL_UNUSED_VAR (invocation_hint);
 
 	ENTER;
 	SAVETMPS;
@@ -87,61 +83,25 @@ gperl_closure_marshal (GClosure * closure,
 	PUSHMARK (SP);
 
 	if (n_param_values == 0) {
-		data = pc->data;
+		data = SvREFCNT_inc (pc->data);
 	} else {
-		/*
-		 * complicateder and complicateder...
-		 * if the closure is set for swap data, we need to swap
-		 * out param_values[0] (the "instance") with pc->data.
-		 */
-		if (GPERL_CLOSURE_SWAP_DATA (pc)) {
-			/* swap instance and data */
-			data     = gperl_sv_from_value (param_values);
-			instance = pc->data;
-		} else {
-			/* normal */
-			instance = gperl_sv_from_value (param_values);
-			data     = pc->data;
-		}
-
-		/* of course, this can leave us with no instance.  :-/ */
-		if (!instance)
-			instance = &PL_sv_undef;
-
-		/* the instance is always the first item in @_ */
-		XPUSHs (instance);
+		GPERL_CLOSURE_MARSHAL_PUSH_INSTANCE (param_values);
 
 		/* the rest of the params should be quite straightforward. */
 		for (i = 1; i < n_param_values; i++) {
 			SV * arg;
-#ifdef NOISY
-			warn ("examining name: %s type: %s fundtype: %s\n",
-			      pc->name,
-			      g_type_name (G_VALUE_TYPE (param_values + i)),
-			      g_type_name (G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (param_values + i))));
-#endif
-		       arg = gperl_sv_from_value ((GValue*) param_values + i);
-		       if (!arg) {
-			       warn ("[gperl_closure_marshal] Warning, failed to convert object from value for closure invocation: number: %d type: %s fundtype: %s\n",
-				     i,
-				     g_type_name (G_VALUE_TYPE (param_values + i)),
-				     g_type_name (G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (param_values + i))));
-				arg = &PL_sv_undef;
-			}
+			arg = gperl_sv_from_value ((GValue*) param_values + i);
 			/* make these mortal as they go onto the stack */
 			XPUSHs (sv_2mortal (arg));
 		}
 	}
-	if (data)
-		XPUSHs (data);
+	GPERL_CLOSURE_MARSHAL_PUSH_DATA;
+
 	PUTBACK;
 
 	flags = return_value ? G_SCALAR : G_DISCARD;
 
-	call_sv (pc->callback, flags | G_EVAL);
-
-	if (SvTRUE (ERRSV))
-		gperl_run_exception_handlers ();
+	GPERL_CLOSURE_MARSHAL_CALL (flags);
 
 	if (return_value && G_VALUE_TYPE (return_value)) {
 		SPAGAIN;
@@ -385,12 +345,11 @@ gperl_callback_invoke (GPerlCallback * callback,
                        ...)
 {
 	va_list var_args;
-#ifndef PERL_IMPLICIT_CONTEXT
 	dSP;
+
 	g_return_if_fail (callback != NULL);
-#else
-	SV ** SP;
-	g_return_if_fail (callback != NULL);
+
+#ifdef PERL_IMPLICIT_CONTEXT
 	PERL_SET_CONTEXT (callback->priv);
 	SPAGAIN;
 #endif
@@ -714,19 +673,46 @@ gperl_run_exception_handlers (void)
 
 MODULE = Glib::Closure	PACKAGE = Glib	PREFIX = gperl_
 
+=for object Glib::Signal
+
+=cut
+
+=for apidoc
+=for arg func (subroutine)
+
+Install a subroutine to be executed when a signal emission traps an exception
+(a croak or die).  I<$func> should return boolean (true if the handler should
+remain installed) and expect to receive a single scalar.  This scalar will be a
+private copy of $@ which the handler can mangle to its heart's content.
+
+Returns an identifier that may be used with C<remove_exception_handler>.
+
+See C<gperl_install_exception_handler()> in L<Glib::xsapi>.
+
+=cut
 int
-gperl_install_exception_handler (SV * class, SV * func, SV * data=NULL)
+gperl_install_exception_handler (class, SV * func, SV * data=NULL)
     C_ARGS:
 	gperl_closure_new (func, data, 0)
-    CLEANUP:
-	UNUSED(class);
 
+
+=for apidoc
+
+Remove the exception handler identified by I<$tag>, as returned by
+C<install_exception_handler>.  If I<$tag> cannot be found, this
+does nothing.
+
+WARNING:  Do not call this function from within an exception handler.
+If you want to remove your handler during its execution just have it
+return false.
+
+See C<gperl_remove_exception_handler()> in L<Glib::xsapi>.
+
+=cut
 void
-gperl_remove_exception_handler (SV * class, guint tag)
+gperl_remove_exception_handler (class, guint tag)
     C_ARGS:
 	tag
-    CLEANUP:
-	UNUSED(class);
 
 
  ##

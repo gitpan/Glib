@@ -1,8 +1,10 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.21 2003/09/22 00:23:18 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.34 2003/11/10 18:30:24 muppetman Exp $
 #
 
 use 5.008;
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
 use File::Spec;
 use Cwd;
@@ -26,45 +28,24 @@ unless (eval "use ExtUtils::Depends;"
            . "1") {
    warn "$@\n";
    WriteMakefile(
+         NAME         => 'Glib',
          PREREQ_FATAL => 1,
          PREREQ_PM    => {
-            ExtUtils::Depends::   => $build_reqs{'perl-ExtUtils-Depends'},
-            ExtUtils::PkgConfig:: => $build_reqs{'perl-ExtUtils-PkgConfig'},
+            'ExtUtils::Depends'   => $build_reqs{'perl-ExtUtils-Depends'},
+            'ExtUtils::PkgConfig' => $build_reqs{'perl-ExtUtils-PkgConfig'},
          },
    );
    exit 1; # not reached
 }
+# client modules may use Glib::MakeHelper -- he's not installed at this
+# point, so we have to require him directly.
+require 'MakeHelper.pm';
 
 mkdir 'build', 0777;
 
-%glibcfg = ExtUtils::PkgConfig->find ('gobject-2.0 >= '.$build_reqs{Glib});
-
-$runtime_reqs{Glib} = $glibcfg{modversion};
-
-# optional thread-safety
-$nothreads = grep /disable[-_]threadsafe/i, @ARGV;
-if (!$nothreads) {
-	eval {
-		%gthreadcfg = ExtUtils::PkgConfig->find ('gthread-2.0');
-	};
-	$nothreads = 1 if $@;
-}
-
-if ($nothreads) {
-	warn " *** \n";
-	warn " *** configuring Glib to build without thread safety\n";
-	warn " *** \n";
-	%gthreadcfg = (
-		cflags => ' -DGPERL_DISABLE_THREADSAFE ',
-		libs => '',
-	);
-}
-
-
-my $glib = ExtUtils::Depends->new ('Glib');
 # this is the order in which we want the api docs from the XS files to
 # appear in Glib::xsapi
-@xs_files = qw(
+our @xs_files = qw(
 	Glib.xs
 	GLog.xs
 	GType.xs
@@ -77,18 +58,51 @@ my $glib = ExtUtils::Depends->new ('Glib');
 	GIOChannel.xs
 	GParamSpec.xs
 );
-%pm_files = (
+our %pm_files = (
      'Glib.pm'         => '$(INST_LIBDIR)/Glib.pm',
      'Subclass.pm'     => '$(INST_LIBDIR)/Glib/Object/Subclass.pm',
+     'ParseXSDoc.pm'   => '$(INST_LIBDIR)/Glib/ParseXSDoc.pm',
+     'GenPod.pm'       => '$(INST_LIBDIR)/Glib/GenPod.pm',
+     'MakeHelper.pm'   => '$(INST_LIBDIR)/Glib/MakeHelper.pm',
      'devel.pod'       => '$(INST_LIBDIR)/Glib/devel.pod',
-     'build/xsapi.pod' => '$(INST_LIBDIR)/Glib/xsapi.pod',
+#     'build/xsapi.pod' => '$(INST_LIBDIR)/Glib/xsapi.pod',
 );
-%pod_files = (
+our %pod_files = (
    'Glib.pm'         => '$(INST_MAN3DIR)/Glib.$(MAN3EXT)',
    'Subclass.pm'     => '$(INST_MAN3DIR)/Glib::Object::Subclass.$(MAN3EXT)',
+   'ParseXSDoc.pm'   => '$(INST_MAN3DIR)/Glib::ParseXSDoc.$(MAN3EXT)',
+   'GenPod.pm'       => '$(INST_MAN3DIR)/Glib::GenPod.$(MAN3EXT)',
    'devel.pod'       => '$(INST_MAN3DIR)/Glib::devel.$(MAN3EXT)',
    'build/xsapi.pod' => '$(INST_MAN3DIR)/Glib::xsapi.$(MAN3EXT)',
+   Glib::MakeHelper->do_pod_files (@xs_files),
 );
+
+
+my %glibcfg = ExtUtils::PkgConfig->find ('gobject-2.0 >= '.$build_reqs{Glib});
+
+$runtime_reqs{Glib} = $glibcfg{modversion};
+
+# optional thread-safety
+my $nothreads = grep /disable[-_]threadsafe/i, @ARGV;
+my %gthreadcfg;
+if (!$nothreads) {
+	eval {
+		%gthreadcfg = ExtUtils::PkgConfig->find ('gthread-2.0');
+	};
+	$nothreads = 1 if $@;
+}
+else
+{
+	warn " *** \n";
+	warn " *** configuring Glib to build without thread safety\n";
+	warn " *** \n";
+	%gthreadcfg = (
+		cflags => ' -DGPERL_DISABLE_THREADSAFE ',
+		libs => '',
+	);
+}
+
+my $glib = ExtUtils::Depends->new ('Glib');
 
 # add -I. and -I./build to the include path so we can find our own files.
 # this will be inherited by dependant modules, so they can find their
@@ -98,22 +112,18 @@ $glib->set_libs ($glibcfg{libs} . $gthreadcfg{libs});
 my $cwd = cwd();
 $glib->add_typemaps (map {File::Spec->catfile($cwd,$_)} 'typemap');
 $glib->add_headers ('"gperl.h"');
-$glib->install (qw(gperl.h));
+$glib->install (qw(gperl.h gperl_marshal.h));
 $glib->save_config ('build/IFiles.pm');
 $glib->add_pm (%pm_files);
 $glib->add_xs (@xs_files);
 
 # exports list needed for win32, unused on others
+our @exports;
 require 'Glib.exports';
 
 WriteMakefile(
     NAME		=> 'Glib',
     VERSION_FROM	=> 'Glib.pm', # finds $VERSION
-    PREREQ_FATAL	=> 1,
-    PREREQ_PM		=> {
-        ExtUtils::Depends::   => $build_reqs{'perl-ExtUtils-Depends'},
-        ExtUtils::PkgConfig:: => $build_reqs{'perl-ExtUtils-PkgConfig'},
-    },
     ABSTRACT_FROM	=> 'Glib.pm', # retrieve abstract from module
     XSPROTOARG		=> '-noprototypes',
     MAN3PODS		=> $glib ? \%pod_files : {},
@@ -123,48 +133,28 @@ WriteMakefile(
 );
 
 package MY;
-use Cwd;
 
 # rule to build the documentation
-sub postamble {
-	my @dirs = qw{rpms rpms/BUILD rpms/RPMS rpms/SOURCES
-		      rpms/SPECS rpms/SRPMS};
-	my $cwd = getcwd();
-
-	my %subs = (
-		'VERSION' => '$(VERSION)',
-		'SOURCE' => '$(DISTNAME)-$(VERSION).tar.gz',
-		'GLIB_RUN' => $runtime_reqs{'Glib'},
-		'GLIB' => $build_reqs{'Glib'},
-		'PERL_EXTUTILS_DEPENDS' => 
-			$build_reqs{'perl-ExtUtils-Depends'},
-		'PERL_EXTUTILS_PKGCONFIG' => 
-			$build_reqs{'perl-ExtUtils-PkgConfig'},
-	);
-	
-	my $substitute = '$(PERL) -npe \''.join('; ', map {
-			"s/\\\@$_\\\@/$subs{$_}/g";
-		} keys %subs).'\'';
-
+sub postamble 
+{
+	require 'MakeHelper.pm';
 	return "
-build/xsapi.pod: @main::xs_files xsapi.pod.head xsapi.pod.foot apidoc.pl
-	$^X apidoc.pl xsapi.pod.head xsapi.pod.foot @main::xs_files > \$@
+# these are special for Glib since it's providing the modules,
+# it just has to make sure that they are ready before it can go
+build/doc.pl :: \$(INST_LIB)/Glib/ParseXSDoc.pm
 
-realclean ::
-	-\$(RM_RF) build perl-\$(DISTNAME).spec
-
-rpms/:
-	-mkdir @dirs
-
-SUBSTITUTE=$substitute
-
-perl-\$(DISTNAME).spec: perl-\$(DISTNAME).spec.in \$(VERSION_FROM) Makefile
-	\$(SUBSTITUTE) \$< > \$@
-
-dist-rpms: Makefile dist perl-\$(DISTNAME).spec rpms/
-	cp \$(DISTNAME)-\$(VERSION).tar.gz rpms/SOURCES/
-	rpmbuild -ba --define \"_topdir $cwd/rpms\" perl-\$(DISTNAME).spec
-";
+build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
+"
+	     . Glib::MakeHelper->postamble_clean ()
+	     . Glib::MakeHelper->postamble_docs (@main::xs_files)
+	     . Glib::MakeHelper->postamble_rpms (
+			'GLIB_RUN' => $runtime_reqs{'Glib'},
+			'GLIB' => $build_reqs{'Glib'},
+			'PERL_EXTUTILS_DEPENDS' => 
+				$build_reqs{'perl-ExtUtils-Depends'},
+			'PERL_EXTUTILS_PKGCONFIG' => 
+				$build_reqs{'perl-ExtUtils-PkgConfig'},
+		);
 }
 
 __END__

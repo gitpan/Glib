@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.10 2003/10/01 15:24:57 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.11 2003/10/12 17:57:09 rwmcfa1 Exp $
  */
 
 =head2 GBoxed
@@ -324,6 +324,8 @@ default_boxed_unwrap (GType        gtype,
 		      SV         * sv)
 {
 	BoxedWrapper * boxed_wrapper;
+
+	PERL_UNUSED_VAR (gtype);
 
 	if (!SvROK (sv))
 		croak ("expected a blessed reference");

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.4 2003/10/01 15:24:57 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.10 2003/11/10 00:09:10 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -75,16 +75,7 @@ g_log_level_flags_get_type (void)
 SV *
 newSVGLogLevelFlags (GLogLevelFlags flags)
 {
-	GFlagsClass * class = gperl_type_class (g_log_level_flags_get_type ());
-	GFlagsValue * vals = class->values;
-	AV * av = newAV ();
-	while (vals && vals->value_nick && vals->value_name) {
-		if ((vals->value != G_LOG_FATAL_MASK) &&
-		    (vals->value & flags))
-			av_push (av, newSVpv (vals->value_nick, 0));
-		vals++;
-	}
-	return newRV_noinc ((SV*) av);
+	return gperl_convert_back_flags (g_log_level_flags_get_type (), flags);
 }
 
 GLogLevelFlags
@@ -175,12 +166,24 @@ BOOT:
 	gperl_register_fundamental (g_log_level_flags_get_type (),
 	                            "Glib::LogLevelFlags");
 
+=for flags Glib::LogLevelFlags
+=cut
+
 ##
 ## Logging mechanism
 ##
 ##guint g_log_set_handler (const gchar *log_domain, GLogLevelFlags log_levels, GLogFunc log_func, gpointer user_data);
+=for apidoc
+
+=for arg log_domain name of the domain to handle with this callback.
+
+=arg log_levels (GLogLevelFlags) log levels to handle with this callback
+
+=arg log_func (subroutine) handler function
+
+=cut
 guint
-g_log_set_handler (SV * class, SV * log_domain, SV * log_levels, SV * log_func, SV * user_data=NULL)
+g_log_set_handler (class, gchar_ornull * log_domain, SV * log_levels, SV * log_func, SV * user_data=NULL)
     PREINIT:
 	GPerlCallback * callback;
 	GType param_types[] = {
@@ -189,27 +192,26 @@ g_log_set_handler (SV * class, SV * log_domain, SV * log_levels, SV * log_func, 
 		G_TYPE_STRING
 	};
     CODE:
-	UNUSED(class);
 	callback = gperl_callback_new (log_func, user_data,
 	                               3, param_types, G_TYPE_NONE);
-	RETVAL = g_log_set_handler ((SvTRUE (log_domain)
-	                             ? SvGChar (log_domain)
-				     : NULL),
+	RETVAL = g_log_set_handler (log_domain,
 				    SvGLogLevelFlags (log_levels),
 				    gperl_log_func, callback);
 	/* we have no choice but to leak the callback. */
 	/* FIXME what about keeping a hash by the ID, and freeing it on
 	 *       Glib::Log->remove_handler ($id)? */
+        /*pcg: would probably take more memory in typical programs... */
     OUTPUT:
 	RETVAL
 
 ##void g_log_remove_handler (const gchar *log_domain, guint handler_id);
+=for apidoc
+=for arg handler_id as returned by C<set_handler>
+=cut
 void
-g_log_remove_handler (SV * class, SV *log_domain, guint handler_id);
+g_log_remove_handler (class, gchar_ornull *log_domain, guint handler_id);
     C_ARGS:
-	(SvTRUE (log_domain) ? SvGChar (log_domain) : NULL), handler_id
-    CLEANUP:
-	UNUSED(class);
+	log_domain, handler_id
 
 ##void g_log_default_handler (const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer unused_data);
 
@@ -218,26 +220,25 @@ g_log_remove_handler (SV * class, SV *log_domain, guint handler_id);
 
 MODULE = Glib::Log	PACKAGE = Glib	PREFIX = g_
 
-void g_log (SV * class, SV *log_domain, SV * log_level, const gchar *message)
+=for object Glib::Log
+=cut
+
+void g_log (class, gchar_ornull * log_domain, SV * log_level, const gchar *message)
     CODE:
-	UNUSED(class);
-	g_log ((SvTRUE (log_domain) ? SvPV_nolen (log_domain) : NULL),
-	       SvGLogLevelFlags (log_level), message);
+	g_log (log_domain, SvGLogLevelFlags (log_level), message);
 
 MODULE = Glib::Log	PACKAGE = Glib::Log	PREFIX = g_log_
 
-SV * g_log_set_fatal_mask (SV * class, const gchar *log_domain, SV * fatal_mask);
+SV * g_log_set_fatal_mask (class, const gchar *log_domain, SV * fatal_mask);
     CODE:
-	UNUSED(class);
 	RETVAL = newSVGLogLevelFlags 
 		(g_log_set_fatal_mask (log_domain,
 		                       SvGLogLevelFlags (fatal_mask)));
     OUTPUT:
 	RETVAL
 
-SV * g_log_set_always_fatal (SV * class, SV * fatal_mask);
+SV * g_log_set_always_fatal (class, SV * fatal_mask);
     CODE:
-	UNUSED(class);
 	RETVAL = newSVGLogLevelFlags 
 		(g_log_set_always_fatal (SvGLogLevelFlags (fatal_mask)));
     OUTPUT:
@@ -255,6 +256,9 @@ SV * g_log_set_always_fatal (SV * class, SV * fatal_mask);
 
 MODULE = Glib::Log	PACKAGE = Glib
 
+=for object Glib::Log
+=cut
+
 ###
 ### these are of dubious value, but i imagine that they could be useful...
 ###
@@ -263,7 +267,7 @@ MODULE = Glib::Log	PACKAGE = Glib
 ##define g_critical(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __VA_ARGS__)
 ##define g_warning(...)  g_log (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __VA_ARGS__)
 void
-error (SV * class, SV * domain, const gchar * message)
+error (class, gchar_ornull * domain, const gchar * message)
     ALIAS:
 	error = 0
 	message = 1
@@ -272,14 +276,13 @@ error (SV * class, SV * domain, const gchar * message)
     PREINIT:
 	GLogLevelFlags flags = G_LOG_LEVEL_MESSAGE;
     CODE:
-	UNUSED(class);
 	switch (ix) {
 		case 0: flags = G_LOG_LEVEL_ERROR; break;
 		case 1: flags = G_LOG_LEVEL_MESSAGE; break;
 		case 2: flags = G_LOG_LEVEL_CRITICAL; break;
 		case 3: flags = G_LOG_LEVEL_WARNING; break;
 	}
-	g_log ((SvTRUE (domain) ? SvPV_nolen (domain) : NULL), flags, message);
+	g_log (domain, flags, message);
 
 ##
 ## these are not needed -- perl's print() and warn() do the job.

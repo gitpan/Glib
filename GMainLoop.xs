@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.7 2003/09/21 16:59:12 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.10 2003/11/10 00:09:10 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -79,6 +79,29 @@ of gmain.h in here, commented out.
 #endif
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::MainContext	PREFIX = g_main_context_
+
+=for object Glib::MainLoop
+
+=head1 DESCRIPTION
+
+Event-driven programs need some sort of loop which watches for events and
+launches the appropriate actions.  Glib::MainLoop provides this functionality.
+
+Mainloops have context, provided by the MainContext object.  For the most part
+you can use the default context (see C<default>), but if you want to create a
+subcontext for a nested loop which doesn't have the same event sources, etc,
+you can.
+
+Event sources, attached to main contexts, watch for events to happen, and
+launch appropriate actions.  Glib provides a few ready-made event sources,
+the Glib::Timeout, Glib::Idle, and io watch (C<< Glib::IO->add_watch >>).
+
+Under the hood, Gtk+ adds event sources for GdkEvents to dispatch events to
+your widgets.  In fact, Gtk2 provides an abstraction of Glib::MainLoop (See
+C<< Gtk2->main >> and friends), so you may rarely have cause to use
+Glib::MainLoop directly.
+
+=cut
  
  #####################
  ### GMainContext: ###
@@ -86,13 +109,11 @@ MODULE = Glib::MainLoop	PACKAGE = Glib::MainContext	PREFIX = g_main_context_
 
 GMainContext *
 g_main_context_new (class)
-	SV * class
     C_ARGS:
 	/*void*/
     CLEANUP:
 	g_main_context_unref (RETVAL); /* release the typemap's ref, so the 
 	                                  wrapper owns the object */
-	UNUSED(class);
 
 void
 DESTROY (maincontext)
@@ -106,11 +127,8 @@ DESTROY (maincontext)
 
 GMainContext *
 g_main_context_default (class)
-	SV * class
     C_ARGS:
 	/*void*/
-    CLEANUP:
-	UNUSED(class);
 
 gboolean g_main_context_iteration (GMainContext *context, gboolean may_block);
 
@@ -174,14 +192,12 @@ MODULE = Glib::MainLoop	PACKAGE = Glib::MainLoop	PREFIX = g_main_loop_
 ##GMainLoop *g_main_loop_new (GMainContext *context, gboolean is_running);
 GMainLoop *
 g_main_loop_new (class, context=NULL, is_running=FALSE)
-	SV * class
 	GMainContext *context
 	gboolean is_running
     C_ARGS:
 	context, is_running
     CLEANUP:
 	g_main_loop_ref (RETVAL);
-	UNUSED(class);
 
 void
 DESTROY (mainloop)
@@ -223,6 +239,9 @@ GMainContext * g_main_loop_get_context (GMainLoop * loop);
 
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::Source	PREFIX = g_source_
+
+=for object Glib::MainLoop
+=cut
 
  ################
  ### GSource: ###
@@ -267,15 +286,18 @@ MODULE = Glib::MainLoop	PACKAGE = Glib::Source	PREFIX = g_source_
  ##void g_get_current_time		        (GTimeVal	*result);
 
 
+=for apidoc
 
+Remove an event source.  I<$tag> is the number returned by things like
+C<< Glib::Timeout->add >>, C<< Glib::Idle->add >>, and
+C<< Glib::IO->add_watch >>.
+
+=cut
 gboolean
 g_source_remove (class, tag)
-	SV * class
 	guint tag
     C_ARGS:
 	tag
-    CLEANUP:
-	UNUSED(class);
 
  ##gboolean g_source_remove_by_user_data        (gpointer       user_data);
  ##gboolean g_source_remove_by_funcs_user_data  (GSourceFuncs  *funcs,
@@ -284,13 +306,24 @@ g_source_remove (class, tag)
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::Timeout	PREFIX = g_timeout_
 
+=for object Glib::MainLoop
+=cut
+
  ##########################
  ### Idles and timeouts ###
  ##########################
 
+=for apidoc
+=for arg interval number of milliseconds
+=for arg callback (subroutine)
+
+Run I<$callback> every I<$interval> milliseconds until I<$callback> returns
+false.  Returns a source id which may be used with C<< Glib::Source->remove >>.
+Note that a mainloop must be active for the timeout to execute.
+
+=cut
 guint
 g_timeout_add (class, interval, callback, data=NULL, priority=G_PRIORITY_DEFAULT)
-	SV * class
 	guint interval
 	SV * callback
 	SV * data
@@ -299,7 +332,6 @@ g_timeout_add (class, interval, callback, data=NULL, priority=G_PRIORITY_DEFAULT
 	GClosure * closure;
 	GSource * source;
     CODE:
-	UNUSED(class);
 	closure = gperl_closure_new (callback, data, FALSE);
 	source = g_timeout_source_new (interval);
 	if (priority != G_PRIORITY_DEFAULT)
@@ -314,9 +346,20 @@ g_timeout_add (class, interval, callback, data=NULL, priority=G_PRIORITY_DEFAULT
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::Idle	PREFIX = g_idle_
 
+=for object Glib::MainLoop
+=cut
+
+=for apidoc
+=for arg callback (subroutine)
+
+Run I<$callback> when the mainloop is idle.  If I<$callback> returns false,
+it will uninstall itself, otherwise, it will run again at the next idle
+iteration.  Returns a source id which may be used with
+C<< Glib::Source->remove >>.
+
+=cut
 guint
 g_idle_add (class, callback, data=NULL, priority=G_PRIORITY_DEFAULT_IDLE)
-	SV * class
 	SV * callback
 	SV * data
 	gint priority
@@ -324,7 +367,6 @@ g_idle_add (class, callback, data=NULL, priority=G_PRIORITY_DEFAULT_IDLE)
 	GClosure * closure;
 	GSource * source;
     CODE:
-	UNUSED(class);
 	closure = gperl_closure_new (callback, data, FALSE);
 	source = g_idle_source_new ();
 	g_source_set_priority (source, priority);
@@ -340,9 +382,32 @@ g_idle_add (class, callback, data=NULL, priority=G_PRIORITY_DEFAULT_IDLE)
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::IO	PREFIX = g_io_
 
+=for object Glib::MainLoop
+=cut
+
+BOOT:
+	gperl_register_fundamental (G_TYPE_IO_CONDITION, "Glib::IOCondition");
+
+=for enum Glib::IOCondition
+=cut
+
+=for apidoc
+=for arg fd (file descriptor) file number, e.g. fileno($filehandle)
+=for arg callback (subroutine)
+
+Run I<$callback> when there is an event on I<$fd> that matches I<$condition>.
+The watch uninstalls itself if I<$callback> returns false.
+Returns a source id that may be used with C<< Glib::Source->remove >>.
+
+Glib's IO channels serve the same basic purpose as Perl's file handles, so
+for the most part you don't see GIOChannels in Perl.  The IO watch integrates
+IO operations with the main loop, which Perl file handles don't do.  For
+various reasons, this function requires raw file descriptors, not full
+file handles.  See C<fileno> in L<perlfunc>.
+
+=cut
 guint
 g_io_add_watch (class, fd, condition, callback, data=NULL, priority=G_PRIORITY_DEFAULT)
-	SV * class
 	int fd
 	GIOCondition condition
 	SV * callback
@@ -353,7 +418,6 @@ g_io_add_watch (class, fd, condition, callback, data=NULL, priority=G_PRIORITY_D
 	GSource * source;
 	GIOChannel * channel;
     CODE:
-	UNUSED(class);
 	channel = g_io_channel_unix_new (fd);
 	source = g_io_create_watch (channel, condition);
 	if (priority != G_PRIORITY_DEFAULT)

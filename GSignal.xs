@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.13 2003/10/01 15:24:57 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.19 2003/11/10 18:30:25 muppetman Exp $
  */
 
 =head2 GSignal
@@ -112,7 +112,10 @@ forget_closure (SV * callback,
 {
 #ifdef NOISY
 	warn ("forget_closure %p / %p", callback, closure);
+#else
+	PERL_UNUSED_VAR (callback);
 #endif
+	
 	GPERL_REC_LOCK (closures);
 	closures = g_slist_remove (closures, closure);
 	GPERL_REC_UNLOCK (closures);
@@ -136,14 +139,16 @@ remember_closure (GPerlClosure * closure)
 =item void gperl_signal_set_marshaller_for (GType instance_type, char * detailed_signal, GClosureMarshal marshaller)
 
 You need this function only in rare cases, usually as workarounds for bad
-signal parameter types.  Use the given I<marshaller> to marshal all handlers
-for I<detailed_signal> on I<instance_type>.  C<gperl_signal_connect> will look
-for marshallers registered here, and apply them to the GPerlClosure it creates
-for the given callback being connected.  The marshaller function is no fun to
-write, and should follow C<gperl_closure_marshal> (private function in
-GClosure.xs) very closely; in particular, if C<PERL_IMPLICIT_CONTEXT> is
-defined, the C<marshal_data> parameter will be the perl interpreter that
-should be used to invoke the callback.  Use the Source, Luke.
+signal parameter types or to implement writable arguments.  Use the given
+I<marshaller> to marshal all handlers for I<detailed_signal> on
+I<instance_type>.  C<gperl_signal_connect> will look for marshallers
+registered here, and apply them to the GPerlClosure it creates for the given
+callback being connected.
+
+Use the helper macros in gperl_marshal.h to help write your marshaller
+function.  That header, which is installed with the Glib module but not
+#included through gperl.h, includes commentary and examples which you
+should follow closely to avoid nasty bugs.  Use the Source, Luke.
 
 =cut
 static GHashTable * marshallers = NULL;
@@ -176,8 +181,8 @@ gperl_signal_set_marshaller_for (GType instance_type,
 	} else {
 		if (!marshallers)
 			marshallers =
-				g_hash_table_new_full (g_str_hash,
-				                       g_str_equal,
+				g_hash_table_new_full (gperl_str_hash,
+				                       (GEqualFunc)gperl_str_eq,
 				                       g_free,
 				                       g_free);
 		if (marshaller)
@@ -335,6 +340,14 @@ foreach_closure_matched (gpointer instance,
 
 MODULE = Glib::Signal	PACKAGE = Glib::Object	PREFIX = g_
 
+BOOT:
+	gperl_register_fundamental (g_signal_flags_get_type (),
+	                            "Glib::SignalFlags");
+
+=for flags Glib::SignalFlags
+
+=cut
+
 ##
 ##/* --- typedefs --- */
 ##typedef struct _GSignalQuery		 GSignalQuery;
@@ -352,7 +365,7 @@ MODULE = Glib::Signal	PACKAGE = Glib::Object	PREFIX = g_
 
 ###
 ### ## creating signals ##
-### new signals are currently created as a byproduct of Glib::Type:;register
+### new signals are currently created as a byproduct of Glib::Type::register
 ###
 ##        g_signal_newv
 ##        g_signal_new_valist
@@ -371,6 +384,19 @@ MODULE = Glib::Signal	PACKAGE = Glib::Object	PREFIX = g_
 ## heavily borrowed from gtk-perl and goran's code in gtk2-perl, which
 ## was inspired by pygtk's pyobject.c::pygobject_emit
 
+=for apidoc
+
+=signature retval = $object->signal_emit ($name, ...)
+
+=arg name (string) the name of the signal
+
+=arg ... (list) any arguments to pass to handlers.
+
+Emit the signal I<name> on I<$object>.  The number and types of additional
+arguments in I<...> are determined by the signal; similarly, the presence
+and type of return value depends on the signal being emitted.
+
+=cut
 void
 g_signal_emit (instance, name, ...)
 	GObject * instance
@@ -494,6 +520,32 @@ void g_signal_stop_emission_by_name (GObject * instance, const gchar * detailed_
 ##					       GClosureNotify	  destroy_data,
 ##					       GConnectFlags	  connect_flags);
 
+=for apidoc Glib::Object::signal_connect
+
+=arg callback (subroutine) 
+
+=arg data (scalar) arbitrary data to be passed to each invocation of I<callback>
+
+Register I<callback> to be called on each emission of I<$detailed_signal>.
+Returns an identifier that may be used to remove this handler with
+C<< $object->signal_handler_disconnect >>.
+
+=cut
+
+=for apidoc Glib::Object::signal_connect_after
+
+Like C<signal_connect>, except that I<$callback> will be run after the default
+handler.
+
+=cut
+
+=for apidoc Glib::Object::signal_connect_swapped
+
+Like C<signal_connect>, except that I<$data> and I<$object> will be swapped
+on invocation of I<$callback>.
+
+=cut
+
 gulong
 g_signal_connect (instance, detailed_signal, callback, data=NULL)
 	SV * instance
@@ -598,6 +650,21 @@ g_signal_handler_is_connected (object, handler_id)
  ## g_signal_handlers_block_by_func(instance, func, data)
  ## g_signal_handlers_unblock_by_func(instance, func, data)
 
+=for apidoc Glib::Object::signal_handlers_block_by_func
+=for arg func (subroutine) function to block
+=for arg data (scalar) data to match, ignored if undef
+=cut
+
+=for apidoc Glib::Object::signal_handlers_unblock_by_func
+=for arg func (subroutine) function to block
+=for arg data (scalar) data to match, ignored if undef
+=cut
+
+=for apidoc Glib::Object::signal_handlers_disconnect_by_func
+=for arg func (subroutine) function to block
+=for arg data (scalar) data to match, ignored if undef
+=cut
+
 int
 do_stuff_by_func (instance, func, data=NULL)
 	GObject * instance
@@ -631,6 +698,20 @@ do_stuff_by_func (instance, func, data=NULL)
 ##					       GClosure		 *class_closure);
 ##void	g_signal_chain_from_overridden	      (const GValue      *instance_and_params,
 ##					       GValue            *return_value);
+=for apidoc
+
+Chain up to an overridden class closure; it is only valid to call this from
+a class closure override.
+
+Translation: because of various details in how GObjects are implemented,
+the way to override a virtual method on a GObject is to provide a new "class
+closure", or default handler for a signal.  This happens when a class is
+registered with the type system (see Glib::Type::register and
+L<Glib::Object::Subclass>).  When called from inside such an override, this
+method runs the overridden class closure.  This is equivalent to calling
+$self->SUPER::$method (@_) in normal Perl objects.
+
+=cut
 void
 g_signal_chain_from_overridden (GObject * instance, ...)
     PREINIT:

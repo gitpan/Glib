@@ -15,13 +15,15 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.7 2003/09/21 16:59:12 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.exports,v 1.8 2003/11/08 06:12:09 muppetman Exp $
 #
 
 @exports = qw(
 _gperl_call_XS
 gperl_croak_gerror
 gperl_alloc_temp
+gperl_str_eq
+gperl_str_hash
 gperl_try_convert_enum
 gperl_convert_enum
 gperl_convert_back_enum_pass_unknown
@@ -31,6 +33,8 @@ gperl_convert_flag_one
 gperl_convert_flags
 gperl_convert_back_flags
 gperl_register_fundamental
+gperl_fundamental_type_from_package
+gperl_fundamental_package_from_type
 gperl_set_isa
 gperl_prepend_isa
 gperl_type_from_package

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.26 2003/10/10 02:43:58 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.41 2003/11/14 04:29:44 muppetman Exp $
 #
 
 package Glib;
@@ -27,13 +27,120 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '1.00';
+our $VERSION = '1.011';
+
+# this is the 'lite' version of what we could get Exporter to do for us.
+# we export nothing, so it seems silly to drag in all of Exporter::Heavy
+# just for a version check.
+sub import {
+	my $pkg = shift;
+	foreach (@_) {
+		no strict;
+		$pkg->VERSION ($_);
+	}
+}
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
 bootstrap Glib $VERSION;
 
+package Glib::Flags;
+
+use overload
+   'bool' => \&bool,
+   '+'    => \&union,     '|'    => \&union,
+   '-'    => \&sub,
+   '>='   => \&ge,
+   '=='   => \&eq,        'eq'   => \&eq, # eq for is_deeply in Test::More
+   '*'    => \&intersect, '&'    => \&intersect,
+   '/'    => \&xor,       '^'    => \&xor,
+   '@{}'  => \&as_arrayref,
+   '""'   => sub { "[ @{$_[0]} ]" },
+   fallback => 1;
+   
+package Glib::Object::Property;
+
+use Carp;
+
+sub TIESCALAR
+{
+# in the array reference the elements are:
+#	[0] Glib::Object
+#	[1] property name
+
+	bless [ $_[1], $_[2] ], $_[0];
+}
+
+sub STORE { croak 'property '.$_[0][1].' is read-only'; }
+
+sub FETCH { croak 'property '.$_[0][1].' is write-only'; }
+
+package Glib::Object::Property::Readable;
+
+our @ISA = qw/Glib::Object::Property/;
+
+sub FETCH { $_[0][0]->get_property ($_[0][1]); }
+
+package Glib::Object::Property::Writable;
+
+our @ISA = qw/Glib::Object::Property/;
+
+sub STORE { $_[0][0]->set_property ($_[0][1], $_[1]); }
+
+package Glib::Object::Property::ReadWrite;
+
+our @ISA = qw/Glib::Object::Property/;
+
+*FETCH = \&Glib::Object::Property::Readable::FETCH;
+*STORE = \&Glib::Object::Property::Writable::STORE;
+
+package Glib::Object;
+
+use Carp;
+
+sub tie_properties
+{
+	my $self = shift;	# the object
+	my $all = shift;	# add all properties, up heirarchy
+
+	my @props = $self->list_properties;
+	my $package = ref $self;
+	my $name;
+	foreach my $prop (@props)
+	{
+		# skip to next if it doesn't belong to this package and 
+		# they don't want everything tied
+		next if ($prop->{owner_type} ne $package and not $all);
+		
+		$name = $prop->{name};
+		$name =~ s/-/_/g;
+		
+		carp "overwriting existing non-tied hash key $name"
+			if (exists ($self->{$name}) 
+				and not tied $self->{$name});
+
+		if ($prop->{flags} >= ["readable", "writable"]) {
+                        tie $self->{$name}, 
+                                'Glib::Object::Property::ReadWrite',
+                                $self, $name;
+                } elsif ($prop->{flags} >= "readable") {
+                        tie $self->{$name}, 
+                                'Glib::Object::Property::Readable',
+                                $self, $name;
+                } elsif ($prop->{flags} >= "writable") {
+			tie $self->{$name}, 
+				'Glib::Object::Property::Writable',
+				$self, $name;
+                } else {
+                        # if it's not readable and not writable what is it?
+		}
+	}
+}
+
+package Glib;
+
 1;
+__END__
 
 =head1 NAME
 
@@ -118,7 +225,7 @@ so they get their own section.
 Enumerations and flags are treated as strings and arrays of strings,
 respectively.  GLib provides a way to register nicknames for enumeration
 values, and the Perl bindings use these nicknames for the real values, so that
-we never have to deal with numbers in Perl.  This can get a little cumbersome
+we never have to deal with numbers in Perl. This can get a little cumbersome
 for bitfields, but it's very nice when you forget a flag value, as the bindings
 will tell you what values are accepted when you pass something invalid. Also,
 the bindings consider the - and _ characters to be equivalent, so that signal
@@ -135,10 +242,92 @@ example, the following are equivalent:
 
 Beware that Perl will always return to you the nickname form, with the dash.
 
+Flags have some additional magic abilities in the form of overloaded
+operators:
+
+  + or |   union of two flagsets ("add")
+  -        difference of two flagsets ("sub", "remove")
+  * or &   intersection of two bitsets ("and")
+  / or ^   symmetric difference ("xor", you will rarely need this)
+  >=       contains-operator ("is the left set a superset of the right set?")
+  ==       equality
+
+In addition, flags in boolean context indicate wether they are empty or
+not, which allows you to write common operations naturally:
+
+  $widget->set_events ($widget->get_events - "motion_notify_mask");
+  $widget->set_events ($widget->get_events - ["motion_notify_mask",
+                                              "button_press_mask"]);
+
+  # shift pressed (both work, it's a matter of taste)
+  if ($event->state >= "shift-mask") { ...
+  if ($event->state * "shift-mask") { ...
+
+  # either shift OR control pressed?
+  if ($event->state * ["shift-mask", "control-mask"]) { ...
+
+  # both shift AND control be pressed?
+  if ($event->state >= ["shift-mask", "control-mask"]) { ...
+
+In general, C<+> and C<-> work as expected to add or remove flags. To test
+wether I<any> bits are set in a mask, you use C<$mask * ...>, and to test
+wether I<all> bits are set in a mask, you use C<$mask >= ...>.
+
+When dereferenced as an array C<@$flags> or C<$flags->[...]>, you can
+access the flag values directly as strings (but you are not allowed to
+modify the array), and when stringified C<"$flags"> a flags value will
+output a human-readable version of it's contents.
+
 =head2 It's All the Same
 
 For the most part, the remaining bits of GLib are unchanged.  GMainLoop is now
 Glib::MainLoop, GObject is now Glib::Object, GBoxed is now Glib::Boxed, etc.
+
+=head1 FILENAMES, URIS AND ENCODINGS
+
+Perl knows two datatypes, unicode text and binary data. Filenames on a
+system that doesn't use a utf-8 locale are usually stored in a local
+encoding ("binary"). Gtk+ and descendants, however, internally work in
+unicode all the time, so when feeding a filename into a GLib/Gtk+ function
+that expects a filename, you first need to convert it from the local
+encoding to unicode.
+
+This involves some elaborate guessing, which perl currently avoids, but
+GLib and Gtk+ do. The following functions expose the conversion algorithm
+that glib uses.
+
+These functions are only necessary when you want to use perl functions
+to manage filenames returned by a glib/gtk+ function, or when you feed
+filenames into glib/gtk+ functions that have their source outside your
+program (e.g. commandline arguments).
+
+=over 4
+
+=item $filename = Glib::filename_to_unicode $filename_in_local_encoding
+
+Convert a perl strings that supposedly contains a filename into a filename
+in the local encoding, the same way that glib or gtk+ do it internally.
+
+Example:
+
+   $filesel->set_filename (Glib::filename_to_unicode $ARGV[1]);
+
+=item $filename_in_local_encoding = Glib::filename_from_unicode $filename
+
+Converts a perl string containing a filename in the local encoding into a
+perl string in the same way glib ot gtk+ do it.
+
+Example:
+
+   open MY, "<", Glib::filename_from_unicode $filesel->get_filename;
+
+=back
+
+Other functions for converting URIs are currently missing. Also, it might
+be useful to know that perl currently has no policy at all regarding this
+issue, if your scalar happens to be in utf8 internally it will use utf8,
+if it happens to be stored as bytes, it will use it as-is.
+
 
 =head1 EXCEPTIONS
 
@@ -191,9 +380,11 @@ should register the log domains they wrap for this to happen fluidly.
 
 =head1 SEE ALSO
 
-How to create your own gobject subclasses:
+L<Glib::Object::Subclass> explains how to create your own gobject subclasses
+in Perl.
 
-  Glib::Objects::Subclass
+L<Glib::index> lists the automatically-generated API reference for the
+various packages in Glib.
 
 This module is the basis for the Gtk2 module, so most of the references
 you'll be able to find about this one are tied to that one.  The perl
@@ -209,9 +400,13 @@ GLib-based C libraries to perl.
   Glib::PkgConfig - simple interface to pkg-config for developers
   Glib::devel - Binding developer's overview of Glib's internals
   Glib::xsapi - internal API reference for GPerl
+  Glib::ParseXSDoc - extract API docs from xs sources.
+  Glib::GenPod - turn the output of Glib::ParseXSDoc into POD
+  Glib::MakeHelper - Makefile.PL utilities for Glib-based extensions
+
   Yet another document, available separately, ties it all together:
     http://gtk2-perl.sourceforge.net/doc/binding_howto.pod.html
-
+  
 For gtk2-perl itself, see its website at
 
   gtk2-perl - http://gtk2-perl.sourceforge.net/

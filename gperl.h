@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.24 2003/10/02 07:12:08 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.29 2003/11/12 20:46:28 pcg Exp $
  */
 
 #ifndef _GPERL_H_
@@ -40,11 +40,6 @@
  * miscellaneous
  */
 
-/* make the compiler shut up about unused variables */
-#ifndef USUSED
-# define UNUSED(var)   ((var)=(var))
-#endif
-
 /* never use this function directly.  use GPERL_CALL_BOOT. */
 void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
 
@@ -66,6 +61,11 @@ void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
 void gperl_croak_gerror (const char * prefix, GError * err);
 
 gpointer gperl_alloc_temp (int nbytes);
+gchar *gperl_filename_from_sv (SV *sv);
+SV *gperl_sv_from_filename (const gchar *filename);
+
+gboolean gperl_str_eq (const char * a, const char * b);
+guint    gperl_str_hash (gconstpointer key);
 
 
 /* internal trickery */
@@ -86,6 +86,9 @@ SV * gperl_convert_back_flags (GType type, gint val);
 /* register a fundamental type (enums, flags...) */
 void gperl_register_fundamental (GType gtype, const char * package);
 
+GType gperl_fundamental_type_from_package (const char * package);
+const char * gperl_fundamental_package_from_type (GType gtype);
+
 /*
  * inheritance management
  */
@@ -94,7 +97,9 @@ void gperl_set_isa (const char * child_package, const char * parent_package);
 /* unshift @{$parent_package}::ISA, $child_package */
 void gperl_prepend_isa (const char * child_package, const char * parent_package);
 
-/* these work regardless of what the actual type is (GBoxed or GObject) */
+/* these work regardless of what the actual type is (GBoxed, GObject, GEnum,
+ * or GFlags).  in general it's safer to use the most specific one, but this
+ * is handy when you don't care. */
 GType gperl_type_from_package (const char * package);
 const char * gperl_package_from_type (GType type);
 
@@ -186,8 +191,12 @@ SV * gperl_object_check_type (SV * sv, GType gtype);
 /* typedefs and macros for use with the typemap */
 typedef gchar gchar_length;
 typedef gchar gchar_own;
+typedef gchar gchar_ornull;
 typedef GObject GObject_ornull;
 typedef GObject GObject_noinc;
+typedef gchar *GPerlFilename;
+typedef const gchar *GPerlFilename_const;
+typedef gchar *GPerlFilename_own;
 
 #define newSVGObject(obj)	(gperl_new_object ((obj), FALSE))
 #define newSVGObject_noinc(obj)	(gperl_new_object ((obj), TRUE))

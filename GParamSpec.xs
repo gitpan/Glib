@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.6 2003/09/21 16:59:12 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.9 2003/11/10 00:09:11 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -79,19 +79,54 @@ SvGParamSpec (SV * sv)
 
 MODULE = Glib::ParamSpec	PACKAGE = Glib::ParamSpec	PREFIX = g_param_spec_
 
+=for apidoc
+
+=head1 DESCRIPTION
+
+Glib::ParamSpec encapsulates the metadata required to specify parameters.
+You will see these most often when creating new Glib::Object types; see
+C<< Glib::Type->register >> and L<Glib::Object::Subclass>.
+
+Parameter specifications allow you to provide limits for validation as 
+well as nicknames and blurbs to document the parameters.  Blurbs show up
+in reference documentation such as this page or the gtk+ C API reference;
+i'm not really sure where the nicknames get used.  The Perl bindings for
+the most part ignore the difference between dashes and underscores in
+the paramspec names, which typically find use as the actual keys for 
+object parameters.
+
+It's worth noting that Glib offers various sizes of integer and floating
+point values, while Perl really only deals with full integers and double
+precision floating point values.  The size distinction is important for
+the underlying C libraries.
+
+=cut
+
+BOOT:
+	gperl_register_fundamental (g_param_flags_get_type (),
+	                            "Glib::ParamFlags");
+
+=for enum Glib::ParamFlags
+=cut
+
 ## stuff from gparam.h
 
+=for apidoc
+
+=signature string = $paramspec->get_name
+
+Dashes in the name are converted to underscores.
+
+=cut
 SV *
 g_param_spec_get_name (GParamSpec * pspec)
-	CODE:
+    CODE:
         char *c;
         RETVAL = newSVpv (g_param_spec_get_name (pspec), 0);
-
         for (c = SvPV_nolen (RETVAL); c <= SvEND (RETVAL); c++)
                 if (*c == '-')
                         *c = '_';
-        
-	OUTPUT:
+    OUTPUT:
         RETVAL
 
 const gchar* g_param_spec_get_nick (GParamSpec * pspec)
@@ -115,7 +150,6 @@ const gchar* g_param_spec_get_blurb (GParamSpec * pspec)
 ##  GParamSpec* g_param_spec_int64 (const gchar *name, const gchar *nick, const gchar *blurb, gint64 minimum, gint64 maximum, gint64 default_value, GParamFlags flags) 
 GParamSpec*
 IV (class, name, nick, blurb, minimum, maximum, default_value, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -130,7 +164,6 @@ IV (class, name, nick, blurb, minimum, maximum, default_value, flags)
 	long  = 3
 	int64 = 4
     CODE:
-	UNUSED(class);
 	RETVAL = NULL;
     	switch (ix) {
 	    case 1:
@@ -164,7 +197,6 @@ IV (class, name, nick, blurb, minimum, maximum, default_value, flags)
 ##  GParamSpec* g_param_spec_uint64 (const gchar *name, const gchar *nick, const gchar *blurb, guint64 minimum, guint64 maximum, guint64 default_value, GParamFlags flags) 
 GParamSpec*
 UV (class, name, nick, blurb, minimum, maximum, default_value, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -179,7 +211,6 @@ UV (class, name, nick, blurb, minimum, maximum, default_value, flags)
 	ulong  = 3
 	uint64 = 4
     CODE:
-	UNUSED(class);
 	RETVAL = NULL;
     	switch (ix) {
 	    case 1:
@@ -210,7 +241,6 @@ UV (class, name, nick, blurb, minimum, maximum, default_value, flags)
 ##  GParamSpec* g_param_spec_boolean (const gchar *name, const gchar *nick, const gchar *blurb, gboolean default_value, GParamFlags flags) 
 GParamSpec*
 g_param_spec_boolean (class, name, nick, blurb, default_value, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -218,24 +248,42 @@ g_param_spec_boolean (class, name, nick, blurb, default_value, flags)
 	GParamFlags flags
     C_ARGS:
 	name, nick, blurb, default_value, flags
-    CLEANUP:
-	UNUSED(class);
 
 
 #### gunichar not in typemap
 ###  GParamSpec* g_param_spec_unichar (const gchar *name, const gchar *nick, const gchar *blurb, gunichar default_value, GParamFlags flags) 
 #
-#### GType not in typemap.  actually, the GTypes for enums and flags are
-#### never exposed to perl at all.  how do we handle these?
 ###  GParamSpec* g_param_spec_enum (const gchar *name, const gchar *nick, const gchar *blurb, GType enum_type, gint default_value, GParamFlags flags) 
+GParamSpec*
+g_param_spec_enum (class, const gchar *name, const gchar *nick, const gchar *blurb, const char * enum_type, SV * default_value, GParamFlags flags)
+    PREINIT:
+	GType gtype;
+    CODE:
+	gtype = gperl_fundamental_type_from_package (enum_type);
+	RETVAL = g_param_spec_enum (name, nick, blurb, gtype,
+	                            gperl_convert_enum (gtype, default_value),
+	                            flags);
+    OUTPUT:
+	RETVAL 
+
 ###  GParamSpec* g_param_spec_flags (const gchar *name, const gchar *nick, const gchar *blurb, GType flags_type, guint default_value, GParamFlags flags) 
+GParamSpec*
+g_param_spec_flags (class, const gchar *name, const gchar *nick, const gchar *blurb, const char * flags_type, SV * default_value, GParamFlags flags)
+    PREINIT:
+	GType gtype;
+    CODE:
+	gtype = gperl_fundamental_type_from_package (flags_type);
+	RETVAL = g_param_spec_flags (name, nick, blurb, gtype,
+	                             gperl_convert_flags (gtype, default_value),
+	                             flags);
+    OUTPUT:
+	RETVAL 
 
 
 ##  GParamSpec* g_param_spec_float (const gchar *name, const gchar *nick, const gchar *blurb, gfloat minimum, gfloat maximum, gfloat default_value, GParamFlags flags) 
 ##  GParamSpec* g_param_spec_double (const gchar *name, const gchar *nick, const gchar *blurb, gdouble minimum, gdouble maximum, gdouble default_value, GParamFlags flags) 
 GParamSpec*
 g_param_spec_double (class, name, nick, blurb, minimum, maximum, default_value, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -246,7 +294,6 @@ g_param_spec_double (class, name, nick, blurb, minimum, maximum, default_value, 
     ALIAS:
 	float = 1
     CODE:
-	UNUSED(class);
 	if (ix == 1)
 		RETVAL = g_param_spec_float (name, nick, blurb,
 		                             (float)minimum, (float)maximum,
@@ -261,7 +308,6 @@ g_param_spec_double (class, name, nick, blurb, minimum, maximum, default_value, 
 ##  GParamSpec* g_param_spec_string (const gchar *name, const gchar *nick, const gchar *blurb, const gchar *default_value, GParamFlags flags) 
 GParamSpec*
 g_param_spec_string (class, name, nick, blurb, default_value, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -269,15 +315,12 @@ g_param_spec_string (class, name, nick, blurb, default_value, flags)
 	GParamFlags flags
     C_ARGS:
 	name, nick, blurb, default_value, flags
-    CLEANUP:
-	UNUSED(class);
 
 ###  GParamSpec* g_param_spec_param (const gchar *name, const gchar *nick, const gchar *blurb, GType param_type, GParamFlags flags) 
 ##  GParamSpec* g_param_spec_boxed (const gchar *name, const gchar *nick, const gchar *blurb, GType boxed_type, GParamFlags flags) 
 ##  GParamSpec* g_param_spec_object (const gchar *name, const gchar *nick, const gchar *blurb, GType object_type, GParamFlags flags) 
 GParamSpec*
 typed (class, name, nick, blurb, package, flags)
-	SV * class
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
@@ -290,7 +333,6 @@ typed (class, name, nick, blurb, package, flags)
     PREINIT:
 	GType type = 0;
     CODE:
-	UNUSED(class);
 	RETVAL = NULL;
 	switch (ix) {
 	    case 0: croak ("param specs not supported as param specs yet");

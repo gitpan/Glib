@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.11 2003/10/02 18:35:24 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.15 2003/11/13 18:27:35 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -137,10 +137,99 @@ gperl_alloc_temp (int nbytes)
 {
 	dTHR;
 
-	SV * s = sv_2mortal (newSVpv ("", 0));
-	SvGROW (s, (unsigned)nbytes);
-	memset (SvPV (s, PL_na), 0, nbytes);
-	return SvPV (s, PL_na);
+	SV * s = sv_2mortal (NEWSV (0, nbytes));
+	memset (SvPVX (s), 0, nbytes);
+	return SvPVX (s);
+}
+
+=item gchar *gperl_filename_from_sv (SV *sv)
+
+Return a localized version of the filename in the sv, using
+g_filename_from_utf8 (and consequently this function might croak). The
+memory is allocated using gperl_alloc_temp.
+
+=cut
+gchar *
+gperl_filename_from_sv (SV *sv)
+{
+        dTHR;
+
+        GError *error = 0;
+        gchar *lname;
+        STRLEN len;
+        gchar *filename = SvPVutf8 (sv, len);
+
+        lname = g_filename_from_utf8 (filename, len, 0, 0, &error);
+        if (!lname)
+        	gperl_croak_gerror (filename, error);
+
+        len = strlen (lname);
+        filename = gperl_alloc_temp (len + 1);
+        memcpy (filename, lname, len);
+        g_free (lname);
+
+        return filename;
+}
+
+=item SV *gperl_sv_from_filename (const gchar *filename)
+
+Convert the filename into an utf8 string as used by gtk/glib and perl.
+
+=cut
+SV *
+gperl_sv_from_filename (const gchar *filename)
+{
+	GError *error = 0;
+        SV *sv;
+        gchar *str = g_filename_to_utf8 (filename, -1, 0, 0, &error);
+
+        if (!filename)
+        	gperl_croak_gerror (str, error);
+
+        sv = newSVpv (str, 0);
+        g_free (str);
+
+        SvUTF8_on (sv);
+        return sv;
+}
+
+=item gboolean gperl_str_eq (const char * a, const char * b);
+
+Compare a pair of ascii strings, considering '-' and '_' to be equivalent.
+Used for things like enum value nicknames and signal names.
+
+=cut
+gboolean
+gperl_str_eq (const char * a,
+              const char * b)
+{
+	while (*a && *b) {
+		if (*a == *b ||
+		    ((*a == '-' || *a == '_') && (*b == '-' || *b == '_'))) {
+			a++;
+			b++;
+		} else
+			return FALSE;
+	}
+	return *a == *b;
+}
+
+=item guint gperl_str_hash (gconstpointer key)
+
+Like g_str_hash(), but considers '-' and '_' to be equivalent.
+
+=cut
+guint
+gperl_str_hash (gconstpointer key)
+{
+	const char *p = key;
+	guint h = *p;
+
+	if (h)
+		for (p += 1; *p != '\0'; p++)
+			h = (h << 5) - h + (*p == '-' ? '_' : *p);
+
+	return h;
 }
 
 
@@ -168,3 +257,30 @@ BOOT:
 	GPERL_CALL_BOOT (boot_Glib__MainLoop);
 	GPERL_CALL_BOOT (boot_Glib__ParamSpec);
 	GPERL_CALL_BOOT (boot_Glib__IO__Channel);
+
+##
+## NOTE: in order to avoid overwriting the docs for the main Glib.pm, 
+##       all xsubs in this section must be either assigned to other
+##       packages or marked as hidden.
+##
+
+=for apidoc __hide__
+=cut
+const char *
+filename_from_unicode (GPerlFilename filename)
+	PROTOTYPE: $
+	CODE:
+        RETVAL = filename;
+	OUTPUT:
+        RETVAL
+        
+=for apidoc __hide__
+=cut
+GPerlFilename
+filename_to_unicode (const char *filename)
+	PROTOTYPE: $
+	CODE:
+        RETVAL = filename;
+	OUTPUT:
+        RETVAL
+        
