@@ -1,3 +1,112 @@
+2003/08/28 23:30 muppetman
+
+	* gperl.h, GClosure.xs, Glib.xs: merged changes from the exceptions
+	branch.  gtk2-perl now attempts to do reasonable handling of 
+	exceptions in callbacks.  still needs pod for the perl-level stuff,
+	but i'm not sure where to put it.
+
+	* Glib.exports: new exportable symbols
+
+	* GParamSpec.xs: hush uninitialized value warning (drop in the bucket)
+
+	* Glib.pm, MANIFEST, README, debian/changelog: update for 0.96 release
+
+2003/08/28 17:45 muppetman
+
+	* GSignal.xs: clean up comments, bind signal_handler_is_connected
+
+2003/08/22 01:11 muppetman
+
+	* Glib.pm, README, META.yml, debian/changelog, MANIFEST:
+	prep for 0.95 release
+
+2003/08/19 21:11 rwmcfa1
+
+	* Makefile.PL: added realclean removal of build dir to postamble 
+	section.
+
+2003/08/18 23:45 muppetman
+
+	* t/7.t: test out signal stuff on a subclassed object.
+
+2003/08/18 17:28 muppetman
+
+	* GSignal.xs: quiet down remember_closure and forget_closure, now
+	that i'm sure they work.
+
+2003/08/16 20:53 muppetman
+
+	* GSignal.xs: implemented wrappers for g_signal_handlers_block_by_func,
+	unblock_by_func, and disconnect_by_func.  code for the _matched
+	versions of these functions (the generic ones) is commented out, 
+	because there is no typemap for GSignalMatchType.
+
+2003/08/15 09:35 muppetman
+
+	* debian/*, AUTHORS: patch from James Curbo adding maintainence
+	files for debian packages.
+
+	* MANIFEST, README, Glib.pm: updated for 0.94 release
+
+2003/08/14 16:54 muppetman
+
+	* apidoc.pl, Makefile.PL: use a simple perl script instead of shell
+	commands in the makefile to create xsapi.pod; not all platforms have
+	the shell tools, and this will let us sneak in more sophisticated
+	stuff later.
+
+	* PkgConfig.pm: portability fixes
+
+2003/08/14 11:50 muppetman
+
+	* devel.pod, Makefile.PL, Glib.pm: new manpage, Glib::devel, describes
+	the philosphy of how the bindings are designed and how they work; an
+	overview-style supplement to Glib::xsapi, which details the APIs
+	themselves.
+
+2003/08/13 23:44 muppetman
+
+	* GObject.xs: fatalistic commentary
+
+	* GIOChannel.xs, Glib.xs, Makefile.PL: new file GIOChannel.xs
+
+	* GClosure.xs, GMainLoop.xs, GSignal.xs, gperl.h: closure
+	correctness and simplification fixes
+
+	* GValue.xs: reordering to assure that all the same types are
+	handled in both switches; croak on unhandled types rather than
+	just warn --- an unhandled type is a bug that we need to know
+	about; it may require a handler registration mechanism.
+
+	* TODO: updates
+
+2003/08/13 18:15 muppetman
+
+	* xsapi.pod.foot, xsapi.pod.head: new files
+
+	* GBoxed.xs, GClosure.xs, GObject.xs, GSignal.xs, GType.xs, GValue.xs,
+	Glib.xs, Makefile.PL, gperl.h: moved all the gtk-doc commentary in
+	gperl.h into embedded pod in the various XS files; now we can extract
+	all the pod from the XS files and convert that into an installable
+	API reference document, Glib::xsapi.
+
+2003/08/12 12:06 rwmcfa1
+
+	* PkgConfig.pm: can now take multiple pkg name parameters, see t/6.t
+	for examples of usage.
+
+	* t/6.t: test out PkgConfig.pm some.
+
+2003/08/09 23:57 pcg
+
+	* gperl.h: export gperl_register_fundamental.
+        * Glib.exports: add it here, too (actually, this was an anonymous
+        check-in by muppetman... tsk, tsk..)
+
+2003/08/09 02:09 muppetman
+
+	* GBoxed.xs, t/2.t: removed a FIXME
+
 2003/08/01 12:41 muppetman
 
 	* MANIFEST, README, Glib.pm: updated for 0.92 release

@@ -16,7 +16,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
 # Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.14 2003/08/01 16:52:55 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.18 2003/08/29 03:30:42 muppetman Exp $
 #
 
 package Glib;
@@ -28,7 +28,7 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '0.92';
+our $VERSION = '0.96';
 
 sub dl_load_flags { 0x01 }
 
@@ -43,7 +43,6 @@ Glib - Perl wrappers for the GLib utility and Object libraries
 =head1 SYNOPSIS
 
   use Glib;
-  blah blah blah
 
 =head1 ABSTRACT
 
@@ -68,17 +67,13 @@ the GType id will never be seen in perl, as the package name serves
 that purpose.  [FIXME link to a document describing this stuff in detail.]
 
 This module also provides facilities for creating wrappers for other
-GObject-based libraries.  [FIXME link to a developer's doc]
+GObject-based libraries.
 
 =head1 SEE ALSO
 
 How to create your own gobject subclasses:
 
   Glib::Objects::Subclass
-
-Other PMs installed with this module:
-
-  Glib::PkgConfig - simple interface to pkg-config for developers
 
 This module is the basis for the Gtk2 module, so most of the references
 you'll be able to find about this one are tied to that one.  The perl
@@ -88,12 +83,21 @@ reference documentation:
   GLib - http://developer.gnome.org/doc/API/2.0/glib/
   GObject - http://developer.gnome.org/doc/API/2.0/gobject/
 
+This module serves as the foundation for any module which needs to bind
+GLib-based C libraries to perl.
+
+  Glib::PkgConfig - simple interface to pkg-config for developers
+  Glib::devel - Binding developer's overview of Glib's internals
+  Glib::xsapi - internal API reference for GPerl
+  Yet another document, available separately, ties it all together:
+    http://gtk2-perl.sourceforge.net/doc/binding_howto.pod.html
+
 For gtk2-perl itself, see its website at
 
   gtk2-perl - http://gtk2-perl.sourceforge.net/
 
 A mailing list exists for discussion of using gtk2-perl and related
-modules.  Archives and subscription information is available at
+modules.  Archives and subscription information are available at
 http://lists.gnome.org/.
 
 

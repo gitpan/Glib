@@ -16,16 +16,49 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.5 2003/06/27 17:02:21 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.7 2003/08/14 03:46:38 muppetman Exp $
  */
+
+=head2 GValue
+
+GValue is GLib's generic value container, and it is because of GValue that the
+run time type handling of GObject parameters and GClosure marshaling can
+function, and most usages of these functions will be from those two points.
+
+Client code will run into uses for gperl_sv_from_value() and
+gperl_value_from_sv() when trying to convert lists of parameters into GValue
+arrays and the like.
+
+=over
+
+=cut
 
 #include "gperl.h"
 
 
 /****************************************************************************
  * GValue handling
+ * 
+ * we have code here to handle the fundamental types listed in the API
+ * reference, plus the G_TYPE_ENUM and G_TYPE_FLAGS fundamentals.
+ * we won't, however, handle any *other* fundamentals created by
+ * g_type_fundamental_next().  if we want to handle that, we probably
+ * need to move away from a switch statement to an array of function
+ * pointers (at least for the non-standard ones) so that the perl bindings
+ * for the library that creates these new fundamentals can register 
+ * conversion functions for them.
  */
 
+=item gboolean gperl_value_from_sv (GValue * value, SV * sv)
+
+set a I<value> from a whatever is in I<sv>.  I<value> must be initialized 
+so the code knows what kind of value to coerce out of I<sv>.
+
+Returns TRUE if the code knows how to perform the conversion. FIXME this
+really ought to always succeed; a failed conversion should be considered a bug
+or unimplemented code!
+
+=cut
 gboolean
 gperl_value_from_sv (GValue * value,
 		     SV * sv)
@@ -42,16 +75,12 @@ gperl_value_from_sv (GValue * value,
     			g_value_set_object(value, gperl_get_object(sv));
 			break;
 		case G_TYPE_CHAR:
-			if ((tmp = SvGChar(sv)))
-				g_value_set_char(value, tmp[0]);
-			else
-				return FALSE;
+			tmp = SvGChar (sv);
+			g_value_set_char(value, tmp ? tmp[0] : 0);
 			break;
 		case G_TYPE_UCHAR:
-			if ((tmp = SvPV_nolen(sv)))
-				g_value_set_char(value, tmp[0]);
-			else
-				return FALSE;
+			tmp = SvPV_nolen (sv);
+			g_value_set_uchar(value, tmp ? tmp[0] : 0);
 			break;
 		case G_TYPE_BOOLEAN:
 			/* undef is also false. */
@@ -87,18 +116,6 @@ gperl_value_from_sv (GValue * value,
 		case G_TYPE_POINTER:
 			g_value_set_pointer(value, (gpointer) SvIV(sv));
 			break;
-		case G_TYPE_PARAM:
-			g_value_set_param(value, (gpointer) SvIV(sv));
-			break;
-		case G_TYPE_OBJECT:
-			g_value_set_object(value, gperl_get_object_check (sv, G_VALUE_TYPE(value)));
-			break;
-		case G_TYPE_ENUM:
-			g_value_set_enum(value, gperl_convert_enum(G_VALUE_TYPE(value), sv));
-			break;
-		case G_TYPE_FLAGS:
-			g_value_set_flags(value, gperl_convert_flags(G_VALUE_TYPE(value), sv));
-			break;
 		case G_TYPE_BOXED:
 			/* SVs need special treatment! */
 			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV))
@@ -109,16 +126,39 @@ gperl_value_from_sv (GValue * value,
 			else
 				g_value_set_boxed (value, gperl_get_boxed_check (sv, G_VALUE_TYPE(value)));
 			break;
+		case G_TYPE_PARAM:
+			g_value_set_param(value, (gpointer) SvIV(sv));
+			break;
+		case G_TYPE_OBJECT:
+			g_value_set_object(value, gperl_get_object_check (sv, G_VALUE_TYPE(value)));
+			break;
+
+		case G_TYPE_ENUM:
+			g_value_set_enum(value, gperl_convert_enum(G_VALUE_TYPE(value), sv));
+			break;
+		case G_TYPE_FLAGS:
+			g_value_set_flags(value, gperl_convert_flags(G_VALUE_TYPE(value), sv));
+			break;
 			
 		default:
-			warn ("[gperl_value_from_sv] FIXME: unhandled type - %d (%s fundamental for %s)\n",
-			      typ, g_type_name(G_TYPE_FUNDAMENTAL(G_VALUE_TYPE(value))), G_VALUE_TYPE_NAME(value));
+			/* if we get here, there's something seriously wrong. */
+			croak ("[gperl_value_from_sv] FIXME: unhandled type - %d (%s fundamental for %s)\n",
+			       typ, g_type_name(G_TYPE_FUNDAMENTAL(G_VALUE_TYPE(value))), G_VALUE_TYPE_NAME(value));
 			return FALSE;
 	}
 	return TRUE;
 }
 
 
+=item SV * gperl_sv_from_value (const GValue * value)
+
+coerce whatever is in I<value> into a perl scalar and return it.
+
+Returns NULL if the code doesn't know how to perform the conversion.  FIXME
+this really ought to always succeed; a failed conversion should be considered a
+bug or unimplemented code!
+
+=cut
 SV *
 gperl_sv_from_value (const GValue * value)
 {
@@ -130,6 +170,11 @@ gperl_sv_from_value (const GValue * value)
 			   just blindly treating them as objects until
 			   this breaks and i understand what they mean. */
 			return gperl_new_object (g_value_get_object (value), FALSE);
+		case G_TYPE_CHAR:
+			return newSViv (g_value_get_char (value));
+
+		case G_TYPE_UCHAR:
+			return newSVuv (g_value_get_uchar (value));
 
 		case G_TYPE_BOOLEAN:
 			return newSViv(g_value_get_boolean(value));
@@ -178,6 +223,9 @@ gperl_sv_from_value (const GValue * value)
 						G_VALUE_TYPE (value),
 						FALSE);
 
+		case G_TYPE_PARAM:
+			croak ("[gperl_sv_from_value] G_TYPE_PARAM not implemented");
+
 		case G_TYPE_OBJECT:
 			return gperl_new_object (g_value_get_object (value), FALSE);
 
@@ -190,13 +238,17 @@ gperl_sv_from_value (const GValue * value)
 							 g_value_get_flags (value));
 
 		default:
-			warn ("[gperl_sv_from_value] FIXME: unhandled type - %d (%s fundamental for %s)\n",
-			      typ, g_type_name (G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (value))),
-			      G_VALUE_TYPE_NAME (value));
+			croak ("[gperl_sv_from_value] FIXME: unhandled type - %d (%s fundamental for %s)\n",
+			       typ, g_type_name (G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (value))),
+			       G_VALUE_TYPE_NAME (value));
 	}
 	
 	return NULL;
 }
+
+=back
+
+=cut
 
 /* apparently this line is required by ExtUtils::ParseXS, but not by xsubpp. */
 MODULE = Glib::Value	PACKAGE = Glib::Value	PREFIX = g_value_

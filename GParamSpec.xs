@@ -16,7 +16,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330, 
  * Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.2 2003/06/27 17:01:50 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.3 2003/08/29 03:30:18 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -279,7 +279,7 @@ typed (class, name, nick, blurb, package, flags)
 	boxed = 1
 	object = 2
     PREINIT:
-	GType type;
+	GType type = 0;
     CODE:
 	switch (ix) {
 	    case 0: croak ("param specs not supported as param specs yet");

@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.2 2003/06/27 17:02:41 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.3 2003/08/09 06:14:21 muppetman Exp $
 #
 
 # Before `make install' is performed this script should be runnable with
@@ -22,6 +22,3 @@ ok(2);
 
 undef $obj;
 ok(3);
-
-# FIXME need to define an instantiatable subclass of GObject and test out
-# ref counting, signals, properties, object data, and all that fun stuff.

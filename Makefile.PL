@@ -1,10 +1,11 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.7 2003/07/31 23:44:55 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.13 2003/08/20 01:25:45 rwmcfa1 Exp $
 #
 
 use 5.008;
 use ExtUtils::MakeMaker;
 use Cwd;
+use File::Spec;
 
 # dependent modules will be able to 'use' these normally; for us, they
 # aren't installed yet, so we have to cheat.
@@ -36,15 +37,33 @@ if ($nothreads) {
 
 
 if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') }) {
+   # this is the order in which we want the api docs from the XS files to
+   # appear in Glib::xsapi
+   @xs_files = qw(
+	Glib.xs
+	GType.xs
+	GBoxed.xs
+	GObject.xs
+	GValue.xs
+	GClosure.xs
+	GSignal.xs
+	GMainLoop.xs
+	GIOChannel.xs
+	GParamSpec.xs
+   );
    %pm_files = (
-	'Glib.pm'      => '$(INST_LIBDIR)/Glib.pm',
-	'PkgConfig.pm' => '$(INST_LIBDIR)/Glib/PkgConfig.pm',
-	'Subclass.pm'  => '$(INST_LIBDIR)/Glib/Object/Subclass.pm',
+	'Glib.pm'         => '$(INST_LIBDIR)/Glib.pm',
+	'PkgConfig.pm'    => '$(INST_LIBDIR)/Glib/PkgConfig.pm',
+	'Subclass.pm'     => '$(INST_LIBDIR)/Glib/Object/Subclass.pm',
+	'devel.pod'       => '$(INST_LIBDIR)/Glib/devel.pod',
+	'build/xsapi.pod' => '$(INST_LIBDIR)/Glib/xsapi.pod',
    );
    %pod_files = (
-	'Glib.pm'      => '$(INST_MAN3DIR)/Glib.3pm',
-	'PkgConfig.pm' => '$(INST_MAN3DIR)/Glib::PkgConfig.3pm',
-	'Subclass.pm'  => '$(INST_MAN3DIR)/Glib::Object::Subclass.3pm',
+      'Glib.pm'         => '$(INST_MAN3DIR)/Glib.$(MAN3EXT)',
+      'PkgConfig.pm'    => '$(INST_MAN3DIR)/Glib::PkgConfig.$(MAN3EXT)',
+      'Subclass.pm'     => '$(INST_MAN3DIR)/Glib::Object::Subclass.$(MAN3EXT)',
+      'devel.pod'       => '$(INST_MAN3DIR)/Glib::devel.$(MAN3EXT)',
+      'build/xsapi.pod' => '$(INST_MAN3DIR)/Glib::xsapi.$(MAN3EXT)',
    );
 
    # add -I. and -I./build to the include path so we can find our own files.
@@ -52,13 +71,13 @@ if ($glib = eval { require ExtUtils::Depends; ExtUtils::Depends->new ('Glib') })
    # generated files.
    $glib->set_inc ($glibcfg{cflags} . $gthreadcfg{cflags} . ' -I. ');
    $glib->set_libs ($glibcfg{libs} . $gthreadcfg{libs});
-   $glib->add_typemaps (cwd().'/typemap');
+   my $cwd = cwd();
+   $glib->add_typemaps (map {File::Spec->catfile($cwd,$_)} 'typemap');
    $glib->add_headers ('"gperl.h"');
    $glib->install (qw(gperl.h));
    $glib->save_config ('build/IFiles.pm');
    $glib->add_pm (%pm_files);
-   $glib->add_xs ('Glib.xs', 'GType.xs', 'GBoxed.xs', 'GObject.xs', 'GValue.xs',
-                  'GClosure.xs', 'GSignal.xs', 'GMainLoop.xs', 'GParamSpec.xs');
+   $glib->add_xs (@xs_files);
 }
 
 # exports list needed for win32, unused on others
@@ -79,3 +98,15 @@ WriteMakefile(
     $glib ? $glib->get_makefile_vars : (),
 );
 
+package MY;
+
+# rule to build the documentation
+sub postamble {
+	return "
+build/xsapi.pod: @main::xs_files xsapi.pod.head xsapi.pod.foot apidoc.pl
+	$^X apidoc.pl xsapi.pod.head xsapi.pod.foot @main::xs_files > \$@
+
+realclean ::
+	-rm -Rf build
+";
+}
