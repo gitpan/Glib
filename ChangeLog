@@ -1,3 +1,90 @@
+2003/12/11 22:11 (-0500) muppetman
+
+	* Glib.pm, README, META.yml: stable release 1.020
+
+2003/12/04 22:28 (-0500) muppetman
+
+	* Glib.pm, README: bump version to 1.014 for release
+	* MANIFEST: t/6.t doesn't exist on this branch
+
+2003/12/04 13:13 (-0500) rwmcfa1
+
+	* : Merged from HEAD
+
+	* GenPod.pm: @ARGV is now searched for disable-apidoc which, surprise,
+	disables the generation of the api doc pods thus speeding up the build
+	process.
+	
+	* GenPod.pm: put an extra \n after each of the pods to keep pod stuff
+	happy
+
+2003/12/03 23:38 (-0500) muppetman
+
+	* Glib.pm: credit where credit is due
+
+2003/12/02 23:49 (-0500) rwmcfa1
+
+	* GenPod.pm: implement a sorter function that pushes GObject based pkgs
+	to the front, instead of alpha. this is so that all classes will be
+	instantiated by the time we do the interfaces.
+
+2003/12/02 18:26 (-0500) muppetman
+
+	* GParamSpec.xs: stray code in a switch statement prevented the
+	successful operation of Glib::ParamSpec->object().
+
+2003/12/01 16:21 (-0500) rwmcfa1
+
+	* GenPod.pm: put an extra \n after each of the pods to keep pod stuff
+	happy
+
+2003/11/29 12:45 (-0500) muppetman
+
+	* Glib.pm, README: bump version to 1.013, make release from
+	rel-1-02-branch.
+
+2003/11/29 12:23 (-0500) rwmcfa1
+
+	* GenPod.pm: modified copyright text as list decided.
+
+2003/11/28 22:00 (-0500) muppetman
+
+	* GType.xs: remove unused var and code.
+	* Glib.xs: apparently this bit of doc has been b0rken for a very
+	long time.
+
+2003/11/28 14:47 (-0500) rwmcfa1
+
+	* ParseXSDoc.pm, GenPod.pm: moved inclusion processing into GenPod 
+	rather that ParseXSDoc, it will need to be run later than parse.
+
+	* MakeHelper.pm: DOC_PL_DEPENDS is now POD_DEPENDS, related to ^
+
+2003/11/25 12:02 (-0500) muppetman
+
+	* GType.xs: clean up some odd leaks; use proper contexts in the
+	signal accumulator and custom class closure.
+
+2003/11/25 11:39 (-0500) rwmcfa1
+	
+	* GType.xs, devel.pod:	link correction
+
+	* GenPod.pm: added parents return from list ancestors. use it for 
+	podify_see_alsos, which is new. and added get_copyright
+
+	* Glib.pm: removed reference to old Glib::PkgConfig
+
+	* MakeHelper.pm: added new DOC_PL_DEPENDS var, should prove useful 
+	for includes
+
+	* ParseXSDoc.pm: added include system =for include file, 
+	=for include !cmd
+
+2003/11/24 23:35 (-0500) rwmcfa1
+
+	* Makefile.PL, MakeHelper.pm: clean up and resolution of issues about
+	xsapi.pod.
+
 2003/11/21 02:12 (-0500) muppetman
 
 	* Glib.pm, README: bump version to 1.012 and release.

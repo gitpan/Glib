@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.10 2003/11/21 06:31:28 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.10.2.1 2003/12/02 23:38:59 muppetman Exp $
  */
 
 #include "gperl.h"
@@ -348,7 +348,7 @@ typed (class, name, nick, blurb, package, flags)
 	    case 1:
 		RETVAL = g_param_spec_boxed (name, nick, blurb, type, flags);
 		break;
-	    case 2: type = gperl_object_type_from_package (package); break;
+	    case 2:
 		RETVAL = g_param_spec_object (name, nick, blurb, type, flags);
 		break;
 	}

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.43 2003/11/21 07:37:52 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.45.2.3 2003/12/12 03:12:31 muppetman Exp $
 #
 
 package Glib;
@@ -27,7 +27,7 @@ use warnings;
 require DynaLoader;
 our @ISA = qw(DynaLoader);
 
-our $VERSION = '1.012';
+our $VERSION = '1.020';
 
 # this is the 'lite' version of what we could get Exporter to do for us.
 # we export nothing, so it seems silly to drag in all of Exporter::Heavy
@@ -403,7 +403,6 @@ reference documentation:
 This module serves as the foundation for any module which needs to bind
 GLib-based C libraries to perl.
 
-  Glib::PkgConfig - simple interface to pkg-config for developers
   Glib::devel - Binding developer's overview of Glib's internals
   Glib::xsapi - internal API reference for GPerl
   Glib::ParseXSDoc - extract API docs from xs sources.
@@ -429,7 +428,9 @@ of Göran Thyni, E<lt>gthyni at kirra dot netE<gt> and Guillaume Cottenceau
 E<lt>gc at mandrakesoft dot comE<gt> on the first gtk2-perl module, and from
 the sourcecode of the original gtk-perl and pygtk projects.  Marc Lehmann
 E<lt>pcg at goof dot comE<gt> did lots of great work on the magic of making
-Glib::Object wrapper and subclassing work like they should.
+Glib::Object wrapper and subclassing work like they should.  Ross McFarland
+<rwmcfa1 at neces dot com> wrote quite a bit of the documentation generation
+tools.
 
 =head1 COPYRIGHT AND LICENSE
 

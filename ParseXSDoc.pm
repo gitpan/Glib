@@ -5,6 +5,7 @@ package Glib::ParseXSDoc;
 use strict;
 use Data::Dumper;
 use Exporter;
+use Carp;
 
 our @ISA = qw(Exporter);
 our @EXPORT = qw(

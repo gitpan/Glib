@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.17 2003/11/18 22:25:35 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.18 2003/11/29 03:03:12 muppetman Exp $
  */
 
 =head2 Miscellaneous
@@ -67,7 +67,7 @@ _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark)
 
 =item void gperl_croak_gerror (const char * prefix, GError * err)
 
-within I<err>.  I<prefix> may be NULL, but I<err> may not.
+Croak with the message in I<err>.  I<prefix> may be NULL, but I<err> may not.
 
 Use this when wrapping a function that uses #GError for reporting runtime
 errors.  The bindings map the concept of #GError to runtime exceptions;

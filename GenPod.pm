@@ -7,6 +7,7 @@ package Glib::GenPod;
 # FIXME/TODO
 #use strict;
 #use warnings;
+use Carp;
 use Glib;
 use Data::Dumper;
 
@@ -21,6 +22,10 @@ our @EXPORT = qw(
 	podify_interfaces
 	podify_methods
 );
+
+our $COPYRIGHT = undef;
+our $AUTHORS = 'Gtk2-Perl Team';
+our $MAIN_MOD = 'L<Gtk2>';
 
 =head1 NAME
 
@@ -172,7 +177,9 @@ sub xsdoc2pod
 
 	my $pkgdata;
 	my $ret;
-	foreach my $package (sort keys %$data)
+
+	foreach my $package (sort { ($a->isa('Glib::Object') ? -1 : 1) } 
+				keys %$data)
 	{
 		$pkgdata = $data->{$package};
 
@@ -200,7 +207,8 @@ sub xsdoc2pod
 		print "=head1 DESCRIPTION\n\n".$pkgdata->{desc}."\n\n"
 			if (exists ($pkgdata->{desc}));
 		
-		$ret = podify_ancestors ($package);
+		my $parents;
+		($ret, $parents) = podify_ancestors ($package);
 		if ($ret)
 		{
 			print "=head1 HIERARCHY\n\n$ret";
@@ -215,8 +223,11 @@ sub xsdoc2pod
 		my $pods = $pkgdata->{pods};
 		if ($pods) {
 			foreach my $pod (@$pods) {
+				# TODO: this step could be moved to be run once
+				# before starting, up top
+				preprocess_pod ($pod);
 				print join("\n", @{$pod->{lines}})
-				    . "\n";
+				    . "\n\n";
 			}
 		}
 
@@ -257,6 +268,18 @@ sub xsdoc2pod
 			}
 		}
 
+		$ret = podify_see_alsos ($parents);
+		if ($ret)
+		{
+			print "\n=head1 SEE ALSO\n\n$ret";
+		}
+
+		$ret = get_copyright ();
+		if ($ret)
+		{
+			print "\n=head1 COPYRIGHT\n\n$ret";
+		}
+
 		print "\n=cut\n\n";
 
 		close POD;
@@ -271,7 +294,7 @@ sub xsdoc2pod
 			print join("\t", $_->{file},
 			                  $_->{name}, $_->{blurb}) . "\n";
 		}
-
+		
 		close INDEX;
 	}
 }
@@ -432,6 +455,8 @@ sub podify_ancestors {
 	eval { @anc = Glib::Type->list_ancestors (shift); 1; };
 	return undef unless (@anc or not $@);
 
+	my $parents = [ reverse @anc ];
+
 	my $depth = 0;
 	my $str = '  '.pop(@anc)."\n";
 	foreach (reverse @anc) {
@@ -440,7 +465,7 @@ sub podify_ancestors {
 	}
 	$str .= "\n";
 
-	$str
+	return ($str, $parents);
 }
 
 =item $string = podify_interfaces ($packagename)
@@ -520,6 +545,80 @@ library versions against which this module was compiled.
 	}
 			
 	$str;
+}
+
+=item $string = podify_see_alsos ($parents)
+
+Creates a list of links to be placed in the SEE ALSO section of the page.
+$parents should be a reference to an array of parents, as returned from
+podify_ancestors. Returns undef if no parents will be placed in the list.
+
+=cut
+
+sub podify_see_alsos
+{
+	my $parents = shift;
+	
+	# get rid of ourself
+	unshift (@$parents);
+	
+	# if there are no parents
+	return undef unless (scalar (@$parents));
+	
+	# create the see also list
+	'L<'.join ('>, L<', @$parents).">
+"
+}
+
+=item $string = get_copyright
+
+Returns a string that will/should be placed on each page. The package global
+variable COPYRIGHT can be used to override the text placed here. The package
+global variable AUTHORS should be set to the text to appear just after the year
+of the Copyright line, it defaults to Gtk2-Perl Team. The package gloabal
+variable MAIN_MOD should be set to a pod link pointing towards the main file
+for a package in which the full copyright appears.
+
+=cut
+
+sub get_copyright
+{
+	return $COPYRIGHT || "
+Copyright (C) 2003 $AUTHORS
+
+This software is licensed under the LGPL; see $MAIN_MOD for a full notice.
+"
+}
+
+sub preprocess_pod
+{
+	my $pod = shift;
+
+	foreach (@{$pod->{lines}})
+	{
+		# =for include filename
+		# =for include !cmd
+		if (/^=for\s+include\s+(!)?(.*)$/)
+		{
+			if ($1)
+			{
+				chomp($_ = `$2`);
+			}
+			else
+			{
+				if (open INC, "<$2")
+				{
+					local $/ = undef;
+					$_ = <INC>;
+				}
+				else
+				{
+					carp "\n\nunable to open $2 for inclusion, at ".
+					     $parser->{filename}.':'.($. - @lines);
+				}
+			}
+		}
+	}
 }
 
 =back
