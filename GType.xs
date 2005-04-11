@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.66 2005/02/08 04:29:05 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.66.2.1 2005/04/11 17:58:02 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -43,7 +43,7 @@ G_LOCK_DEFINE_STATIC (packages_by_type);
 
 /*
  * this is just like gtk_type_class --- it keeps a reference on the classes
- * it returns to they stick around.  this is most important for enums and
+ * it returns so they stick around.  this is most important for enums and
  * flags, which will be created and destroyed every time you look them up
  * unless you pull this trick.  duplicates a pointer when you are using
  * gtk, but you aren't always using gtk and it's better to be safe than sorry.
