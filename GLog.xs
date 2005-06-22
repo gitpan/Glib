@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.13 2005/02/08 04:21:11 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.13.2.1 2005/06/22 22:07:12 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -111,7 +111,7 @@ gperl_log_handler (const gchar   *log_domain,
 
 	if (!message)
 		message = "(NULL) message";
-	
+
 	switch (log_level) {
 		case G_LOG_LEVEL_CRITICAL: desc = "CRITICAL"; break;
 		case G_LOG_LEVEL_ERROR:    desc = "ERROR";    break;
@@ -119,6 +119,8 @@ gperl_log_handler (const gchar   *log_domain,
 		case G_LOG_LEVEL_MESSAGE:  desc = "Message";  break;
 		default: desc = "LOG";
 	}
+
+	PERL_SET_CONTEXT (user_data);
 
 	full_string = form ("%s%s%s %s**: %s",
 	                    (log_domain ? log_domain : ""),
@@ -157,7 +159,7 @@ gint
 gperl_handle_logs_for (const gchar * log_domain)
 {
 	return g_log_set_handler (log_domain, ALL_LOGS,
-	                          gperl_log_handler, NULL);
+	                          gperl_log_handler, PERL_GET_CONTEXT);
 }
 
 =back

@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.7 2004/05/04 22:11:24 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.7.4.1 2005/06/22 22:07:52 kaffeetisch Exp $
 #
 # Really simple smoke tests for Glib::Object wrappers.
 #
@@ -13,12 +13,15 @@ use warnings;
 #########################
 
 use Test::More tests => 9;
-BEGIN { use_ok('Glib') };
+BEGIN { use_ok('Glib'); Glib::Object->set_threadsafe (1); };
 
 #########################
 
 my $obj = new Glib::Object "Glib::Object";
 isa_ok ($obj, 'Glib::Object');
+
+$obj->freeze_notify;
+$obj->thaw_notify;
 
 undef $obj;
 ok(1);

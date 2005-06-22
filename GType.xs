@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.66.2.1 2005/04/11 17:58:02 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.66.2.2 2005/06/22 22:07:13 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -468,7 +468,7 @@ gperl_type_from_package (const char * package)
 	return 0;
 }
 
-=item GType gperl_package_from_type (GType gtype)
+=item const char * gperl_package_from_type (GType gtype)
 
 Look up the name of the package associated with I<gtype>, regardless of how it
 was registered.  Returns NULL if no mapping can be found.

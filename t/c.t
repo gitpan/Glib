@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.4 2005/01/26 04:38:35 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.4.2.1 2005/06/22 22:07:52 kaffeetisch Exp $
 #
 
 #
@@ -11,7 +11,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -136,14 +136,16 @@ is ($obj->get ('some_enum'), 'value-one', 'enum property');
 $obj->set (some_enum => 'value-two');
 is ($obj->get ('some_enum'), 'value-two', 'enum property, after set');
 
-ok (eq_array ($obj->get ('some_flags'), ['value-one']), 'flags property');
+is($obj->get ('some_flags'), ['value-one'], 'flags property');
 $obj->set (some_flags => ['value-one', 'value-two']);
 is ($obj->get ('some_flags'), ['value-one', 'value-two'], 
 	'flags property, after set');
 
+ok ($obj->get ('some_flags') & $obj->get ('some_flags'));
+
 __END__
 
-Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the
+Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for the
 full list)
 
 This library is free software; you can redistribute it and/or modify it under

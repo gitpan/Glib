@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.47 2004/07/19 01:05:18 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.47.4.1 2005/06/22 22:07:12 kaffeetisch Exp $
  */
 
 /* 
@@ -809,6 +809,7 @@ set_threadsafe (class, gboolean threadsafe)
 #if GPERL_THREAD_SAFE
 	RETVAL = perl_gobject_tracking = threadsafe;
 #else
+	PERL_UNUSED_VAR (threadsafe);
 	RETVAL = FALSE;
 #endif 
     OUTPUT:
