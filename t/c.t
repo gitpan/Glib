@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.4.2.1 2005/06/22 22:07:52 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.6 2005/06/22 17:31:44 kaffeetisch Exp $
 #
 
 #

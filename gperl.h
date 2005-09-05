@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.39 2005/02/08 04:29:05 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.41 2005/04/26 22:56:56 ebassi Exp $
  */
 
 #ifndef _GPERL_H_
@@ -92,10 +92,24 @@ gint gperl_convert_flags (GType type, SV * val);
 SV * gperl_convert_back_flags (GType type, gint val);
 
 /* register a fundamental type (enums, flags...) */
+
+typedef struct _GPerlValueWrapperClass GPerlValueWrapperClass;
+
+typedef SV*  (*GPerlValueWrapFunc)   (const GValue * value);
+typedef void (*GPerlValueUnwrapFunc) (GValue       * value,
+                                      SV           * sv);
+
+struct _GPerlValueWrapperClass {
+	GPerlValueWrapFunc   wrap;
+	GPerlValueUnwrapFunc unwrap;
+};
+
 void gperl_register_fundamental (GType gtype, const char * package);
+void gperl_register_fundamental_full (GType gtype, const char * package, GPerlValueWrapperClass * wrapper_class);
 
 GType gperl_fundamental_type_from_package (const char * package);
 const char * gperl_fundamental_package_from_type (GType gtype);
+GPerlValueWrapperClass * gperl_fundamental_wrapper_class_from_type (GType gtype);
 
 /*
  * GErrors as exception objects
@@ -317,6 +331,16 @@ SV * newSVGParamSpec (GParamSpec * pspec);
 GParamSpec * SvGParamSpec (SV * sv);
 SV * newSVGParamFlags (GParamFlags flags);
 GParamFlags SvGParamFlags (SV * sv);
+
+/*
+ * gkeyfile.h / GKeyFile.xs
+ */
+#if GLIB_CHECK_VERSION (2, 6, 0)
+SV * newSVGKeyFile (GKeyFile * key_file);
+GKeyFile * SvGKeyFile (SV * sv);
+SV * newSVGKeyFileFlags (GKeyFileFlags flags);
+GKeyFileFlags SvGKeyFileFlags (SV * sv);
+#endif /* GLIB_CHECK_VERSION (2, 6, 0) */
 
 const char * gperl_param_spec_package_from_type (GType gtype);
 

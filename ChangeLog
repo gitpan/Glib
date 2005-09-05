@@ -1,27 +1,77 @@
-2005/06/23	kaffeetisch
+2005/09/05	kaffeetisch
 
-	* Glib.pm, META.yml, NEWS, README: Stable release 1.082.
+	* MANIFEST, META.yml: Remove META.yml.
 
-2005/06/23	kaffeetisch
+	* Glib.pm, Makefile.PL, NEWS, README: Stable release 1.100.
 
-	Merge from HEAD:
+2005/07/27	muppetman
+
+	* CodeGen.pm: Forgot to delete the leftover gtk junk before committing.
+
+2005/07/27	kaffeetisch
+
+	* Glib.pm, META.yml, NEWS, README: Unstable release 1.093.
+
+2005/07/26	muppetman
+
+	* CodeGen.pm, Makefile.PL, MANIFEST: Take out the Gtk2-specific
+	portions of Gtk2::CodeGen, make it extensible, and call it
+	Glib::CodeGen.
+
+2005/07/12	kaffeetisch
+
+	* Glib.pm, META.yml, NEWS, README: Unstable release 1.092.
+
+2005/07/05	kaffeetisch
+
+	* GUtils.xs, t/1.t: Bind and test g_markup_escape_text.
+
+2005/07/02 00:32 pcg
+
+	* GMainLoop.xs (add_watch): on native win32, convert the perl fileno
+	to a winsock fileno using win32_get_osfhandle and call
+	g_io_channel_win32_new_socket directly.
+	* Subclass.pm: fix my contact address while we are at it.
+
+2005/06/28	kaffeetisch
+
+	* GenPod.pm (podify_ancestors): Use one less space for the
+	indention of ancestors to make them line up correctly.
+
+2005/06/22	kaffeetisch
+
+	* t/c.t: Use is() instead of is_deeply() to test flags values
+	since the latter was changed to always use the string version of
+	overloaded objects in recent versions of Test::More, whereas the
+	former seems to work correctly.  Tested with Test::More 0.45 and
+	0.60.
+
+2005/06/20	kaffeetisch
 
 	* xs/GLog.xs (gperl_log_handler): Set perl's context to the one
 	gperl_handle_logs_for() was called in.  This is to make sure
 	Perl_form accesses a valid memory pool, which prevents segfaults
 	when the log handler is called from a different thread.
 
+	* GType.xs: Fix a typo in gperl_package_from_type's POD.
+
+2005/06/06	kaffeetisch
+
+	* Glib.pm, MANIFEST, META.yml, NEWS, README: Unstable release
+	1.091.
+
+2005/05/30	kaffeetisch
+
+	* GKeyFile.xs: Fix the g_key_file_get_keys XSUB to actually return
+	anything, and make it omit NULLs.  Fix an incorrect offset in the
+	g_key_file_set_locale_string_list XSUB.  Replace "const gchar
+	const **" with "const gchar * const *" where appropriate.
+
 	* GObject.xs (Glib::Object::set_threadsafe): Mark `threadsafe' as
 	unused in the !GPERL_THREAD_SAFE branch.
 
-	* GType.xs: Fix a typo in gperl_package_from_type's POD.
-
-	* GenPod.pm: fixed long running auto list of enums/flags problems.
-	enums were only getting added when there was info assocaited with them,
-	flags could always make it through. there was also a bug which allowed
-	enums and flags in parent properties to be listed in children.
-
-	* Glib.xs: Initialize filename and hostname in filename_from_uri.
+	* typemap: Add a GSignalFlags typemap.  The corresponding
+	converters already exist and are exported.
 
 	* t/2.t: Test Glib::Object::freeze_notify and thaw_notify.
 
@@ -33,27 +83,70 @@
 	Glib::MainLooP::get_context, Glib::MainContext::new,
 	Glib::MainContext::default and Glib::MainContext::pending.
 
+	* t/c.t: Test the union operator of flags.
+
+	* t/g.t: Test Glib::KeyFile::set_locale_string_list,
+	get_locale_string_list, set_string_list, set_locale_string,
+	set_comment, set_boolean, set_value, get_keys, remove_comment,
+	remove_key, remove_group, to_data and set_list_separator.
+
+2005/05/22	kaffeetisch
+
+	* Glib.xs: Initialize filename and hostname in filename_from_uri.
+
+	* t/filename.t: Add tests for the filename conversion facilities.
+
 	* t/a.t: Correct existing and add new tests for Glib::Log.  Test
 	set_fatal_mask and set_always_fatal.
 
-	* t/c.t: Test the union operator of flags.  Use is() instead of
-	is_deeply() to test flags values since the latter was changed to
-	always use the string version of overloaded objects in recent
-	versions of Test::More, whereas the former seems to work
-	correctly.  Tested with Test::More 0.45 and 0.60.
+2005/04/27	ebassi
 
-2005/04/11	kaffeetisch
+	* doctypes: fix typo for GKeyFileFlags.
 
-	* Glib.pm, META.yml, NEWS, README: Stable release 1.081.
+2005/04/27	ebassi
 
-2005/04/11	kaffeetisch
+	* Glib.xs, GError.xs, doctypes, gperl-gtypes.c, gperl-gtypes.h,
+	gperl.h, Makefile.PL, MANIFEST, typemap, GKeyFile.xs, t/g.t: bind,
+	document and test GKeyFile, a parser for .ini-like files.
 
-	Merge from HEAD:
+2005/04/25	kaffeetisch
 
-	* GBoxed.xs: Add documentation about lifetime assumption made by
-	gperl_register_boxed.
+	* Glib.pm, META.yml, Makefile.PL, NEWS, README: Unstable release
+	1.090.
 
-	* GType.xs: Fix a typo in a comment.
+2005/04/19	rwmcfa1
+
+	* GenPod.pm: fixed long running auto list of enums/flags problems.
+	enums were only getting added when there was info assocaited with them,
+	flags could always make it through. there was also a bug which allowed
+	enums and flags in parent properties to be listed in children.
+
+2005/04/17	kaffeetisch
+
+	* Glib.pm, META.yml, NEWS, README: Merge from stable-1-08.
+
+2005/04/04	muppetman
+
+	* GSignal.xs, t/signal_emission_hooks.t, MANIFEST:
+	Bind, document, and test g_signal_add_emission_hook and
+	g_signal_remove_emission_hook, with a little refactoring in
+	GSignal.xs.
+
+2005/03/24	kaffeetisch
+
+	* GType.xs, GValue.xs, gperl.h: Add API that allows binding
+	developers to specify conversion functions when registering
+	fundamental types that are to be used by gperl_value_from_sv() and
+	gperl_sv_from_value().  gperl_register_fundamental_full() is the
+	new function that takes a GPerlValueWrapperClass struct which
+	contains a GPerlValueWrapFunc and a GPerlValueUnwrapFunc.
+	gperl_fundamental_wrapper_class_from_type() can be used to
+	retrieve the GPerlValueWrapperClass that corresponds to a given
+	GType.
+
+	* GBoxed.xs, GType.xs: Document that gperl_register_boxed() and
+	gperl_register_fundamental_full() assume that the wrapper class is
+	statically allocated and that it will always be alive.
 
 2005/03/07	kaffeetisch
 

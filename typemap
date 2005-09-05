@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.28 2004/08/01 16:02:57 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.30 2005/05/30 17:58:14 kaffeetisch Exp $
 #
 
 TYPEMAP
@@ -62,6 +62,11 @@ GObject_noinc*	T_GPERL_GENERIC_WRAPPER
 
 GParamSpec*	T_GPERL_GENERIC_WRAPPER
 GParamFlags	T_GPERL_GENERIC_WRAPPER
+
+GSignalFlags	T_GPERL_GENERIC_WRAPPER
+
+GKeyFile*	T_GPERL_GENERIC_WRAPPER
+GKeyFileFlags	T_GPERL_GENERIC_WRAPPER
 
 GIOCondition	T_G_TYPE_IO_CONDITION
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.19 2005/02/15 20:51:06 rwmcfa1 Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.20 2005/07/02 00:35:15 pcg Exp $
  */
 
 #include "gperl.h"
@@ -507,7 +507,12 @@ g_io_add_watch (class, fd, condition, callback, data=NULL, priority=G_PRIORITY_D
 	GSource * source;
 	GIOChannel * channel;
     CODE:
-	channel = g_io_channel_unix_new (fd);
+#ifdef USE_SOCKETS_AS_HANDLES
+        /* native win32 doesn't have fd's, so first convert perls fd into a winsock fd */
+        channel = g_io_channel_win32_new_socket ((HANDLE)win32_get_osfhandle (fd));
+#else
+        channel = g_io_channel_unix_new (fd);
+#endif  /* USE_SOCKETS_AS_HANDLES */
 	source = g_io_create_watch (channel, condition);
 	if (priority != G_PRIORITY_DEFAULT)
 		g_source_set_priority (source, priority);

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.13.2.1 2005/06/22 22:07:12 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.14 2005/06/20 12:56:31 kaffeetisch Exp $
  */
 
 #include "gperl.h"

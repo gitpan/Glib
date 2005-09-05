@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.51 2005/03/07 20:34:23 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.55 2005/09/05 18:39:41 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -33,6 +33,7 @@ unless (eval "use ExtUtils::Depends '$build_reqs{'perl-ExtUtils-Depends'}';"
    );
    exit 1; # not reached
 }
+
 # client modules may use Glib::MakeHelper -- he's not installed at this
 # point, so we have to require him directly.
 require 'MakeHelper.pm';
@@ -56,11 +57,18 @@ our @xs_files = qw(
 	GIOChannel.xs
 	GParamSpec.xs
 );
+
+# Check version before including
+if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.6.0')) {
+	push @xs_files, 'GKeyFile.xs';
+}
+
 our %pm_files = (
      'Glib.pm'         => '$(INST_LIBDIR)/Glib.pm',
      'Subclass.pm'     => '$(INST_LIBDIR)/Glib/Object/Subclass.pm',
      'ParseXSDoc.pm'   => '$(INST_LIBDIR)/Glib/ParseXSDoc.pm',
      'GenPod.pm'       => '$(INST_LIBDIR)/Glib/GenPod.pm',
+     'CodeGen.pm'      => '$(INST_LIBDIR)/Glib/CodeGen.pm',
      'MakeHelper.pm'   => '$(INST_LIBDIR)/Glib/MakeHelper.pm',
      'devel.pod'       => '$(INST_LIBDIR)/Glib/devel.pod',
 );
@@ -69,6 +77,7 @@ our %pod_files = (
    'Subclass.pm'     => '$(INST_MAN3DIR)/Glib::Object::Subclass.$(MAN3EXT)',
    'ParseXSDoc.pm'   => '$(INST_MAN3DIR)/Glib::ParseXSDoc.$(MAN3EXT)',
    'GenPod.pm'       => '$(INST_MAN3DIR)/Glib::GenPod.$(MAN3EXT)',
+   'CodeGen.pm'      => '$(INST_MAN3DIR)/Glib::CodeGen.$(MAN3EXT)',
    'MakeHelper.pm'   => '$(INST_MAN3DIR)/Glib::MakeHelper.$(MAN3EXT)',
    'devel.pod'       => '$(INST_MAN3DIR)/Glib::devel.$(MAN3EXT)',
    '$(INST_LIB)/$(FULLEXT)/xsapi.pod' => '$(INST_MAN3DIR)/Glib::xsapi.$(MAN3EXT)',
@@ -127,6 +136,21 @@ WriteMakefile(
     DL_FUNCS		=> { Glib => [] },
     $glib ? $glib->get_makefile_vars : (),
 );
+
+=unstable
+
+print <<__EOW__;
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   This is an unstable development release of Glib.  The API is not
+   frozen and things are subject to change at any time.  Report any
+   bugs to gtk-perl-list AT gnome DOT org as soon as possible.
+   Please use the 1.08x series for important work.
+
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+__EOW__
+
+=cut
 
 package MY;
 

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Subclass.pm,v 1.12 2004/07/19 01:05:28 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Subclass.pm,v 1.13 2005/07/02 00:35:15 pcg Exp $
 #
 
 package Glib::Object::Subclass;
@@ -359,7 +359,7 @@ that you must provide.
 
 =head1 AUTHORS
 
-Marc Lehmann E<lt>pcg@goof.comE<gt>, muppet E<lt>scott at asofyet dot orgE<gt>
+Marc Lehmann E<lt>schmorp@schmorp.deE<gt>, muppet E<lt>scott at asofyet dot orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 

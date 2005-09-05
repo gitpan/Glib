@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.11 2005/01/04 20:19:01 rwmcfa1 Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.12 2005/07/05 17:51:07 kaffeetisch Exp $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.
@@ -13,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 22;
+use Test::More tests => 23;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -63,9 +63,11 @@ SKIP: {
   ok (defined Glib::get_language_names ());
 }
 
+is (Glib::Markup::escape_text ("<gtk2-perl>"), "&lt;gtk2-perl&gt;");
+
 __END__
 
-Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the
+Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for the
 full list)
 
 This library is free software; you can redistribute it and/or modify it under

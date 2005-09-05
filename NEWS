@@ -1,3 +1,49 @@
+Overview of changes in Glib 1.100
+=================================
+
+ Since 1.08x (the previous stable series)
+ ----------------------------------------
+  * Add API that allows binding developers to specify conversion functions when
+    registering wrappers for custom fundamental types.
+  * Add Glib::Object::signal_add_emission_hook,
+    Glib::Object::signal_remove_emission_hook and Glib::Markup::escape_text.
+  * Add Glib::KeyFile and Glib::CodeGen.
+  * Fix a thread-related crasher in the default log handler.
+
+ Since 1.093
+ -----------
+  * Delete some cruft in CodeGen.pm.  [muppet]
+
+Overview of changes in Glib 1.093
+=================================
+
+* Take out the Gtk2-specific portions of Gtk2::CodeGen, make it extensible, and
+  call it Glib::CodeGen.  [muppet]
+
+Overview of changes in Glib 1.092
+=================================
+
+* Fix a thread-related crasher in the default log handler.  [Torsten]
+* Fix a test suite issue.  [Torsten]
+* Fix Glib::IO::add_watch on win32.  [Marc Lehmann]
+* Add Glib::Markup::escape_text.  [Torsten]
+
+Overview of changes in Glib 1.091
+=================================
+
+* Add GKeyFile bindings.  [Emmanuele]
+* Add tests for previously untested stuff.  [Torsten]
+* Add a GSignalFlags typemap.  [Torsten]
+
+Overview of changes in Glib 1.090
+=================================
+
+* Add API that allows binding developers to specify conversion functions when
+  registering wrappers for custom fundamental types.  [Torsten]
+* Add Glib::Object::signal_add_emission_hook and
+  Glib::Object::signal_remove_emission_hook.  [muppet]
+* Fix problems with the automatic creation of enum/flags listings.  [Ross]
+
 Overview of changes in Glib 1.082
 =================================
 
