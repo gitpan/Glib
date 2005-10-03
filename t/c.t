@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.6 2005/06/22 17:31:44 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.6.2.1 2005/10/03 18:32:07 kaffeetisch Exp $
 #
 
 #
@@ -136,12 +136,13 @@ is ($obj->get ('some_enum'), 'value-one', 'enum property');
 $obj->set (some_enum => 'value-two');
 is ($obj->get ('some_enum'), 'value-two', 'enum property, after set');
 
-is($obj->get ('some_flags'), ['value-one'], 'flags property');
+is_deeply (\@{ $obj->get ('some_flags') }, ['value-one'], 'flags property');
 $obj->set (some_flags => ['value-one', 'value-two']);
-is ($obj->get ('some_flags'), ['value-one', 'value-two'], 
-	'flags property, after set');
+is_deeply (\@{ $obj->get ('some_flags') }, ['value-one', 'value-two'],
+	   'flags property, after set');
 
-ok ($obj->get ('some_flags') & $obj->get ('some_flags'));
+ok ($obj->get ('some_flags') & $obj->get ('some_flags'),
+    '& is overloaded');
 
 __END__
 
