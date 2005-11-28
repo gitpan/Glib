@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.48 2005/05/30 17:58:14 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.48.2.2 2005/11/13 18:07:10 muppetman Exp $
  */
 
 /* 
@@ -41,6 +41,10 @@ Propers go to Marc Lehmann for dreaming most of this up.
 =cut
 
 #include "gperl.h"
+
+/* a gperl_private.h would be nice. */
+extern SV * _gperl_sv_from_value_internal (const GValue * value,
+                                           gboolean copy_boxed);
 
 typedef struct _ClassInfo ClassInfo;
 typedef struct _SinkFunc  SinkFunc;
@@ -434,6 +438,14 @@ gperl_object_type_from_package (const char * package)
 }
 
 /*
+ * Manipulate a pointer to indicate that an SV is undead.
+ * Relies on SV pointers being word-aligned.
+ */
+#define IS_UNDEAD(x) (GPOINTER_TO_UINT(x) & 1)
+#define MAKE_UNDEAD(x) GUINT_TO_POINTER(GPOINTER_TO_UINT(x) | 1)
+#define REVIVE_UNDEAD(x) GUINT_TO_POINTER(GPOINTER_TO_UINT(x) & ~1)
+
+/*
  * this function is called whenever the gobject gets destroyed. this only
  * happens if the perl object is no longer referenced anywhere else, so
  * put it to final rest here.
@@ -445,14 +457,26 @@ gobject_destroy_wrapper (SV *obj)
         	return;
 
 #ifdef NOISY
-        warn ("gobject_destroy_wrapper (%p)[%d]", obj, SvREFCNT (obj));
+        warn ("gobject_destroy_wrapper (%p)[%d]", obj,
+              SvREFCNT ((SV*)REVIVE_UNDEAD(obj)));
 #endif
+        obj = REVIVE_UNDEAD(obj);
         sv_unmagic (obj, PERL_MAGIC_ext);
 
         /* we might want to optimize away the call to DESTROY here for non-perl classes. */
         SvREFCNT_dec (obj);
 }
 
+static void
+update_wrapper (GObject *object, gpointer obj)
+{
+        /* printf("update_wrapper [%p] (%p)\n", object, obj); */
+        g_object_steal_qdata (object, wrapper_quark);
+        g_object_set_qdata_full (object,
+                                 wrapper_quark,
+                                 obj,
+                                 (GDestroyNotify)gobject_destroy_wrapper);
+}
 
 =item SV * gperl_new_object (GObject * object, gboolean own)
 
@@ -552,10 +576,9 @@ gperl_new_object (GObject * object,
                 /* attach magic */
                 sv_magic (obj, 0, PERL_MAGIC_ext, (const char *)object, 0);
 
-		/* this is the one refcount that represents all non-zero perl
-		 * refcounts. it is just temporarily given to the gobject,
-		 * DESTROY takes it back again. this effectively increases
-		 * the combined refcount by one. */
+                /* The SV has a ref to the C object.  If we are to own this
+                 * object, then any other references will be taken care of
+                 * below in take_ownership */
                 g_object_ref (object);
 
                 /* create the wrapper to return, the _noinc decreases the
@@ -566,18 +589,15 @@ gperl_new_object (GObject * object,
                 sv_bless (sv, stash);
 
                 /* attach it to the gobject */
-                g_object_set_qdata_full (object,
-                                         wrapper_quark,
-                                         (gpointer)obj,
-                                         (GDestroyNotify)gobject_destroy_wrapper);
+                update_wrapper (object, obj);
+                /* printf("creating new wrapper for [%p] (%p)\n", object, obj); */
 
-                /* the noinc above is actually the trick, as it leaves the
-                 * attached object's refcount artificially one too low,
-                 * so DESTROY gets called when all handed-out refs are gone
-                 * and we still have the object attached. DESTROY will
-                 * then borrow the ref added by g_object_ref back, and
-                 * thus will eventually trigger gobject destruction, which
-                 * in turn will trigger perl wrapper destruction. */
+                /* the noinc is so that the SV (initially) exists only as long
+                 * as the perl code needs it.  When the DESTROY gets called, we
+                 * check and see if the SV is the only referer to the C object,
+                 * and if so remove both.  Otherwise, the SV will become
+                 * "undead," to be either revived or destroyed with the C
+                 * object */
 
 #ifdef NOISY
 		warn ("gperl_new_object%d %s(%p)[%d] => %s (%p) (NEW)", own,
@@ -588,20 +608,18 @@ gperl_new_object (GObject * object,
         } else {
                 /* create the wrapper to return, increases the combined
                  * refcount by one. */
-                sv = newRV_inc (obj);
 
-                /* Now we need to handle the case of a gobject that has
-                 * been DESTROYed but gets "revived" later. This operation
-                 * does not alter the refcount of the combined object.
-                 * This can only happen if the call with own is not
-                 * the first call. Unfortunately, this is the common case
-                 * for gobjectclasses implemented in perl.
-                 */
-                if (object->ref_count == 1 && own) {
-                        g_object_ref (object);
-                	SvREFCNT_dec (obj);
+                /* if the SV is undead, revive it */
+                if (IS_UNDEAD(obj)) {
+                    g_object_ref (object);
+                    obj = REVIVE_UNDEAD(obj);
+                    update_wrapper (object, obj);
+                    sv = newRV_noinc (obj);
+                    /* printf("reviving undead wrapper for [%p] (%p)\n", object, obj); */
+                } else {
+                    /* printf("reusing previous wrapper for %p\n", obj); */
+                    sv = newRV_inc (obj);
                 }
-                  
         }
 
 #ifdef NOISY
@@ -860,6 +878,12 @@ DESTROY (SV *sv)
                 g_object_steal_qdata (object, wrapper_quark);
         } else {
                 SvREFCNT_inc (SvRV (sv));
+                if (object->ref_count > 1) {
+                    /* become undead */
+                    SV *obj = SvRV(sv);
+                    update_wrapper (object, MAKE_UNDEAD(obj));
+                    /* printf("zombies! [%p] (%p)\n", object, obj);*/
+                }
         }
 #if GPERL_THREAD_SAFE
 	if(perl_gobject_tracking)
@@ -1010,7 +1034,7 @@ g_object_get (object, ...)
 		char *name = SvPV_nolen (ST (i));
 		init_property_value (object, name, &value);
 		g_object_get_property (object, name, &value);
-		PUSHs (sv_2mortal (gperl_sv_from_value (&value)));
+		PUSHs(sv_2mortal(_gperl_sv_from_value_internal(&value, TRUE)));
 		g_value_unset (&value);
 	}
 

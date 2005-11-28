@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.85.2.1 2005/10/03 18:43:54 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.85.2.3 2005/11/28 20:09:08 kaffeetisch Exp $
 #
 
 package Glib;
@@ -61,7 +61,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.101';
+our $VERSION = '1.102';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -303,14 +303,14 @@ not, which allows you to write common operations naturally:
   # either shift OR control pressed?
   if ($event->state * ["shift-mask", "control-mask"]) { ...
 
-  # both shift AND control be pressed?
+  # both shift AND control pressed?
   if ($event->state >= ["shift-mask", "control-mask"]) { ...
 
 In general, C<+> and C<-> work as expected to add or remove flags. To test
 whether I<any> bits are set in a mask, you use C<$mask * ...>, and to test
-whether I<all> bits are set in a mask, you use C<$mask E<gt>= ...>.
+whether I<all> bits are set in a mask, you use C<< $mask >= ... >>.
 
-When dereferenced as an array C<@$flags> or C<$flags->[...]>, you can
+When dereferenced as an array C<@$flags> or C<< $flags->[...] >>, you can
 access the flag values directly as strings (but you are not allowed to
 modify the array), and when stringified C<"$flags"> a flags value will
 output a human-readable version of its contents.

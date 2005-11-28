@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.22 2005/01/02 15:34:38 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.22.4.1 2005/11/28 20:05:01 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -126,7 +126,9 @@ find_func (gpointer key,
 GType
 gperl_param_spec_type_from_package (const char * package)
 {
-	struct FindData fd = { package, 0 };
+	struct FindData fd;
+	fd.package = package;
+	fd.found_type = 0;
 	g_return_val_if_fail (param_package_by_type != NULL, 0);
 #if GLIB_CHECK_VERSION (2, 4, 0)
 	g_hash_table_find (param_package_by_type, find_func, (gpointer) &fd);

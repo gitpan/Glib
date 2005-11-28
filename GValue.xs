@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.18 2005/03/24 09:23:38 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.18.2.1 2005/11/13 18:07:10 muppetman Exp $
  */
 
 =head2 GValue
@@ -162,15 +162,20 @@ gperl_value_from_sv (GValue * value,
 }
 
 
-=item SV * gperl_sv_from_value (const GValue * value)
-
-coerce whatever is in I<value> into a perl scalar and return it.
-
-Croaks if the code doesn't know how to perform the conversion.
-
-=cut
+/*
+ * =item SV * _gperl_sv_from_value_internal (const GValue * value, gboolean copy_boxed)
+ *
+ * Coerce whatever is in I<value> into a perl scalar and return it.
+ * If I<copy_boxed> is true, boxed values will be copied.  Values of type
+ * GPERL_TYPE_SV are always copied (since that is merely a ref).
+ * 
+ * Croaks if the code doesn't know how to perform the conversion.
+ * 
+ * =cut
+ */
 SV *
-gperl_sv_from_value (const GValue * value)
+_gperl_sv_from_value_internal (const GValue * value,
+                               gboolean copy_boxed)
 {
 	GType type = G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (value));
 	switch (type) {
@@ -230,10 +235,15 @@ gperl_sv_from_value (const GValue * value)
 				          : &PL_sv_undef;
 			}
 
-			/* the wrapper does not own the boxed object */
-			return gperl_new_boxed (g_value_get_boxed (value),
-						G_VALUE_TYPE (value),
-						FALSE);
+                        if (copy_boxed)
+                                return gperl_new_boxed_copy
+                                                (g_value_get_boxed (value),
+                                                 G_VALUE_TYPE (value));
+                        else
+                                return gperl_new_boxed
+                                                (g_value_get_boxed (value),
+                                                 G_VALUE_TYPE (value),
+                                                 FALSE);
 
 		case G_TYPE_PARAM:
 			return newSVGParamSpec (g_value_get_param (value));
@@ -262,6 +272,19 @@ gperl_sv_from_value (const GValue * value)
 	}
 
 	return NULL;
+}
+
+=item SV * gperl_sv_from_value (const GValue * value)
+
+Coerce whatever is in I<value> into a perl scalar and return it.
+
+Croaks if the code doesn't know how to perform the conversion.
+
+=cut
+SV *
+gperl_sv_from_value (const GValue * value)
+{
+	return _gperl_sv_from_value_internal (value, FALSE);
 }
 
 =back

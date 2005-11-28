@@ -1,3 +1,38 @@
+2005/11/28	kaffeetisch
+
+	* Glib.pm, NEWS, README: Stable release 1.102.
+
+2005/11/28	kaffeetisch
+
+	Merge from HEAD:
+
+	* GSignal.xs, GParamSpec.xs: Fix some compiler warnings.
+
+	* MANIFEST.SKIP: Skip G.*\.c$ instead of \.c$ to avoid ignoring
+	gperl-gtypes.c.
+
+	* Glib.pm, xsapi.pod.head: Fix a few typos.
+
+2005/11/13	muppetman
+
+	* GValue.xs, GObject.xs:  The GObject property interface passes around
+	pointers to boxed objects, but does not transfer ownership of them.
+	Thus, the old code was letting perl hold on to dead pointers.  We
+	basically need to be able to specify whether to copy boxed objects
+	when converting from GValue to SV.  Since gperl_sv_from_value() is
+	public and API frozen, add a new private function,
+	_gperl_sv_from_value_internal(), and call this from both
+	gperl_sv_from_value() and Glib::Object::get().  Fixes
+	http://bugzilla.gnome.org/show_bug.cgi?id=319204 and several other
+	hard-to-diagnose intermittent bugs.
+
+2005/10/14	muppetman
+
+	* GObject.xs, AUTHORS: Patch from Steven Walter fixes nasty reference
+	counting bug that could leave Perl wrappers pointing at dead C objects
+	in some situations.  Because we have no C containers in glib-object,
+	we can't really add tests for this.
+
 2005/10/03	kaffeetisch
 
 	* Glib.pm, NEWS, README: Stable release 1.101.

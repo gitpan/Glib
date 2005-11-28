@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.26 2005/04/04 05:00:24 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.26.2.1 2005/11/28 20:05:01 kaffeetisch Exp $
  */
 
 =head2 GSignal
@@ -108,7 +108,7 @@ newSVGSignalQuery (GSignalQuery * query)
 {
 	HV * hv;
 	AV * av;
-	int j;
+	guint j;
 	const char * pkgname;
 
 	if (!query)
@@ -441,7 +441,7 @@ gperl_signal_emission_hook (GSignalInvocationHint * ihint,
 	GPerlCallback * callback = (GPerlCallback *) data;
 	gboolean retval;
 	AV * av;
-	int i;
+	guint i;
 	GValue return_value = {0, };
 	g_value_init (&return_value, G_TYPE_BOOLEAN);
 	av = newAV();
