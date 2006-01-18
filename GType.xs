@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2006 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.68 2005/06/20 12:56:31 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.68.2.1 2006/01/18 19:40:26 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -56,8 +56,9 @@ gperl_type_class (GType type)
 	static GQuark quark_static_class = 0;
 	gpointer class;
 
-	if (!G_TYPE_IS_ENUM (type) && !G_TYPE_IS_FLAGS (type))
+	if (!G_TYPE_IS_ENUM (type) && !G_TYPE_IS_FLAGS (type)) {
 		g_return_val_if_fail (G_TYPE_IS_OBJECT (type), NULL);
+	}
 
 	class = g_type_get_qdata (type, quark_static_class);
 	if (!class) {
@@ -1360,7 +1361,7 @@ get_default_property_value (GValue * value,
 	if (!package)
 		croak ("Param spec type %s is not registered with GPerl",
 		       g_type_name (G_PARAM_SPEC_TYPE (pspec)));
-	stash = gv_stashpv (package, FALSE);
+	stash = gv_stashpv (package, TRUE);
 	assert (stash)
 	method = gv_fetchmethod (stash, "get_default_value");
 
