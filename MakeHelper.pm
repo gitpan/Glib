@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.34 2005/02/05 04:38:46 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.34.4.1 2006/02/05 15:06:55 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -404,7 +404,7 @@ $blib_done
 # documentation stuff
 build/doc.pl :: Makefile @xs_files
 	$^X -I \$(INST_LIB) -I \$(INST_ARCHLIB) -MGlib::ParseXSDoc \\
-		-e 'xsdocparse (".join(", ",map {"\"$_\""} @xs_files).")' > \$@
+		-e 'xsdocparse (qw(@xs_files))' > \$@
 
 # passing all of these files through the single podindex file, which is 
 # created at the same time, prevents problems with -j4 where xsdoc2pod would 

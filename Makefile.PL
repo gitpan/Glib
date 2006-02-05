@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.55 2005/09/05 18:39:41 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.55.2.1 2006/01/22 16:37:51 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -87,7 +87,12 @@ our %pod_files = (
 my %glibcfg = ExtUtils::PkgConfig->find ('gobject-2.0 >= '.$build_reqs{Glib});
 
 # optional thread-safety
-my $nothreads = grep /disable[-_]threadsafe/i, @ARGV;
+my $nothreads;
+if($Config::Config{usethreads}) {
+	$nothreads = grep /disable[-_]threadsafe/i, @ARGV;
+} else {
+	$nothreads = 1;
+}
 my %gthreadcfg;
 if (!$nothreads) {
 	eval {

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.85.2.5 2006/01/18 19:43:50 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.85.2.6 2006/02/05 15:10:13 kaffeetisch Exp $
 #
 
 package Glib;
@@ -61,7 +61,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.103';
+our $VERSION = '1.104';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
