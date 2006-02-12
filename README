@@ -1,6 +1,6 @@
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.55.2.4 2006/02/05 15:10:13 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/README,v 1.55.2.5 2006/02/12 16:57:54 kaffeetisch Exp $
 
-Glib version 1.104
+Glib version 1.105
 ==================
 
 This module provides perl access to Glib and GLib's GObject libraries.

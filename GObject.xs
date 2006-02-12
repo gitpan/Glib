@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.48.2.5 2006/02/05 15:06:55 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.48.2.6 2006/02/11 17:01:08 muppetman Exp $
  */
 
 /* 
@@ -872,7 +872,7 @@ _gperl_fetch_wrapper_key (GObject * object,
 	wrapper_hash = REVIVE_UNDEAD (wrapper_hash);
 
 	svname = newSVpv (name, strlen (name));
-	svp = hv_fetch (wrapper_hash, SvPV_nolen (svname), SvLEN (svname)-1,
+	svp = hv_fetch (wrapper_hash, SvPV_nolen (svname), SvCUR (svname),
 	                FALSE); /* never create on the first try; prefer
 	                         * prefer to create the second version. */
 	if (!svp) {
@@ -883,7 +883,7 @@ _gperl_fetch_wrapper_key (GObject * object,
 			if (*c == '-')
 				*c = '_';
 		svp = hv_fetch (wrapper_hash,
-		                SvPV_nolen (svname), SvLEN (svname)-1,
+		                SvPV_nolen (svname), SvCUR (svname),
 		                create);
 	}
 	SvREFCNT_dec (svname);
