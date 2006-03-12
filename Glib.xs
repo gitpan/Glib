@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.41 2005/05/22 15:41:16 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.44 2006/03/04 17:17:31 kaffeetisch Exp $
  */
 
 =head2 Miscellaneous
@@ -307,7 +307,27 @@ gperl_format_variable_for_output (SV * sv)
 
 =cut
 
-MODULE = Glib		PACKAGE = Glib
+/*
+ * Thread-safety stuff.
+ */
+static PerlInterpreter *gperl_master_interp = NULL;
+G_LOCK_DEFINE_STATIC (gperl_master_interp);
+
+void
+_gperl_set_master_interp (PerlInterpreter *interp)
+{
+	G_LOCK (gperl_master_interp);
+	gperl_master_interp = interp;
+	G_UNLOCK (gperl_master_interp);
+}
+
+PerlInterpreter *
+_gperl_get_master_interp (void)
+{
+	return gperl_master_interp;
+}
+
+MODULE = Glib		PACKAGE = Glib		PREFIX = g_
 
 BOOT:
 	g_type_init ();
@@ -316,6 +336,7 @@ BOOT:
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 #endif
+	_gperl_set_master_interp (PERL_GET_INTERP);
 	/* boot all in one go.  other modules may not want to do it this
 	 * way, if they prefer instead to perform demand loading. */
 	GPERL_CALL_BOOT (boot_Glib__Utils);
@@ -427,3 +448,23 @@ filename_to_uri (...)
 		gperl_croak_gerror (NULL, error);
     OUTPUT:
 	RETVAL
+
+
+## XXX i'd prefer to have local fallbacks so that we don't need this version hack.
+##     unfortunately, these functions are nontrivial.
+
+#if GLIB_CHECK_VERSION(2, 6, 0)
+
+### note the use of raw const char* here.
+
+# from gconvert.h.  Pod is in Glib.pm.
+=for apidoc __hide__
+=cut
+gchar_own * g_filename_display_name (const char * filename);
+
+# from gconvert.h.  Pod is in Glib.pm.
+=for apidoc __hide__
+=cut
+gchar_own * g_filename_display_basename (const char * filename);
+
+#endif

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.41 2005/04/26 22:56:56 ebassi Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.42 2005/10/17 19:26:09 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -157,6 +157,14 @@ void gperl_sv_free (SV * sv);
 /*const*/ gchar * SvGChar (SV * sv);
 SV * newSVGChar (const gchar * str);
 
+
+/*
+ * 64 bit integer converters
+ */
+gint64 SvGInt64 (SV *sv);
+SV * newSVGInt64 (gint64 value);
+guint64 SvGUInt64 (SV *sv);
+SV * newSVGUInt64 (guint64 value);
 
 
 /*

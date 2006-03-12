@@ -1,6 +1,58 @@
-2006/02/12	kaffeetisch
+2006/03/12	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.105.
+	* Glib.pm, Makefile.PL, NEWS, README: Stable release 1.120.
+
+2006/03/06	kaffeetisch
+
+	* Glib.pm, NEWS, README: Unstable release 1.118.
+
+2006/03/04	kaffeetisch
+
+	* gperl-private.h, MANIFEST: Add a new header file for private
+	functions that are used in more than one xs file.  For now these
+	are _gperl_sv_from_value_internal, _gperl_fetch_wrapper_key, and
+	some new threading-safety stuff described below.
+
+	* Glib.xs, gperl-private.h: Add _gperl_set_master_interp and
+	_gperl_get_master_interp to get and set a global master
+	interpreter that can be used to setup perl's thread-local storage.
+	For convenience, the new macro GPERL_SET_CONTEXT encapsulates this
+	setup step.  Inspired by Dobrica Pavlinusic's approach in the Fuse
+	module.
+
+	* Glib.xs: Call _gperl_set_master_interp in BOOT to set the global
+	master interpreter to the value of PERL_GET_INTERP.
+
+	* GObject.xs (gobject_destroy_wrapper): Use GPERL_SET_CONTEXT to
+	prevent a segfault that occured when this function was called from
+	a different thread.  Apparently, PL_in_clean_objs tries to access
+	invalid memory if you don't setup perl's context correctly.
+
+	* GLog.xs (gperl_log_handler): Use GPERL_SET_CONTEXT to replace
+	the hack that put the value of PERL_GET_CONTEXT into the user
+	data.  The result should be the same: correctly setup perl's
+	context before calling warn() to avoid segfaults when called from
+	a different thread.
+
+	* GType.xs, GObject.xs: Include gperl-private.h to get rid of the
+	"extern" declarations.
+
+2006/02/27	kaffeetisch
+
+	* Glib.pm, Makefile.PL, NEWS, README: Unstable release 1.117.
+
+2006/02/14	kaffeetisch
+
+	* GType.xs: Add a missing semicolon that caused compilation
+	failures on perl 5.8.8.
+
+2006/02/13	kaffeetisch
+
+	* Glib.pm, Makefile.PL, NEWS, README: Unstable release 1.116.
+
+2006/02/13	kaffeetisch
+
+	* MANIFEST, README.api-changes: Remove this outdated file.
 
 2006/02/11	muppetman
 
@@ -10,16 +62,22 @@
 	5.8.8, resulting in failures in t/f.t related to properties with no
 	getter or setter.
 
-2006/02/05	kaffeetisch
+	* ParseXSDoc.pm: Data::Dumper uses a lot of memory, and causes the
+	docgen for Gtk2 to use up to 10MB.  Switch the serialization code
+	over to Storable, using store_fd(), instead.  Runs a bit faster, too.
+	Also allow passing by reference to parse_xsub(), to avoid copying
+	potentially large xsub bodies.
 
-	* Glib.pm, NEWS, README: Stable release 1.104.
+2006/01/30	kaffeetisch
 
-2006/02/05	kaffeetisch
+	* Glib.pm, NEWS, README: Unstable release 1.115.
 
-	Merge from HEAD:
+2006/01/28	muppetman
 
 	* MakeHelper.pm: Slightly reduce the potentially ludicrous line
 	length of the xsdocparse command.
+
+2006/01/22	muppetman
 
 	* GObject.xs: Honor the "don't warn about unregistered subclasses of
 	this type" flags.  Use those flags to avoid creating _Unregistered
@@ -27,32 +85,84 @@
 	leaves the method a little misnamed, but oh well.  Updated the pod
 	accordingly.  Also remove unused code.
 
-	* GObject.xs: Hide CLONE from the docs; it's not something user
-	code should call.
-
 2006/01/22	kaffeetisch
-
-	Merge from HEAD:
 
 	* AUTHORS, Makefile.PL: Apply a patch from Wim Lewis that makes
 	sure we don't use threading stuff if perl isn't configured to
 	handle threads.
 
+2006/01/21	muppetman
+
+	* GObject.xs: Hide CLONE from the docs; it's not something user
+	code should call.
+
 2006/01/18	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.103.
+	* GObject.xs: Modify the MAKE_UNDEAD and REVIVE_UNDEAD macros so
+	no casts are needed when using them.
 
 2006/01/18	kaffeetisch
 
-	Merge from HEAD:
+	* Glib.pm: Fix a typo.
 
-	* Glib.pm, GObject.xs, GType.xs: Change the way GObject type
-	mappings are initialized.
+2006/01/16	kaffeetisch
+
+	* Glib.pm, NEWS, README: Unstable release 1.114.
+
+2006/01/16	kaffeetisch
 
 	* GObject.xs: Apply patch from Rafael Garcia-Suarez that fixes the
 	undead object macros on 64-bit platforms.
 
-	* GType.xs: Hush a compiler warning.
+2006/01/16	kaffeetisch
+
+	* GObject.xs (class_info_finish_loading): Hush a compiler warning.
+
+2006/01/16	kaffeetisch
+
+	* GLog.xs (gperl_log_handler): Add a comment describing a rare
+	threading-related crash.
+
+2006/01/15	muppetman
+
+	* Glib.pm, GObject.xs, GType.xs: Change the way GObject type
+	mappings are initialized.
+
+	Previously, gperl_register_object() would not only map a GType to a
+	perl package name, but would set up the @ISA entry for that type by
+	introspection; if the parent type was not yet registered, the
+	mapping would go into a "pending isa" list, and the code would walk
+	that list on each registration.  This left a nice loophole that was
+	triggered by the addition of GInitiallyUnowned into libgobject -- if
+	a type's parent is unknown to the bindings, that type simply doesn't
+	get its ancestry set up correctly.  This ended up breaking all
+	nontrivial gtk2-perl programs.  Shame on me for thinking up such a
+	fragile scheme.
+
+	Changed the code in various subtle ways.  Added the idea of "lazy
+	loading", inspired by Gtk-Perl.  gperl_register_object() still
+	registers the association of a GType and a package name, but adds to
+	@ISA only "Glib::Object::_LazyLoader".  ISA setup is performed by
+	the internal function class_info_finish_loading(), which replaces
+	the _LazyLoader name in @ISA with the class's parent and implemented
+	interfaces (preserving manually appended and prepended entries).
+	This is triggered one of two ways: either by calling
+	gperl_object_package_from_type(), which happens when you bless an
+	object; or via an AUTOLOAD, isa, or can invocation in _LazyLoader,
+	which happens when you try to invoke methods on the class.  When a
+	class is set up, all of its parents are checked as well, so this
+	happens fairly quickly.  This should be completely transparent to
+	all existing code, as the new _LazyLoader stuff in private, and the
+	external interfaces have not changed.  The one spot that could break
+	is calling UNIVERSAL::(can|isa) on a Glib::Object-derived package
+	name before that class has been set up.
+
+	In addition, instead of giving up on unknown classes, we now create
+	fake names for them in a "safe" namespace, along the lines of
+	Glib::Object::_Unregistered::$c_type_name, and treat them normally.
+	For foreign types, this still effectively means they can be treated
+	as the first known parent, but the value of ref() will be different
+	(but you shouldn't have been relying on that, anyway).
 
 2006/01/13	muppetman
 
@@ -60,33 +170,45 @@
 	resulted in crashes when manipulating properties of objects with
 	undead wrappers.
 
-	* GKeyFile.xs: _ornull was on the wrong parameter in
-	Glib::KeyFile::set_comment, causing test failure.  Synchronized with
-	HEAD.
+	* Glib.pm, Glib.xs, t/filename.t: Bind, test, and document
+	g_filename_display_name and g_filename_display_basename.
 
-2005/12/27	ebassi
+2006/01/01	kaffeetisch
 
-	Merge from HEAD:
+	* Glib.pm, NEWS, README: Unstable release 1.113.
 
-	* GKeyFile.xs: fix Glib::KeyFile methods that allow undef
-	arguments.
+2005/12/19	kaffeetisch
 
-	* t/g.t: tests for the fixes.
+	* GObject.xs (gperl_register_object): Move around the loop that
+	puts interface packages into @ISA so it gets run on every call to
+	gperl_register_object.  With the old code, you ran into problems
+	when a GInterface was registered after the last GObject had been
+	registered.
 
-2005/11/28	kaffeetisch
+2005/12/12	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.102.
+	* Glib.pm, NEWS, README: Unstable release 1.112.
 
-2005/11/28	kaffeetisch
+2005/12/12	kaffeetisch
 
-	Merge from HEAD:
+	* GType.xs: Hush a compiler warning.
 
-	* GSignal.xs, GParamSpec.xs: Fix some compiler warnings.
+	* MANIFEST.SKIP: Use the more correct G.+\.c$ instead of G*\.c$.
 
-	* MANIFEST.SKIP: Skip G.*\.c$ instead of \.c$ to avoid ignoring
-	gperl-gtypes.c.
+2005/11/30      ebassi
 
-	* Glib.pm, xsapi.pod.head: Fix a few typos.
+	* GKeyFile.xs: fix the argument types in order to allow 'undef' values.
+
+	* t/g.t: new tests for the functions allowing undefined values.
+
+2005/11/18	kaffeetisch
+
+	* GType.xs Register the fundamentals for gint64 and guint64 as
+	Glib::Int64 and Glib::UInt64 respectively.
+
+2005/11/14	kaffeetisch
+
+	* Glib.pm, NEWS, README: Unstable release 1.111.
 
 2005/11/13	muppetman
 
@@ -101,22 +223,60 @@
 	http://bugzilla.gnome.org/show_bug.cgi?id=319204 and several other
 	hard-to-diagnose intermittent bugs.
 
+2005/11/12	kaffeetisch
+
+	* xsapi.pod.head: Fix a few typos.
+
+2005/10/18	kaffeetisch
+
+	* Glib.pm, MANIFEST, MANIFEST.SKIP, Makefile.PL, NEWS, README:
+	Unstable release 1.110.
+
+2005/10/17	kaffeetisch
+
+	* GParamSpec.xs, GType.xs, GValue.xs, gperl.h, typemap, t/64bit.t:
+	Use custom converters for gint64 and guint64 that transform 64 bit
+	integers to and from strings if perl's IV type isn't big enough.
+
+	* AUTHORS, Glib.pm: Add some documentation about the above;
+	include a write up by A. Pagaltzis about the various big integer
+	modules for Perl.
+
+	* GSignal.xs (newSVGSignalQuery)
+	(gperl_signal_emission_hook): Fix some signedness warnings.
+
+	* GParamSpec.xs (gperl_param_spec_type_from_package): Fix a
+	variable-data-in-struct-construction warning.
+
+2005/10/15	kaffeetisch
+
+	* GObject.xs (gperl_register_object): Free the interfaces list
+	after use.
+
 2005/10/14	muppetman
 
 	* GObject.xs, AUTHORS: Patch from Steven Walter fixes nasty reference
 	counting bug that could leave Perl wrappers pointing at dead C objects
-	in some situations.  Because we have no C containers in glib-object,
-	we can't really add tests for this.
+	in some situations.  Because we have no C containers in glib-object, we
+	can't really add tests for this.
 
-2005/10/03	kaffeetisch
+2005/10/05	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.101.
-
-2005/10/03	kaffeetisch
+	* Glib.pm, NEWS: Merge from stable-1-10.
 
 	* t/c.t: Change the flags test yet again.  Make it explicit this
 	time by using is_deeply() and \@{} so it hopefully works with any
 	version of Test::More.
+
+2005/09/30	kaffeetisch
+
+	* GObject.xs (gperl_register_object): Automatically add each known
+	interface an object implements to the corresponding @ISA.
+	(gperl_new_object): If we encounter an object which has no known
+	type in its ancestry except for G_TYPE_OBJECT, register it with a
+	unique package name and take a look at the interfaces it
+	implements -- if there is one we know, add it to the new package's
+	@ISA.
 
 2005/09/05	kaffeetisch
 

@@ -1,3 +1,86 @@
+Overview of changes in Glib 1.120
+=================================
+
+ Since 1.10x (the previous stable series)
+ ----------------------------------------
+  * Comepletely revamp the way GObject types are mapped to Perl package names.
+    The new algorithm is more robust and correct.
+  * Add custom 64 bit integer handlers.
+  * Add Glib::filename_display_name and Glib::filename_display_basename.
+  * Improve thread safety.
+  * Fix many bugs.
+
+ Since 1.118
+ -----------
+  * Nada.
+
+Overview of changes in Glib 1.118
+=================================
+
+* Improve the thread safety of Glib by correctly setting up perl's thread-local
+  storage in a few strategic places.  [Torsten]
+
+Overview of changes in Glib 1.117
+=================================
+
+* Fix compilation against perl 5.8.8.  [Torsten]
+
+Overview of changes in Glib 1.116
+=================================
+
+* Fix a bug that caused custom objects with properties that have no getter or
+  setter to misbehave on perl 5.8.8.  [muppet]
+* Optimize Glib::ParseXSDoc to use less memory.  [muppet]
+
+Overview of changes in Glib 1.115
+=================================
+
+* Don't try to be thread safe if perl wasn't built with threading support.
+  [Wim Lewis]
+* Don't create unique package names for types that have an ancestor which has
+  the "don't warn about unregistered subclasses" bit set.  Use this ancestor's
+  package name to represent affected types.  [muppet]
+
+Overview of changes in Glib 1.114
+=================================
+
+* Add bindings for g_filename_display_name and g_filename_display_basename.
+  [muppet]
+* Fix a crash that occured when properties of undead objects were modified.
+  [muppet]
+* Fix the undead object macros to work on 64-bit platforms.  [Rafael
+  Garcia-Suarez]
+* Completely redo the way GObject types are mapped to package names.  This
+  fixes the problem uncovered by the recent GInitiallyUnowned issue.  See the
+  ChangeLog for a detailed description of the changes.  [muppet, Torsten]
+
+Overview of changes in Glib 1.113
+=================================
+
+* Improve the automatic interface registration for objects by making it
+  independent of the order of package name registration.  [Torsten]
+
+Overview of changes in Glib 1.112
+=================================
+
+* Allow undef for some arguments in the Glib::KeyFile API.  [Emmanuele]
+* Register the package names Glib::Int64 and Glib::UInt64 for gint64 and
+  guint64 fundamentals.  [Torsten]
+
+Overview of changes in Glib 1.111
+=================================
+
+* Copy boxed objects coming from the GObject property interface to avoid
+  holding on to dead pointers.  [muppet]
+
+Overview of changes in Glib 1.110
+=================================
+
+* Add automatic package registration for interfaces.  [Torsten]
+* Fix a serious reference counting bug.  [Steven Walter]
+* Add custom 64 bit integer handlers that convert to and from strings if
+  necessary.  [Torsten]
+
 Overview of changes in Glib 1.105
 =================================
 

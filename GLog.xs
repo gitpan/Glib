@@ -16,10 +16,11 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.14 2005/06/20 12:56:31 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.16 2006/03/04 17:17:30 kaffeetisch Exp $
  */
 
 #include "gperl.h"
+#include "gperl-private.h" /* for GPERL_SET_CONTEXT */
 
 =head2 GLog
 
@@ -55,14 +56,14 @@ g_log_level_flags_get_type (void)
     static const GFlagsValue values[] = {
       { G_LOG_FLAG_RECURSION,  "G_LOG_FLAG_RECURSION", "recursion" },
       { G_LOG_FLAG_FATAL,      "G_LOG_FLAG_FATAL",     "fatal" },
-     
+
       { G_LOG_LEVEL_ERROR,     "G_LOG_LEVEL_ERROR",    "error" },
       { G_LOG_LEVEL_CRITICAL,  "G_LOG_LEVEL_CRITICAL", "critical" },
       { G_LOG_LEVEL_WARNING,   "G_LOG_LEVEL_WARNING",  "warning" },
       { G_LOG_LEVEL_MESSAGE,   "G_LOG_LEVEL_MESSAGE",  "message" },
       { G_LOG_LEVEL_INFO,      "G_LOG_LEVEL_INFO",     "info" },
       { G_LOG_LEVEL_DEBUG,     "G_LOG_LEVEL_DEBUG",    "debug" },
-     
+
       { G_LOG_FATAL_MASK,      "G_LOG_FATAL_MASK",     "fatal-mask" },
 
       { 0, NULL, NULL }
@@ -98,9 +99,8 @@ void
 gperl_log_handler (const gchar   *log_domain,
                    GLogLevelFlags log_level,
                    const gchar   *message,
-                   gpointer user_data)
+                   gpointer       user_data)
 {
-	char * full_string;
 	char * desc;
 
 	gboolean in_recursion = (log_level & G_LOG_FLAG_RECURSION) != 0;
@@ -120,16 +120,13 @@ gperl_log_handler (const gchar   *log_domain,
 		default: desc = "LOG";
 	}
 
-	PERL_SET_CONTEXT (user_data);
-
-	full_string = form ("%s%s%s %s**: %s",
-	                    (log_domain ? log_domain : ""),
-	                    (log_domain ? "-" : ""),
-	                    desc,
-	                    (in_recursion ? "(recursed) " : ""),
-	                    message);
-
-	warn (full_string);
+	GPERL_SET_CONTEXT;
+	warn ("%s%s%s %s**: %s",
+	      (log_domain ? log_domain : ""),
+	      (log_domain ? "-" : ""),
+	      desc,
+	      (in_recursion ? "(recursed) " : ""),
+	      message);
 
 	/* the standard log handler calls abort() for G_LOG_LEVEL_ERROR
 	 * messages.  this is handy for being able to stop gdb on the
@@ -159,7 +156,7 @@ gint
 gperl_handle_logs_for (const gchar * log_domain)
 {
 	return g_log_set_handler (log_domain, ALL_LOGS,
-	                          gperl_log_handler, PERL_GET_CONTEXT);
+	                          gperl_log_handler, NULL);
 }
 
 =back

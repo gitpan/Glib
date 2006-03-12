@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.55.2.1 2006/01/22 16:37:51 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.60 2006/03/12 21:22:00 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -150,7 +150,21 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
    This is an unstable development release of Glib.  The API is not
    frozen and things are subject to change at any time.  Report any
    bugs to gtk-perl-list AT gnome DOT org as soon as possible.
-   Please use the 1.08x series for important work.
+   Please use the 1.10x series for important work.
+
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+__EOW__
+
+=cut
+
+=frozen
+
+print <<__EOW__;
+WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   This is an unstable development release of Glib.  The API is frozen in
+   accordance with the GNOME 2.14 schedule.  Report any bugs to gtk-perl-list
+   AT gnome DOT org as soon as possible.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
@@ -192,7 +206,7 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 
 __END__
 
-Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
+Copyright (C) 2003-2006 by the gtk2-perl team (see the file AUTHORS for
 the full list)
 
 This library is free software; you can redistribute it and/or modify it under

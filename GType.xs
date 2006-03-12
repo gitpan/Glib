@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2006 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.68.2.1 2006/01/18 19:40:26 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.74 2006/03/04 17:17:31 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -28,10 +28,7 @@
 #include "gperl.h"
 #include "gperl_marshal.h"
 
-/* private helper, defined in GObject.xs, not exported */
-extern SV * _gperl_fetch_wrapper_key (GObject * object,
-                                      const char * name,
-                                      gboolean create);
+#include "gperl-private.h" /* for _gperl_fetch_wrapper_key */
 
 /* for fundamental types */
 static GHashTable * types_by_package = NULL;
@@ -673,6 +670,101 @@ newSVGChar (const gchar * str)
 	sv = newSVpv (str, 0);
 	SvUTF8_on (sv);
 	return sv;
+}
+
+
+=back
+
+=head2 64 bit integers
+
+On 32 bit machines and even on some 64 bit machines, perl's IV/UV data type can
+only hold 32 bit values.  The following functions therefore convert 64 bit
+integers to and from Perl strings if normal IV/UV conversion does not suffice.
+
+=over
+
+=item gint64 SvGInt64 (SV *sv)
+
+Converts the string in I<sv> to a signed 64 bit integer.  If appropriate, uses
+C<SvIV> instead.
+
+=cut
+
+gint64
+SvGInt64 (SV *sv)
+{
+#ifdef USE_64_BIT_ALL
+	return SvIV (sv);
+#else
+	return strtoll (SvPV_nolen (sv), NULL, 10);
+#endif
+}
+
+=item SV * newSVGInt64 (gint64 value)
+
+Creates a PV from the signed 64 bit integer in I<value>.  If appropriate, uses
+C<newSViv> instead.
+
+=cut
+
+SV *
+newSVGInt64 (gint64 value)
+{
+#ifdef USE_64_BIT_ALL
+	return newSViv (value);
+#else
+	char string[25];
+	STRLEN length;
+	SV *sv;
+
+	/* newSVpvf doesn't seem to work correctly. */
+	length = sprintf(string, "%lld", value);
+	sv = newSVpv (string, length);
+
+	return sv;
+#endif
+}
+
+=item guint64 SvGUInt64 (SV *sv)
+
+Converts the string in I<sv> to an unsigned 64 bit integer.  If appropriate,
+uses C<SvUV> instead.
+
+=cut
+
+guint64
+SvGUInt64 (SV *sv)
+{
+#ifdef USE_64_BIT_ALL
+	return SvUV (sv);
+#else
+	return strtoull (SvPV_nolen (sv), NULL, 10);
+#endif
+}
+
+=item SV * newSVGUInt64 (guint64 value)
+
+Creates a PV from the unsigned 64 bit integer in I<value>.  If appropriate,
+uses C<newSVuv> instead.
+
+=cut
+
+SV *
+newSVGUInt64 (guint64 value)
+{
+#ifdef USE_64_BIT_ALL
+	return newSVuv (value);
+#else
+	char string[25];
+	STRLEN length;
+	SV *sv;
+
+	/* newSVpvf doesn't seem to work correctly. */
+	length = sprintf(string, "%llu", value);
+	sv = newSVpv (string, length);
+
+	return sv;
+#endif
 }
 
 
@@ -1362,7 +1454,7 @@ get_default_property_value (GValue * value,
 		croak ("Param spec type %s is not registered with GPerl",
 		       g_type_name (G_PARAM_SPEC_TYPE (pspec)));
 	stash = gv_stashpv (package, TRUE);
-	assert (stash)
+	assert (stash);
 	method = gv_fetchmethod (stash, "get_default_value");
 
 	if (method) {
@@ -1778,6 +1870,8 @@ BOOT:
 	gperl_register_fundamental (G_TYPE_UINT, "Glib::UInt");
 	gperl_register_fundamental (G_TYPE_LONG, "Glib::Long");
 	gperl_register_fundamental (G_TYPE_ULONG, "Glib::ULong");
+	gperl_register_fundamental (G_TYPE_INT64, "Glib::Int64");
+	gperl_register_fundamental (G_TYPE_UINT64, "Glib::UInt64");
 	gperl_register_fundamental (G_TYPE_FLOAT, "Glib::Float");
 	gperl_register_fundamental (G_TYPE_DOUBLE, "Glib::Double");
 	gperl_register_fundamental (G_TYPE_BOOLEAN, "Glib::Boolean");

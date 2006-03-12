@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.30 2005/05/30 17:58:14 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/typemap,v 1.31 2005/10/17 19:26:09 kaffeetisch Exp $
 #
 
 TYPEMAP
@@ -29,8 +29,8 @@ gint16		T_IV
 guint16		T_UV
 gint32		T_IV
 guint32		T_UV
-gint64		T_IV
-guint64		T_UV
+gint64		T_GINT64
+guint64		T_GUINT64
 gshort		T_SHORT
 gushort		T_U_SHORT
 glong		T_IV
@@ -89,6 +89,12 @@ T_GPERL_GENERIC_WRAPPER
 	$var = Sv${(my $ntype = $type) =~ s/(?:const\s+)?([:\w]+)(?:\s*\*)$/$1/x;
 	           \$ntype} ($arg);
 
+T_GINT64
+	$var = SvGInt64 ($arg);
+
+T_GUINT64
+	$var = SvGUInt64 ($arg);
+
 T_GUNICHAR
 	$var = g_utf8_get_char (SvGChar ($arg));
 
@@ -145,6 +151,12 @@ OUTPUT
 T_GPERL_GENERIC_WRAPPER
 	$arg = newSV${(my $ntype = $type) =~ s/(?:const\s+)?([:\w]+)(?:\s*\*)$/$1/;
 		      \$ntype} ($var);
+
+T_GINT64
+	$arg = newSVGInt64 ($var);
+
+T_GUINT64
+	$arg = newSVGUInt64 ($var);
 
 T_GUNICHAR
 	{

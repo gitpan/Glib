@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.85.2.7 2006/02/12 16:57:54 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.101 2006/03/12 21:22:00 kaffeetisch Exp $
 #
 
 package Glib;
@@ -56,12 +56,14 @@ our %EXPORT_TAGS = (
 			filename_from_unicode
 			filename_to_uri
 			filename_from_uri
+			filename_display_name
+			filename_display_basename
 			/],
 );
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.105';
+our $VERSION = '1.120';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -398,6 +400,9 @@ Example:
 
    $gtkfilesel->set_filename (filename_to_unicode $ARGV[1]);
 
+This function will croak() if the conversion cannot be made, e.g., because the
+utf-8 is invalid.
+
 =item $filename_in_local_encoding = filename_from_unicode $filename
 
 =item $filename_in_local_encoding = Glib->filename_from_unicode ($filename)
@@ -415,6 +420,25 @@ Other functions for converting URIs are currently missing. Also, it might
 be useful to know that perl currently has no policy at all regarding
 filename issues, if your scalar happens to be in utf-8 internally it will
 use utf-8, if it happens to be stored as bytes, it will use it as-is.
+
+When dealing with filenames that you need to display, there is a much easier
+way, as of Glib 1.120 and glib 2.6.0:
+
+=over 4
+
+=item $uft8_string = filename_display_name ($filename)
+
+=item $uft8_string = filename_display_basename ($filename)
+
+Given a I<$filename> in filename encoding, return the filename, or just
+the file's basename, in utf-8.  Unlike the other functions described above,
+this one is guaranteed to return valid utf-8, but the conversion is not
+necessarily reversible.  These functions are intended to be used for failsafe
+display of filenames, for example in gtk+ labels.
+
+Since gtk+ 2.6, Glib 1.12
+
+=back
 
 
 =head1 EXCEPTIONS
@@ -466,6 +490,46 @@ these messages through Perl's native system, warn() and die().  Extensions
 should register the log domains they wrap for this to happen fluidly.
 [FIXME say more here]
 
+=head1 64 BIT INTEGERS
+
+Since perl's integer data type can only hold 32 bit values on all 32 bit
+machines and even on some 64 bit machines, Glib converts 64 bit integers to and
+from strings if necessary.  These strings can then be used to feed one of the
+various big integer modules.  Make sure you don't let your strings get into
+numerical context before passing them into a Glib function because in this
+case, perl will convert the number to scientific notation which at this point
+is not understood by Glib's converters.
+
+Here is an overview of what big integer modules are available.  First of all,
+there's Math::BigInt.  It has everything you will ever need, but its pure-Perl
+implementation is also rather slow.  There are multiple ways around this,
+though.
+
+=over
+
+=item L<Math::BigInt::FastCalc>
+
+L<Math::BigInt::FastCalc> can help avoid the glacial speed of vanilla
+L<Math::BigInt::Calc>.  Recent versions of L<Math::BigInt> will automatically
+use L<Math::BigInt::FastCalc> in place of L<Math::BigInt::Calc> when available.
+Other options include L<Math::BigInt::GMP> or L<Math::BigInt::Pari>, which
+however have much larger dependencies.
+
+=item L<Math::BigInt::Lite>
+
+Then there's L<Math::BigInt::Lite>, which uses native Perl integer operations
+as long as Perl integers have sufficient range, and upgrades itself to
+L<Math::BigInt> when Perl integers would overflow. This must be used in place
+of L<Math::BigInt>.
+
+=item L<bigint> / L<bignum> / L<bigfloat>
+
+Finally, there's the bigint/bignum/bigfloat pragmata, which automatically load
+the corresponding Math:: modules and which will autobox constants.
+bignum/bigint will automatically use L<Math::BigInt::Lite> if it's available.
+
+=back
+
 =head1 Exports
 
 For the most part, gtk2-perl avoids exporting things.  Nothing is exported by
@@ -491,6 +555,8 @@ you can also get all of them with the export tag "all".
   filename_to_unicode
   filename_from_uri
   filename_to_uri
+  filename_display_basename
+  filename_display_name
 
 =back
 
