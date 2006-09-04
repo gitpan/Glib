@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.60 2006/03/12 21:22:00 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.63 2006/09/04 18:04:37 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -61,6 +61,10 @@ our @xs_files = qw(
 # Check version before including
 if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.6.0')) {
 	push @xs_files, 'GKeyFile.xs';
+}
+
+if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.11.0')) {
+	push @xs_files, 'GBookmarkFile.xs';
 }
 
 our %pm_files = (
@@ -150,7 +154,7 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
    This is an unstable development release of Glib.  The API is not
    frozen and things are subject to change at any time.  Report any
    bugs to gtk-perl-list AT gnome DOT org as soon as possible.
-   Please use the 1.10x series for important work.
+   Please use the 1.12x series for important work.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
@@ -163,7 +167,7 @@ print <<__EOW__;
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 
    This is an unstable development release of Glib.  The API is frozen in
-   accordance with the GNOME 2.14 schedule.  Report any bugs to gtk-perl-list
+   accordance with the GNOME 2.16 schedule.  Report any bugs to gtk-perl-list
    AT gnome DOT org as soon as possible.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -174,7 +178,7 @@ __EOW__
 package MY;
 
 # rule to build the documentation
-sub postamble 
+sub postamble
 {
 	require 'MakeHelper.pm';
 	return "
@@ -196,9 +200,9 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 	       )
 	     . Glib::MakeHelper->postamble_rpms (
 			'GLIB' => $build_reqs{'Glib'},
-			'PERL_EXTUTILS_DEPENDS' => 
+			'PERL_EXTUTILS_DEPENDS' =>
 				$build_reqs{'perl-ExtUtils-Depends'},
-			'PERL_EXTUTILS_PKGCONFIG' => 
+			'PERL_EXTUTILS_PKGCONFIG' =>
 				$build_reqs{'perl-ExtUtils-PkgConfig'},
 		);
 }

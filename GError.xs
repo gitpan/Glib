@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GError.xs,v 1.9 2005/04/26 22:56:56 ebassi Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GError.xs,v 1.11 2006/07/23 10:20:59 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -329,6 +329,12 @@ BOOT:
 	 * of these here.  in theory, it's possible to get any of these,
 	 * so we should define them for later use; in practice, we may
 	 * never see a few of them. */
+#if GLIB_CHECK_VERSION (2, 12, 0)
+	/* gbookmarkfile.h */
+	gperl_register_error_domain (G_BOOKMARK_FILE_ERROR,
+				     GPERL_TYPE_BOOKMARK_FILE_ERROR,
+				     "Glib::BookmarkFile::Error");
+#endif /* GLIB_CHECK_VERSION (2, 12, 0) */
 	/* gconvert.h */
 	gperl_register_error_domain (G_CONVERT_ERROR,
 	                             GPERL_TYPE_CONVERT_ERROR,

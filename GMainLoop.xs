@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.20 2005/07/02 00:35:15 pcg Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.21 2006/08/07 18:17:18 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -130,6 +130,7 @@ async_watcher_install (void)
 		async_watcher_dispatch,
 		NULL
 	};
+	/* FIXME: we never unref the watcher. */
 	GSource * async_watcher =
 		g_source_new (&async_watcher_funcs, sizeof (GSource));
 	g_source_attach (async_watcher, NULL);

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.44 2006/03/04 17:17:31 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.47 2006/08/07 18:17:19 kaffeetisch Exp $
  */
 
 =head2 Miscellaneous
@@ -353,6 +353,9 @@ BOOT:
 #if GLIB_CHECK_VERSION (2, 6, 0)
 	GPERL_CALL_BOOT (boot_Glib__KeyFile);
 #endif /* GLIB_CHECK_VERSION (2, 6, 0) */
+#if GLIB_CHECK_VERSION (2, 12, 0)
+	GPERL_CALL_BOOT (boot_Glib__BookmarkFile);
+#endif /* GLIB_CHECK_VERSION (2, 12, 0) */
 	/* make sure that we're running/linked against a version at least as 
 	 * new as we built against, otherwise bad things will happen. */
 	if ((((int)glib_major_version) < GLIB_MAJOR_VERSION)
@@ -431,7 +434,6 @@ filename_to_uri (...)
 	char * hostname = NULL;
 	GError * error = NULL;
     CODE:
-	/* FIXME FIXME this is broken somehow */
 	if (items == 2) {
 		filename = SvPV_nolen (ST (0));
 		hostname = SvOK (ST (1)) ? SvPV_nolen (ST (1)) : NULL;

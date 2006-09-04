@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.27 2005/10/17 19:26:09 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.28 2006/08/07 18:17:19 kaffeetisch Exp $
  */
 
 =head2 GSignal
@@ -324,7 +324,7 @@ typedef guint (*sig_match_callback) (gpointer           instance,
                                      gpointer           func,
                                      gpointer           data);
 
-static int
+static guint
 foreach_closure_matched (gpointer instance,
                          GSignalMatchType mask,
                          guint signal_id,
@@ -333,7 +333,7 @@ foreach_closure_matched (gpointer instance,
                          SV * data,
                          sig_match_callback callback)
 {
-	int n = 0;
+	guint n = 0;
 	GSList * i;
 
 	if (mask & G_SIGNAL_MATCH_CLOSURE || /* this isn't too likely */

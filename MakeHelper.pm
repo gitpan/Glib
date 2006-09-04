@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.35 2006/01/29 04:43:08 muppetman Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.36 2006/07/14 18:43:45 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -376,9 +376,8 @@ sub postamble_docs_full {
 	my $blib_done;
 	# this is very sloppy, because different makes have different
 	# conditional syntaxes.
-	use Config;
-	if ($Config{make} eq 'nmake') {
-		warn "loathe nmake.\n";
+	require Config;
+	if ($Config::Config{make} eq 'nmake') {
 		$blib_done = "
 !If \"\$(LINKTYPE)\" == \"dynamic\"
 BLIB_DONE=\$(INST_DYNAMIC)
@@ -509,10 +508,9 @@ inserted by this module under the name MY::const_cccmd to fix this issue.
 sub const_cccmd {
 	my $inherited = shift->SUPER::const_cccmd (@_);
 	return '' unless $inherited;
-	use Config;
+	require Config;
 	# a more sophisticated match may be necessary, but this works for me.
-	if ($Config{cc} eq "cl") {
-		warn "you are using MSVC... my condolences.\n";
+	if ($Config::Config{cc} eq "cl") {
 		$inherited .= ' /Fo$@';
 	} else {
 		$inherited .= ' -o $@';

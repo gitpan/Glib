@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.42 2005/10/17 19:26:09 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.44 2006/07/23 10:21:00 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -349,6 +349,14 @@ GKeyFile * SvGKeyFile (SV * sv);
 SV * newSVGKeyFileFlags (GKeyFileFlags flags);
 GKeyFileFlags SvGKeyFileFlags (SV * sv);
 #endif /* GLIB_CHECK_VERSION (2, 6, 0) */
+
+/*
+ * gbookmarkfile.h / GBookmarkFile.xs
+ */
+#if GLIB_CHECK_VERSION (2, 12, 0)
+SV * newSVGBookmarkFile (GBookmarkFile * bookmark_file);
+GBookmarkFile * SvGBookmarkFile (SV * sv);
+#endif /* GLIB_CHECK_VERSION (2, 12, 0) */
 
 const char * gperl_param_spec_package_from_type (GType gtype);
 

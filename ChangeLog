@@ -1,3 +1,106 @@
+2006-09-04	kaffeetisch
+
+	* Glib.pm, Makefile.PL, NEWS, README: Stable release 1.140.
+
+2006-09-04	kaffeetisch
+
+	* t/9.t: Don't test Glib::main_depth on glib <= 2.4.0, where it
+	first appeared.
+
+	* t/g.t: Fix skip count.
+
+2006-08-29	kaffeetisch
+
+	* README: Add a bug reports section.
+
+2006-08-07	kaffeetisch
+
+	* Glib.pm, NEWS, README: Unstable release 1.132.
+
+2006-08-07	kaffeetisch
+
+	* GKeyFile.xs, Glib.xs: Remove outdated FIXME comments.
+
+	* GMainLoop.xs (async_watcher_install): Add FIXME comment about a
+	leak.
+
+	* GObject.xs: Remove FIXME comment about gperl_object_check_type's
+	semantics.  We can't do anything about anymore.
+
+	* GSignal.xs (foreach_closure_matched): Fix to use guint instead
+	of int for the return type.
+
+	* Glib.pm: Don't use indirect object syntax.
+
+	* TODO: Update.
+
+	* typemap: Add custom typemaps for guchar* to avoid compiler
+	warnings.
+
+	* t/g.t: Change version checks to refer to stable releases only.
+
+2006-07-23	kaffeetisch
+
+	* Glib.pm, Makefile.PL, NEWS, README: Unstable release 1.131.
+
+2006-07-23	kaffeetisch
+
+	* GError.xs, GKeyFile.xs, Glib.xs, gperl-gtypes.h, gperl-gtypes.c,
+	gperl.h: Change version checks to check for 2.12 instead of 2.11.
+
+2006-07-19  Emmanuele Bassi  <ebassi@gmail.com>
+
+	* GObject.xs: Bind g_object_class_find_property()...
+
+	* t/4.t: ... and test it.
+
+2006-07-14	kaffeetisch
+
+	* Glib.pm, NEWS, README, copyright.pod: Unstable release 1.130.
+
+2006-07-14	kaffeetisch
+
+	* MakeHelper.pm: Turn a few 'use Config's into 'require Config's.
+	Also remove some loud MSVC/nmake bashing. :-)
+
+2006-06-20  Emmanuele Bassi  <ebassi@gmail.com>
+
+	A GBookmarkFile.xs
+	A t/h.t
+
+	* GBookmarkFile.xs: Bind GBookmarkFile, a parser for desktop
+	bookmarks, that comes with GLib 2.11/2.12.
+
+	* t/h.t: Test suite for Glib::BookmarkFile.
+
+	* GError.xs:
+	* Glib.xs:
+	* MANIFEST:
+	* Makefile.PL:
+	* doctypes:
+	* gperl-gtypes.[hc]:
+	* gperl.h:
+	* typemap: Build glue for Glib::BookmarkFile.
+
+	* Makefile.PL:
+	* Glib.pm: Update $VERSION to 1.130 and warn the user.
+
+2006/06/19	kaffeetisch
+
+	* GKeyFile.xs, t/g.t: Bind and test g_key_file_set_double,
+	g_key_file_get_double, g_key_file_set_double_list, and
+	g_key_file_get_double_list.  Fix a few API doc glitches.
+
+2006/06/19	kaffeetisch
+
+	* GObject.xs: Register GInitiallyUnowned as
+	Glib::InitiallyUnowned.
+
+2006/05/21	kaffeetisch
+
+	* GObject.xs (class_info_finish_loading): Free the list returned
+	by g_type_interfaces when we're finished with it.
+
 2006/03/12	kaffeetisch
 
 	* Glib.pm, Makefile.PL, NEWS, README: Stable release 1.120.
