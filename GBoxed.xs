@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.23 2005/03/24 09:23:38 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.24 2006/09/13 14:53:27 kaffeetisch Exp $
  */
 
 =head2 GBoxed
@@ -444,7 +444,9 @@ SV *
 gperl_new_boxed_copy (gpointer boxed,
                       GType gtype)
 {
-	return gperl_new_boxed (g_boxed_copy (gtype, boxed), gtype, TRUE);
+	return boxed
+		? gperl_new_boxed (g_boxed_copy (gtype, boxed), gtype, TRUE)
+		: &PL_sv_undef;
 }
 
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.74 2006/03/04 17:17:31 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.75.2.1 2006/11/19 19:24:46 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -690,13 +690,19 @@ C<SvIV> instead.
 
 =cut
 
+#ifdef G_OS_WIN32
+# define PORTABLE_STRTOLL(str, end, base) strtol (str, end, base)
+#else
+# define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
+#endif
+
 gint64
 SvGInt64 (SV *sv)
 {
 #ifdef USE_64_BIT_ALL
 	return SvIV (sv);
 #else
-	return strtoll (SvPV_nolen (sv), NULL, 10);
+	return PORTABLE_STRTOLL (SvPV_nolen (sv), NULL, 10);
 #endif
 }
 
@@ -732,13 +738,19 @@ uses C<SvUV> instead.
 
 =cut
 
+#ifdef G_OS_WIN32
+# define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
+#else
+# define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
+#endif
+
 guint64
 SvGUInt64 (SV *sv)
 {
 #ifdef USE_64_BIT_ALL
 	return SvUV (sv);
 #else
-	return strtoull (SvPV_nolen (sv), NULL, 10);
+	return PORTABLE_STRTOULL (SvPV_nolen (sv), NULL, 10);
 #endif
 }
 
