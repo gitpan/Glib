@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.63 2006/09/04 18:04:37 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.63.2.1 2007/01/21 15:36:36 kaffeetisch Exp $
 #
 
 use 5.008;
@@ -63,7 +63,7 @@ if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.6.0')) {
 	push @xs_files, 'GKeyFile.xs';
 }
 
-if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.11.0')) {
+if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.12.0')) {
 	push @xs_files, 'GBookmarkFile.xs';
 }
 

@@ -1,3 +1,21 @@
+2007-02-11	kaffeetisch
+
+	* Glib.pm, NEWS, README, copyright.pod: Stable release 1.143.
+
+2007-01-21	kaffeetisch
+
+	Merge from HEAD:
+
+	* Makefile.PL: Check that glib >= 2.12.0, not 2.11.0, before
+	including GBookmarkFile.xs.
+
+2006-12-30	kaffeetisch
+
+	Merge from HEAD:
+
+	* Glib.xs: Call g_threads_init before g_type_init.  Required (and
+	probably enforced in the near future) by recent glib versions.
+
 2006-12-04	kaffeetisch
 
 	* Glib.pm, NEWS, README: Stable release 1.142.

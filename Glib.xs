@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.47 2006/08/07 18:17:19 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.47.2.1 2006/12/30 15:37:37 kaffeetisch Exp $
  */
 
 =head2 Miscellaneous
@@ -330,12 +330,12 @@ _gperl_get_master_interp (void)
 MODULE = Glib		PACKAGE = Glib		PREFIX = g_
 
 BOOT:
-	g_type_init ();
 #if defined(G_THREADS_ENABLED) && !defined(GPERL_DISABLE_THREADSAFE)
 	/*warn ("calling g_thread_init (NULL)");*/
 	if (!g_thread_supported ())
 		g_thread_init (NULL);
 #endif
+	g_type_init ();
 	_gperl_set_master_interp (PERL_GET_INTERP);
 	/* boot all in one go.  other modules may not want to do it this
 	 * way, if they prefer instead to perform demand loading. */
