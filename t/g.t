@@ -1,10 +1,13 @@
+#!/usr/bin/perl
 #
 # KeyFile stuff.
 #
 use strict;
 use warnings;
+use Cwd qw(cwd);
+use File::Spec; # for catfile()
 use Glib ':constants';
-use Test::More tests => 30;
+use Test::More tests => 33;
 
 my $str = <<__EOK__
 #top of the file
@@ -32,7 +35,7 @@ __EOK__
 ;
 
 SKIP: {
-	skip "Glib::KeyFile is new in glib 2.6.0", 30
+	skip "Glib::KeyFile is new in glib 2.6.0", 33
 		unless Glib->CHECK_VERSION (2, 6, 0);
 
 	ok (defined Glib::KeyFile->new ());
@@ -105,13 +108,20 @@ SKIP: {
 		skip "double stuff", 4
 			unless Glib->CHECK_VERSION (2, 12, 0);
 
-		is($key_file->get_double('mysection', 'doublekey'), 3.1415);
-		$key_file->set_double('mysection', 'doublekey', 23.42);
-		is($key_file->get_double('mysection', 'doublekey'), 23.42);
+		my $epsilon = 1e-6;
 
-		is_deeply([$key_file->get_double_list('listsection', 'doublelist')], [23.42, 3.1415]);
+		ok($key_file->get_double('mysection', 'doublekey') - 3.1415 < $epsilon);
+		$key_file->set_double('mysection', 'doublekey', 23.42);
+		ok($key_file->get_double('mysection', 'doublekey') - 23.42 < $epsilon);
+
+		my @list = $key_file->get_double_list('listsection', 'doublelist');
+		ok($list[0] - 23.42 < $epsilon &&
+		   $list[1] - 3.1415 < $epsilon);
+
 		$key_file->set_double_list('listsection', 'doublelist', 3.1415, 23.42);
-		is_deeply([$key_file->get_double_list('listsection', 'doublelist')], [3.1415, 23.42]);
+		@list = $key_file->get_double_list('listsection', 'doublelist');
+		ok($list[0] - 3.1415 < $epsilon &&
+		   $list[1] - 23.42 < $epsilon);
 	}
 
 	$key_file->remove_comment('locales', 'mystring');
@@ -125,6 +135,28 @@ SKIP: {
 	is($key_file->to_data(), "");
 
 	$key_file->set_list_separator(ord(':'));
+
+	SKIP: {
+		skip "load_from_dirs", 3
+			unless Glib->CHECK_VERSION (2, 14, 0);
+
+		my $file = 'tmp.ini';
+		open my $fh, '>', $file or
+			skip "load_from_dirs, can't create temporary file", 3;
+		print $fh $str;
+		close $fh;
+
+		my $key_file = Glib::KeyFile->new;
+		my ($success, $path) =
+			$key_file->load_from_dirs($file,
+						  [ 'keep-comments' ],
+						  cwd(), '/tmp');
+		ok ($success);
+		is ($path, File::Spec->catfile(cwd(), $file));
+		is ($key_file->get_comment(undef, undef), "top of the file\n", 'we reached the top again');
+
+		unlink $file;
+	}
 }
 
 __END__

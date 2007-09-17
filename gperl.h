@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.44.2.2 2006/11/23 18:45:21 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.49 2007/09/15 14:10:12 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -235,8 +235,10 @@ SV * gperl_object_check_type (SV * sv, GType gtype);
 typedef gchar gchar_length;
 typedef gchar gchar_own;
 typedef gchar gchar_ornull;
+typedef gchar gchar_own_ornull;
 typedef char char_ornull;
 typedef char char_own;
+typedef char char_own_ornull;
 typedef GObject GObject_ornull;
 typedef GObject GObject_noinc;
 typedef gchar *GPerlFilename;
@@ -359,6 +361,14 @@ GBookmarkFile * SvGBookmarkFile (SV * sv);
 #endif /* GLIB_CHECK_VERSION (2, 12, 0) */
 
 const char * gperl_param_spec_package_from_type (GType gtype);
+
+/*
+ * gutils.h / GUtils.xs
+ */
+#if GLIB_CHECK_VERSION (2, 14, 0)
+GUserDirectory SvGUserDirectory (SV *sv);
+SV * newSVGUserDirectory (GUserDirectory dir);
+#endif
 
 /*
  * helpful debugging stuff

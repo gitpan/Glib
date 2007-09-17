@@ -1,9 +1,9 @@
-#
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.12 2005/07/05 17:51:07 kaffeetisch Exp $
+#!/usr/bin/perl
+
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.15 2007/09/15 14:10:13 kaffeetisch Exp $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.
-#
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 23;
+use Test::More tests => 24;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -42,9 +42,15 @@ ok (defined (Glib::get_tmp_dir), "Glib::get_tmp_dir");
 SKIP: {
   skip "set_application_name is new in glib 2.2.0", 2
     unless Glib->CHECK_VERSION (2,2,0);
-  # this will not hold after Gtk2::init, since gtk_init() calls
-  # gdk_parse_args() which calls g_set_prgname(argv[0]).
-  is (Glib::get_application_name (), undef, 'before any calls to anything');
+
+  SKIP: {
+    skip 'no undef on win32', 1
+      if $^O eq 'MSWin32';
+    # this will not hold after Gtk2::init, since gtk_init() calls
+    # gdk_parse_args() which calls g_set_prgname(argv[0]).
+    is (Glib::get_application_name (), undef, 'before any calls to anything');
+  }
+
   my $appname = 'Flurble Foo 2, Electric Boogaloo';
   Glib::set_application_name ($appname);
   is (Glib::get_application_name (), $appname);
@@ -61,6 +67,14 @@ SKIP: {
   ok (defined Glib::get_system_data_dirs ());
   ok (defined Glib::get_system_config_dirs ());
   ok (defined Glib::get_language_names ());
+}
+
+SKIP: {
+  skip 'new 2.14 stuff', 1
+    unless Glib->CHECK_VERSION (2, 14, 0);
+
+  # qw/desktop documents download music pictures public-share templates videos/
+  ok (defined Glib::get_user_special_dir ('desktop'));
 }
 
 is (Glib::Markup::escape_text ("<gtk2-perl>"), "&lt;gtk2-perl&gt;");

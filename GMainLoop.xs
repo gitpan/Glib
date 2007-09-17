@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.21 2006/08/07 18:17:18 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GMainLoop.xs,v 1.24 2007/09/15 14:10:12 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -263,6 +263,12 @@ gboolean g_main_context_pending (GMainContext *context);
 ##void g_main_context_remove_poll   (GMainContext *context,
 ##				   GPollFD      *fd);
 
+#if GLIB_CHECK_VERSION (2, 12, 0)
+
+gboolean g_main_context_is_owner (GMainContext *context);
+
+#endif
+
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::MainLoop	PREFIX = g_main_loop_
 
@@ -432,7 +438,25 @@ g_timeout_add (class, interval, callback, data=NULL, priority=G_PRIORITY_DEFAULT
     OUTPUT:
 	RETVAL
 
+#if GLIB_CHECK_VERSION (2, 14, 0)
 
+guint
+g_timeout_add_seconds (class, guint interval, SV * callback, SV * data=NULL, gint priority=G_PRIORITY_DEFAULT)
+    PREINIT:
+	GClosure * closure;
+	GSource * source;
+    CODE:
+	closure = gperl_closure_new (callback, data, FALSE);
+	source = g_timeout_source_new_seconds (interval);
+	if (priority != G_PRIORITY_DEFAULT)
+		g_source_set_priority (source, priority);
+	g_source_set_closure (source, closure);
+	RETVAL = g_source_attach (source, NULL);
+	g_source_unref (source);
+    OUTPUT:
+	RETVAL
+
+#endif
 
 MODULE = Glib::MainLoop	PACKAGE = Glib::Idle	PREFIX = g_idle_
 
@@ -482,7 +506,7 @@ BOOT:
 =cut
 
 =for apidoc
-=for arg fd (file descriptor) file number, e.g. fileno($filehandle)
+=for arg fd (integer) file descriptor, e.g. fileno($filehandle)
 =for arg callback (subroutine)
 
 Run I<$callback> when there is an event on I<$fd> that matches I<$condition>.

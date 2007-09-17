@@ -9,7 +9,7 @@
 
 package Glib::GenPod;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use strict;
 use warnings;
@@ -32,6 +32,7 @@ our @EXPORT = qw(
 	podify_interfaces
 	podify_methods
 	podify_enums_and_flags
+	podify_deprecated_by
 );
 
 our $COPYRIGHT = undef;
@@ -96,6 +97,20 @@ will be placed under the key 'I<Package::Name>' in xsdocparse's data
 structure.  Everything from this line to the next C<=cut> is included as a
 description POD.
 
+=item =for object Package::Name (Other::Package::Name)
+
+Generate POD in I<Package::Name> but for the package I<Other::Package::Name>.
+This is useful if you want POD to appear in a different namespace but still
+want the automatically generated hierarchy, signal and property listing,
+etc. from the original namespace.  For example:
+
+  =for object Gnome2::PanelApplet::main (Gnome2::PanelApplet)
+  =cut
+
+This will create Gnome2/PanelApplet/main.pod containing the automatically
+generated documentation for Gnome2::PanelApplet (hierarchy, signals, etc.) plus
+the method listing from the current XS file.
+
 =item =for enum Package::Name
 
 =item =for flags Package::Name
@@ -104,6 +119,12 @@ This causes xsdoc2pod to call C<podify_values> on I<Package::Name> when
 writing the pod for the current package (as set by an object directive or
 MODULE line).  Any text in this paragraph, to the next C<=cut>, is included
 in that section.
+
+=item =for deprecated_by Package::Name
+
+Used to add a deprecation warning, indicating I<Package::Name> as an
+alternative way to achieve the same functionality.  There may be any number
+these in each package.
 
 =item =for see_also L<some_thing_to_see>
 
@@ -179,6 +200,11 @@ This function or method can generate a Glib::Error exception.
 Generate a function-style signature for this xsub.  The default is to
 generate method-style signatures.
 
+=item - __deprecated__
+
+This function or method is deprecated and should not be used in newly written
+code.
+
 =back
 
 (These are actually handled by Glib::ParseXSDoc, but we list them here
@@ -234,7 +260,6 @@ sub xsdoc2pod
 
 		open POD, ">$pod" or die "can't open $pod for writing: $!\n";
 		select POD;
-		print STDERR "podifying $pod\n";
 
 		$package = $pkgdata->{object} if (exists $pkgdata->{object});
 
@@ -272,6 +297,9 @@ sub xsdoc2pod
 
 		$ret = podify_pods ($pkgdata->{pods});
 		print "$ret\n\n" if ($ret);
+
+		$ret = podify_deprecated_by ($package, @{ $pkgdata->{deprecated_bys} });
+		print "\n=head1 DEPRECATION WARNING\n\n$ret" if ($ret);
 
 		$ret = podify_methods ($package, $pkgdata->{xsubs});
 		print "\n=head1 METHODS\n\n$ret" if ($ret);
@@ -365,6 +393,8 @@ our %basic_types = (
 	subroutine => 'subroutine',
 	integer    => 'integer',
 	string     => 'string',
+	package    => 'package',
+	list       => 'list',
 
 	# other C names which may sneak through
 	bool     => 'boolean', # C++ keyword, but provided by the perl api
@@ -531,6 +561,39 @@ sub podify_signals {
 	$str .= "=back\n\n";
     };
     return $str
+}
+
+=item $string = podify_deprecated_by ($packagename, @deprecated_by)
+
+Creates a deprecation warning for $packagename, suggesting using the items
+inside @deprecated_by instead.
+
+=cut
+
+sub podify_deprecated_by
+{
+	my $package       = shift;
+	my @deprecated_by = @_;
+
+	return undef unless scalar @deprecated_by;
+
+	my $str = "$package has been marked as deprecated, and should not be "
+	        . "used in newly written code.\n\n";
+
+	# create the deprecated for list
+	$str .= "You should use "
+	      . join (', ',
+	              map {
+			if (/^\s*L</) {
+				$_;
+			}
+			else {
+				"L<$_>";
+			}
+		      } @deprecated_by)
+	      . " instead of $package.\n";
+
+	return $str;
 }
 
 sub podify_enums_and_flags
@@ -776,8 +839,7 @@ I<$packagename>.
 sub podify_methods
 {
 	my $package = shift;
-	return undef unless $data->{$package};
-	my $xsubs = $data->{$package}{xsubs};
+	my $xsubs = shift;
 	return undef unless $xsubs && @$xsubs;
 	# we will be re-using $package from here on out.
 
@@ -978,6 +1040,9 @@ sub convert_type {
 	              (\s*\*)?				# maybe a star
 	              \s*$/x;				# trailing space
 	my $ctype   = $1 || '!!';
+	if ($ctype eq '!!') {
+		warn "Glib::GenPod: Unable to parse type `$typestr´";
+	}
 
 	# variant type
 	$ctype =~ s/(?:_(ornull|own|copy|own_ornull|noinc))$//;
@@ -1138,6 +1203,26 @@ sub xsub_to_pod {
 
 	$str .= "May croak with a L<Glib::Error> in \$@ on failure.\n\n"
 		if ($xsub->{gerror});
+
+	$str .= "This method is deprecated and should not be used in newly written code.\n\n"
+		if ($xsub->{deprecated});
+
+
+	# When there are multiple version guards of the same type, we only want
+	# the innermost.
+	my %version_conditions;
+	my %prefix_to_name = (
+		GTK => 'gtk+',
+	);
+	foreach (@{ $xsub->{preprocessor_conditionals} }) {
+		if (m/^\s*(\w+)_CHECK_VERSION\s*\((\d+),\s*(\d+)/) {
+			my $lib_name = $prefix_to_name{$1} || lc $1;
+			$version_conditions{$lib_name} = "$2.$3";
+		}
+	}
+	foreach my $lib_name (keys %version_conditions) {
+		$str .= "Since: $lib_name $version_conditions{$lib_name}\n\n";
+	}
 
 	$str .= "=back\n\n";
 

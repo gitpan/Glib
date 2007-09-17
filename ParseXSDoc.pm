@@ -13,7 +13,7 @@ our @EXPORT = qw(
 	xsdocparse
 );
 
-our $VERSION = '1.002';
+our $VERSION = '1.003';
 
 our $NOISY = $ENV{NOISYDOC};
 
@@ -273,6 +273,7 @@ sub parse_file {
 			#print Dumper(\@cond);
 		} elsif (/^\s*#\s*else\s*(\s.*)?$/) {
 			#warn "else $cond[-1]\n";
+			$cond[$#cond] = '!' . $cond[$#cond];
 		} elsif (/^\s*#\s*endif\s*(\s.*)?$/) {
 			#warn "endif $cond[-1]\n";
 			pop @cond;
@@ -296,13 +297,22 @@ sub parse_file {
 				$self->{object} = $1;
 				if ($2) {
 					$self->pkgdata->{blurb} = $2;
-					if ($self->pkgdata->{blurb} =~ s/\((.*)\)//)
+					$self->pkgdata->{blurb} =~ s/^\s*-\s*//;
+
+					# If the line has the special form
+					# "=for object Foo (Bar)", we take this
+					# to mean: document the object Bar in
+					# the file Foo.
+					if ($self->pkgdata->{blurb} =~ s/\s*\((.*)\)//)
 					{
 						print STDERR "Documenting object $1 in file "
 									.$self->{object}."\n";
 						$self->pkgdata->{object} = $1;
+						if ('' eq $self->pkgdata->{blurb})
+						{
+							delete $self->pkgdata->{blurb};
+						}
 					}
-					$self->pkgdata->{blurb} =~ s/^\s*-\s*//;
 				}
 			} elsif (/^=for\s+(enum|flags)\s+([\w:]+)/) {
 				push @{ $self->pkgdata->{enums} }, {
@@ -315,6 +325,9 @@ sub parse_file {
 			} elsif (/^=for\s+see_also\s+(.+)$/) {
 				push @{ $self->pkgdata->{see_alsos} }, $1;
 				# claim this pod now!
+				$lastpod = undef;
+			} elsif (/^=for\s+deprecated_by\s+([\w:]+)$/) {
+				push @{ $self->pkgdata->{deprecated_bys} }, $1;
 				$lastpod = undef;
 			}
 			push @{ $self->pkgdata->{pods} }, $lastpod
@@ -342,6 +355,7 @@ sub parse_file {
 				$xsub->{pod} = $lastpod;
 				$lastpod = undef;
 			}
+			$xsub->{preprocessor_conditionals} = [ @cond ];
 			push @{ $self->pkgdata->{xsubs} }, $xsub;
 
 		} else {
@@ -423,6 +437,7 @@ sub preprocess_pods {
 			if ($firstline) {
 				$_->{function} = ($firstline =~ /__function__/);
 				$_->{hidden} = ($firstline =~ /__hide__/);
+				$_->{deprecated} = ($firstline =~ /__deprecated__/);
 				$_->{gerror} = ($firstline =~ /__gerror__/);
 			}
 		}

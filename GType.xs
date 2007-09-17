@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.75.2.2 2006/11/23 18:45:21 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.78 2007/08/13 18:37:39 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -1913,8 +1913,8 @@ BOOT:
 
 
 =for apidoc
-=for arg parent_class (package name) type from which to derive
-=for arg new_class (package name) name of new type
+=for arg parent_class (package) type from which to derive
+=for arg new_class (package) name of new type
 =for arg ... arguments for creation
 Register a new type with the GLib type system.
 

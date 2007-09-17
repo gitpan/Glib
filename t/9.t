@@ -1,14 +1,16 @@
-#!env perl -w
+#!/usr/bin/perl
 
 #
 # mainloop stuff.
 #
 
+use strict;
+use warnings;
 use Config;
 
-print "1..22\n";
+print "1..25\n";
 
-use Glib;
+use Glib qw/:constants/;
 
 print "ok 1\n";
 
@@ -79,7 +81,7 @@ use Data::Dumper;
 # we can't do much but just skip this.
 
 if ($Config{archname} =~ m/^(x86_64|mipsel|mips|alpha)/
-    and not Glib->CHECK_VERSION (2,2,4)) {
+    && (!Glib->CHECK_VERSION (2,2,4))) {
 	print "not ok 12 - skip bug in glib\n";
 	print "not ok 13 - skip bug in glib\n";
 	print "not ok 14 - skip bug in glib\n";
@@ -112,7 +114,7 @@ if ($Config{archname} =~ m/^(x86_64|mipsel|mips|alpha)/
 # caused asynchronous signals not to be delivered while a main loop is
 # running (because control stays in C).  let's make sure that we can
 # get a 1 second alarm before a 2 second timeout has a chance to fire.
-if ($^O eq 'Win32') {
+if ($^O eq 'MSWin32') {
 	# XXX Win32 doesn't do SIGALRM the way unix does; either the alarm
 	# doesn't interrupt the poll, or alarm just doesn't work.
 	my $reason = "async signals don't work on win32 like they do on unix";
@@ -159,6 +161,28 @@ print $context ?
 
 print $context->pending ?
   "not ok 22\n" : "ok 22\n";
+
+if (Glib->CHECK_VERSION (2, 12, 0)) {
+  print $context->is_owner ?
+    "not ok 23\n" : "ok 23\n";
+  print Glib::MainContext::is_owner(undef) ?
+    "not ok 24\n" : "ok 24\n";
+} else {
+  print "ok 23 - skip\n";
+  print "ok 24 - skip\n";
+}
+
+if (Glib->CHECK_VERSION (2, 14, 0)) {
+  my $loop = Glib::MainLoop->new;
+  Glib::Timeout->add_seconds (1, sub {
+    print "ok 25 - in timeout handler\n";
+    $loop->quit;
+    return FALSE;
+  });
+  $loop->run;
+} else {
+  print "ok 25 - skip\n";
+}
 
 __END__
 

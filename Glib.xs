@@ -16,22 +16,16 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.47.2.1 2006/12/30 15:37:37 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.xs,v 1.49 2006/12/30 15:37:17 kaffeetisch Exp $
  */
+
+#include "gperl.h"
 
 =head2 Miscellaneous
 
 Various useful utilities defined in Glib.xs.
 
 =over
-
-=cut
-
-
-#include "gperl.h"
-
-#include "ppport.h"
-
 
 =item GPERL_CALL_BOOT(name)
 

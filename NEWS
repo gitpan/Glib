@@ -1,3 +1,47 @@
+Overview of changes in Glib 1.160
+=================================
+
+ Since 1.14x (the previous stable series)
+ ----------------------------------------
+  * Add Glib::get_user_special_dir.
+  * Add Glib::KeyFile::load_from_dirs.
+  * Add Glib::MainContext::is_owner.
+  * Add Glib::Timeout::add_seconds.
+  * Improve the automatic documentation generator.
+
+ Since 1.153
+ -----------
+  * Nothing.
+
+Overview of changes in Glib 1.153
+=================================
+
+* Add char_own_ornull and gchar_own_ornull typemaps.  [Torsten]
+* Fix some win32 test failures.  [Torsten]
+* Make it possible to document specific packages in different POD files by
+  providing a new =for object variant.  [Torsten]
+* Parse preprocessor conditionals in the XS code to add Since: tags to methods'
+  POD.  [Torsten]
+
+Overview of changes in Glib 1.152
+=================================
+
+* Wrap g_main_context_is_owner.  [Torsten]
+* Wrap g_timeout_add_seconds.  [Torsten]
+
+Overview of changes in Glib 1.151
+=================================
+
+* Use BSD make syntax on BSD systems by default.  [Slaven Rezic, Torsten]
+* Wrap g_key_file_load_from_dirs.  [Torsten]
+* Wrap g_get_user_special_dir.  [Torsten]
+
+Overview of changes in Glib 1.150
+=================================
+
+* Make it possible to mark objects and methods as deprecated with
+  Glib::ParseXSDoc and Glib::GenPod.  [Emmanuele]
+
 Overview of changes in Glib 1.144
 =================================
 

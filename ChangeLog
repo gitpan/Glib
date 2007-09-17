@@ -1,39 +1,127 @@
-2007-02-25	kaffeetisch
+2007-09-16	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.144.
+	* Glib.pm
+	* Makefile.PL
+	* NEWS
+	* README: Stable release 1.160.
+
+2007-09-15	kaffeetisch
+
+	* GKeyFile.xs
+	* GMainLoop.xs
+	* GUtils.xs
+	* gperl.h
+	* t/1.t
+	* t/9.t
+	* t/g.t: Change version checks to refer to glib 2.14 instead of
+	2.13.
+
+2007-08-13	kaffeetisch
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.153.
+
+2007-08-13	kaffeetisch
+
+	* GMainLoop.xs
+	* GObject.xs
+	* GType.xs
+	* GenPod.pm: Output a warning if a type name isn't recognized by
+	the doc parser.  Add 'package' and 'list' to the basic types and
+	fix the remaining type name issues the new warning uncovered.
+
+	* GenPod.pm
+	* ParseXSDoc.pm: Parse preprocessor conditionals in the XS code to
+	add Since: tags to methods' POD.
+
+	* GenPod.pm
+	* ParseXSDoc.pm: Make it possible to document specific packages in
+	different POD files by providing a new =for object variant.
+
+	* t/1.t
+	* t/9.t
+	* t/filename.t: Fix win32 test failures.
+
+2007-08-01	kaffeetisch
+
+	* gperl.h
+	* typemap: Add char_own_ornull and gchar_own_ornull typemaps.
+
+2007-07-08	kaffeetisch
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.152.
+
+2007-07-07	kaffeetisch
+
+	* GObject.xs: Register G_TYPE_INTERFACES as Glib::Interfaces to
+	avoid having it appear under Glib::Object::_Unregistered in
+	hierarchies in the generated POD.
+
+	* GMainLoop.xs
+	* t/9.t: Wrap g_main_context_is_owner and g_timeout_add_seconds.
+
+2007-06-24	kaffeetisch
+
+	* Glib.pm, NEWS, README: Unstable release 1.151.
+
+2007-06-23	kaffeetisch
+
+	* GUtils.xs
+	* gperl.h
+	* typemap
+	* t/1.t: Wrap g_get_user_special_dir and provide converters for
+	the new enum GUserDirectory.
+
+	* t/g.t: In floating point tests, don't check for equality.
+	Instead, check that numbers don't differ too much from their
+	expected values.
+
+2007-06-10	kaffeetisch
+
+	* GKeyFile.xs, t/g.t: Wrap g_key_file_load_from_dirs.
 
 2007-02-24	kaffeetisch
-
-	Merge from HEAD:
 
 	* MakeHelper.pm: Use BSD make syntax for the BLIB_DONE stuff on
 	BSD systems, unless the environment variable FORCE_GMAKE is set.
 
-2007-02-11	kaffeetisch
+2007-01-08	kaffeetisch
 
-	* Glib.pm, NEWS, README, copyright.pod: Stable release 1.143.
+	* Glib.pm, Makefile.PL, NEWS, README, copyright.pod: Unstable
+	release 1.150.
 
-2007-01-21	kaffeetisch
+2007-01-07	kaffeetisch
 
-	Merge from HEAD:
+	* GenPod.pm: Only mark those objects as deprecated that have a
+	non-empty list of replacements; this avoids marking each and every
+	object as deprecated.  Move up the deprecation message in the POD
+	to make it more prominent.  Also, hush the "podifying Foo"
+	messages.
 
-	* Makefile.PL: Check that glib >= 2.12.0, not 2.11.0, before
-	including GBookmarkFile.xs.
+2007-01-06  Emmanuele Bassi  <ebassi@gnome.org>
+
+	* ParseXSDoc.pm:
+	* GenPod.pm: Add a "deprecated_by" key to the apidoc parser;
+	you should use this to mark an object deprecated in favour of
+	another.  Also add a __deprecated__ marker for functions and
+	methods.
 
 2006-12-30	kaffeetisch
-
-	Merge from HEAD:
 
 	* Glib.xs: Call g_threads_init before g_type_init.  Required (and
 	probably enforced in the near future) by recent glib versions.
 
-2006-12-04	kaffeetisch
+2006-12-02	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.142.
+	* NEWS: Merge from stable-1-14.
+
+	* Makefile.PL: Check that glib >= 2.12.0, not 2.11.0, before
+	including GBookmarkFile.xs.
 
 2006-11-23	kaffeetisch
-
-	Merge from HEAD:
 
 	* GType.xs, gperl.h: Revert the G_OS_WIN32 change and just use
 	WIN32 instead.  G_OS_WIN32 doesn't seem to be defined on most
@@ -42,18 +130,19 @@
 	* AUTHORS, GType.xs: Use _strtoi64 and and _strtoui64 on win32 if
 	compiling with MSVC; patch from Serguei Trouchelle.
 
-2006-11-19	kaffeetisch
+2006-11-05	kaffeetisch
 
-	* Glib.pm, NEWS, README: Stable release 1.141.
+	* GType.xs, gperl.h: Use G_OS_WIN32 instead of WIN32 or _WIN32.
 
-2006-11-19	kaffeetisch
-
-	Merge from HEAD:
+2006-10-21	kaffeetisch
 
 	* GBookmarkFile.xs: Remove a custom "=for signature" directive
 	that incorrectly specified a boolean return value for remove_item.
 
-	* GType.xs, gperl.h: Use G_OS_WIN32 instead of WIN32 or _WIN32.
+2006-10-17	kaffeetisch
+
+	* Glib.xs, MANIFEST, ppport.h: Get rid of ppport.h, we don't seem
+	to need it.
 
 2006-10-03	kaffeetisch
 
