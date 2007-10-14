@@ -1,8 +1,9 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.66 2007/09/16 17:05:03 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.66.2.1 2007/10/14 18:57:33 kaffeetisch Exp $
 #
 
-use 5.008;
+BEGIN { require 5.008; }
+
 use strict;
 use warnings;
 use ExtUtils::MakeMaker;
@@ -175,10 +176,8 @@ __EOW__
 
 =cut
 
-package MY;
-
 # rule to build the documentation
-sub postamble
+sub MY::postamble
 {
 	require 'MakeHelper.pm';
 	return "
@@ -194,7 +193,7 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 "
 	     . Glib::MakeHelper->postamble_clean ()
 	     . Glib::MakeHelper->postamble_docs_full (
-			DEPENDS => $main::glib,
+			DEPENDS => $glib,
 			DOCTYPES => 'doctypes',
 			COPYRIGHT_FROM => 'copyright.pod',
 	       )

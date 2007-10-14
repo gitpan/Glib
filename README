@@ -1,4 +1,4 @@
-Glib version 1.160
+Glib version 1.161
 ==================
 
 This module provides perl access to Glib and GLib's GObject libraries.
@@ -102,4 +102,4 @@ You should have received a copy of the GNU Library General Public License along
 with this library; if not, write to the Free Software Foundation, Inc., 59
 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 
-# $Id: README,v 1.75 2007/09/16 17:05:03 kaffeetisch Exp $
+# $Id: README,v 1.75.2.1 2007/10/14 19:04:22 kaffeetisch Exp $

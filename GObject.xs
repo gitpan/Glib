@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.69 2007/08/13 18:37:39 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.69.2.1 2007/10/14 18:57:33 kaffeetisch Exp $
  */
 
 /*
@@ -931,7 +931,9 @@ that process.
 void
 CLONE (gchar * class)
     CODE:
-    	if (perl_gobject_tracking && strcmp (class, "Glib::Object") == 0)
+	/* !perl_gobjects can happen when no object has been created yet. */
+    	if (perl_gobject_tracking && perl_gobjects &&
+	    strcmp (class, "Glib::Object") == 0)
 	{
 		G_LOCK (perl_gobjects);
 /*g_printerr ("we're in clone: %s\n", class);*/
