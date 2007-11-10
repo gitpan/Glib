@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.37 2007/02/24 14:12:12 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.37.2.1 2007/10/18 16:08:55 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -353,9 +353,12 @@ sub postamble_docs_full {
 
 	#warn "".scalar(@doctypes)." doctype files\n";
 	#warn "".scalar(@xs_files)." xs files\n";
-	
-	$add_types = "add_types (".join(", ",map {"\"$_\""} @doctypes)."); "
-		if @doctypes;
+
+	if (@doctypes) {
+		$add_types = 'add_types ('
+		           . join(', ', map {'"' . quotemeta ($_) . '"'} @doctypes)
+		           . '); '
+	}
 
 	my $docgen_code = ''
 	    . $add_types
