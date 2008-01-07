@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GError.xs,v 1.11 2006/07/23 10:20:59 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GError.xs,v 1.11.4.1 2007/11/18 22:32:44 kaffeetisch Exp $
  */
 
 #include "gperl.h"
@@ -243,7 +243,7 @@ gperl_gerror_from_sv (SV * sv, GError ** error)
 		const char * domain;
 		GQuark qdomain;
 		svp = hv_fetch (hv, "domain", 6, FALSE);
-		if (!svp || !SvOK (sv))
+		if (!svp || !SvOK (*svp))
 			g_error ("key 'domain' not found in plain hash for GError");
 		domain = SvPV_nolen (*svp);
 		qdomain = g_quark_try_string (domain);

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.78 2007/08/13 18:37:39 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.78.2.1 2007/11/18 22:32:44 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -1422,9 +1422,8 @@ add_interfaces (GType instance_type, AV * interfaces)
 
         for (i = 0; i <= av_len (interfaces); i++) {
 		SV ** svp = av_fetch (interfaces, i, FALSE);
-		if (!svp && !SvOK (*svp))
-			croak ("%s is not a valid interface name",
-			       SvPV_nolen (*svp));
+		if (!svp || !SvOK (*svp))
+			croak ("encountered undefined interface name");
 
 		/* call the interface's setup function on this class. */
 		{
