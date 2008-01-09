@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.69.2.2 2008/01/07 22:22:44 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.69.2.3 2008/01/09 20:49:05 kaffeetisch Exp $
  */
 
 /*
@@ -295,6 +295,24 @@ gperl_register_object (GType gtype,
 
 	G_UNLOCK (types_by_type);
 	G_UNLOCK (types_by_package);
+
+	if (G_TYPE_IS_INTERFACE (gtype))
+		/*
+		 * Force GInterfaces to finish loading now.  In some cases,
+		 * we won't cause a call to gperl_object_package_from_type()
+		 * on the interface type to happen from perl code before
+		 * somebody tries to do a lookup on an object type that
+		 * implements that interface, which causes _LazyLoader to
+		 * get upset.  Since GInterfaces are not deep-derivable, an
+		 * alternative is simply to avoid setting up lazy loading
+		 * for GInterfaces, but that can cause problems if the
+		 * GInterface type is not registered.
+		 *
+		 * NOTE:  class_info_finish_loading() may call other
+		 *        functions that grab locks, so we need to be
+		 *        unlocked.
+		 */
+		class_info_finish_loading (class_info);
 }
 
 

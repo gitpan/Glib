@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Glib
-version:             1.163
+version:             1.164
 abstract:            Perl wrappers for the GLib utility and Object libraries
 license:             ~
 author:              ~
