@@ -57,8 +57,10 @@ t/f.t
 t/filename.t
 t/g.t
 t/h.t
+t/make_helper.t
 t/signal_emission_hooks.t
 t/signal_query.t
+t/tied_definedness.t
 TODO
 typemap
 xsapi.pod.foot

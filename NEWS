@@ -1,3 +1,66 @@
+Overview of changes in Glib 1.180
+=================================
+
+ Since 1.16x (the previous stable series)
+ ----------------------------------------
+  * Add Glib::MakeHelper::get_configure_requires_yaml.
+  * Add Glib::Object::signal_get_invocation_hint.
+  * Make our lazy-loader compatible with perl-5.10.0.
+  * Allow Perl-derived GObjects to override GInterfaces that are implemented by
+    parent classes.
+  * Correct the way we check values for definedness: use the new function
+    gperl_sv_is_defined.  For convenience, also add gperl_sv_is_array_ref,
+    gperl_sv_is_code_ref, and gperl_sv_is_hash_ref.
+
+ Since 1.174
+ -----------
+  * Tell the compiler to always look for our headers in '.' first.
+  * Add a hyphen to the NAME section of generated POD indices.
+
+Overview of changes in Glib 1.174
+=================================
+
+* Increase compatibility with different `make´s by not using Makefile
+  conditionals for building our documentation.
+
+Overview of changes in Glib 1.173
+=================================
+
+* Make Glib::Type::list_values return the value of each enum/flags entry in
+  addition to the name and nickname.
+
+Overview of changes in Glib 1.172
+=================================
+
+* Make inproper usage of Glib::Object methods result in an error message and
+  not in a segfault.
+* Add Glib::Object::signal_get_invocation_hint.
+* In our lazy-loading machinery for packages, change the way we clear @ISA
+  arrays to avoid problems with perl 5.10.0.
+* Add new helpers to the C API: gperl_sv_is_defined, gperl_sv_is_array_ref,
+  gperl_sv_is_code_ref, and gperl_sv_is_hash_ref.
+* Allow Perl-derived GObjects to override GInterfaces that are implemented by
+  parent classes.
+* Load GInterface types immediately, instead of lazily.  This makes sure
+  GInterfaces are set up by the time they are needed.
+
+Overview of changes in Glib 1.171
+=================================
+
+* Correct the way we check values for definedness: add gperl_sv_defined(), an
+  XS version of perl's defined(), and use it everywhere.  Among other things,
+  this should fix the problems where tied values were reported as undefined.
+* Fix some build issues.
+
+Overview of changes in Glib 1.170
+=================================
+
+* Make our build output prettier.
+* Add Glib::MakeHelper::get_configure_requires_yaml.
+* Use the above to add configure_requires information to META.yml in order to
+  publicize our Makefile.PL-time requirements.
+* Try to fix some portability issues.
+
 Overview of changes in Glib 1.164
 =================================
 

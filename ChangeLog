@@ -1,12 +1,67 @@
+2008-03-10  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Stable release 1.180.
+
+2008-02-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: Tell the compiler to always look for headers in '.'
+	first so that ours are preferred in case of name
+	clashes.  (Suggestion by Daniel Macks in RT #32883)
+
+	* MakeHelper.pm: Add a hyphen to the NAME section of POD
+	indices.  (Suggested by Quentin Sculo)
+
+2008-02-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.174.
+
+2008-02-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MakeHelper.pm: Rework the BLIB_DONE stuff to not rely on
+	Makefile conditionals.  We should now build fine with any `make´
+	again.  Also fix some incorrect and add missing dependencies for
+	various documentation files.
+
+2008-02-12  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.173.
+
+2008-01-17  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs
+	* t/c.t: Make Glib::Type::list_values return the value of each
+	enum/flags entry in addition to the name and nickname.  (Patch by
+	Kevin Ryde)
+
+	* t/9.t
+	* t/filename.t: Hopefully fix test failures on Windows.
+
+2008-01-16  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/4.t: Test Glib::Type->list_ancestors and
+	Glib::Type->package_from_cname.
+
 2008-01-09  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm
 	* NEWS
-	* README: Stable release 1.164.
+	* README: Unstable release 1.172.
 
 2008-01-09  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	Merge from HEAD:
+	* ParseXSDoc.pm (parse_file): When parsing an #else pre-processor
+	directive, make sure we have actually seen and parsed a
+	corresponding #if before trying to negate its entry.  This can
+	happen when our parsing heurestics fail.  The result was an
+	exception: "Modification of non-creatable array value attempted."
+
+2008-01-09  muppet <scott@asofyet.org>
 
 	* GType.xs:  Defer the instantiation of a newly-registered
 	object class's class until after we've parsed the list of
@@ -23,26 +78,32 @@
 	via g_type_interface_peek_parent().  Black magic may be
 	required for that.
 
+2008-01-07  muppet <scott@asofyet.org>
+
 	* GObject.xs:  Load GInterface types immediately, instead of
 	leaving them for lazy loading.  Otherwise, it is possible to
 	get into situations in which a GInterface has not triggered
 	its lazy loading by the time it is needed.
 
-	* ParseXSDoc.pm (parse_file): When parsing an #else pre-processor
-	directive, make sure we have actually seen and parsed a
-	corresponding #if before trying to negate its entry.  This can
-	happen when our parsing heurestics fail.  The result was an
-	exception: "Modification of non-creatable array value attempted."
-
 2008-01-07  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	* Glib.pm
-	* NEWS
-	* README: Stable release 1.163.
+	* CodeGen.pm
+	* GBoxed.xs
+	* GError.xs
+	* GObject.xs
+	* GSignal.xs
+	* GType.xs
+	* GValue.xs
+	* Glib.exports
+	* Glib.xs
+	* gperl.h
+	* typemap: Rename gperl_sv_defined to gperl_sv_is_defined.
 
-2008-01-07  Torsten Schoenfeld  <kaffeetisch@gmx.de>
-
-	Merge from HEAD:
+	* GBoxed.xs
+	* GError.xs
+	* GType.xs
+	* gperl.h: Add new macros: gperl_sv_is_array_ref,
+	gperl_sv_is_code_ref, and gperl_sv_is_hash_ref.
 
 	* GObject.xs (class_info_finish_loading): When handling a class'
 	@ISA, instead of simple av_fetch calls and a final av_clear, use
@@ -50,15 +111,66 @@
 	to break the caching magic associated with it when running under
 	perl 5.10.0.  This in turn breaks our lazy-loading scheme.
 
+2008-01-07  muppet  <scott@asofyet.org>
+
+	* GSignal.xs, t/signal_emission_hooks.t:  Bind and test
+	g_signal_get_invocation_hint().
+
+2007-12-30  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* gperl_marshal.h: Mention in the POD that
+	dGPERL_CALLBACK_MARSHAL_SP should always come last in a list of
+	declarations.
+
+2007-12-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* gperl.h (SvGObject)
+	* t/2.t: Use gperl_get_object_check instead of gperl_get_object so
+	that inproper usage of Glib::Object methods results in an error
+	message and not in a segfault.
+
+	* CodeGen.pm (gen_boxed_stuff): Correctly cast the return value of
+	the Sv$classname macros for boxed types so as to avoid handing out
+	void* pointers.
+
 2007-12-16  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	Merge from HEAD:
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.171.
+
+2007-12-16  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
 
 	* GBookmarkFile.xs: Hush compiler warning.
 
-2007-11-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+	* CodeGen.pm
+	* gperl.h
+	* typemap: Replace the last occurences of SvOK with
+	gperl_sv_defined.
 
-	Merge from HEAD:
+2007-11-20  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.exports
+	* Glib.xs
+	* gperl.h: Add gperl_sv_defined, which checks an SV for
+	definedness just like Perl's defined() does.
+
+	* GBoxed.xs
+	* GError.xs
+	* GObject.xs
+	* GSignal.xs
+	* GType.xs
+	* GValue.xs
+	* Glib.xs: Use gperl_sv_defined instead of SvOK to check SVs for
+	definedness.  This keeps Glib from erroneously thinking your
+	scalars are undefined, for example when using tied hashes.
+
+	* MANIFEST
+	* t/tied_definedness.t: Test that values from tied hashes get
+	through the definedness checks.
+
+2007-11-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* GError.xs (gperl_gerror_from_sv): Fix the check for undefined
 	domain keys in GError hashes.
@@ -68,19 +180,21 @@
 
 2007-11-15  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	Merge from HEAD:
-
 	* Glib.exports: Add SvGKeyFile.  (Reported by spicy jack)
 
-2007-11-10  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+2007-10-28  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm
+	* Makefile.PL
 	* NEWS
-	* README: Stable release 1.162.
+	* README: Unstable release 1.170.
+
+2007-10-28  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs: Define and use PORTABLE_LL_FORMAT and
+	PORTABLE_ULL_FORMAT.
 
 2007-10-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
-
-	Merge from HEAD:
 
 	* AUTHORS
 	* MakeHelper.pm (postamble_docs_full): When constructing the
@@ -89,21 +203,41 @@
 
 2007-10-14  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	* Glib.pm
-	* NEWS
-	* README: Stable release 1.161.
-
-2007-10-14  Torsten Schoenfeld  <kaffeetisch@gmx.de>
-
-	Merge from HEAD:
-
 	* Makefile.PL: Use BEGIN { require 5.008; } instead of use 5.008;
 	so automatic CPAN testers know which perl version we need.  Also
 	get rid of the MY package by prefixing the relevant subs with
 	`MY::´.
 
+2007-10-08  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
 	* GObject.xs (Glib::Object::CLONE): Check that perl_gobjects !=
 	NULL before working with it, to avoid an assertion.
+
+2007-10-07  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MakeHelper.pm
+	* t/make_helper.t: Add
+	Glib::MakeHelper::get_configure_requires_yaml to generate YAML
+	suitable for use with EU::MM's EXTRA_META.
+
+	* Makefile.PL: Use the above to tell EU::MM to generate a correct
+	configure_requires entry.  Also output a no_index entry to tell
+	the CPAN indexer what to ignore.
+
+2007-09-24	kaffeetisch
+
+	* CodeGen.pm
+	* GenPod.pm
+	* MakeHelper.pm
+	* Makefile.PL: Prettify build output by summarizing what is done
+	instead of printing executed command lines, and by removing
+	unnecessarily verbose output.  Use `make NOECHO=" "´ if you want
+	to see the command lines.
+
+	* MakeHelper.pm: Implement custom Makefile rule generators in MY
+	that print stuff like [ XS File.xs ] instead of the overly long
+	command lines.  Again, use `make NOECHO=" "´ if you want to see
+	the command lines.
 
 2007-09-16	kaffeetisch
 

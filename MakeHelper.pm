@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.37.2.1 2007/10/18 16:08:55 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.42 2008/02/24 17:27:24 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -138,6 +138,27 @@ sub read_source_list_file {
 	return @list;
 }
 
+=item string = Glib::MakeHelper->get_configure_requires_yaml (%module_to_version)
+
+Generates YAML code that lists every module found in I<%module_to_version>
+under the C<configure_requires> key.  This can be used with
+I<ExtUtils::MakeMaker>'s C<EXTRA_META> parameter to specify which modules are
+needed at I<Makefile.PL> time.
+
+=cut
+
+sub get_configure_requires_yaml {
+  shift; # package name
+  my %prereqs = @_;
+
+  my $yaml = "configure_requires:\n";
+  while (my ($module, $version) = each %prereqs) {
+    $yaml .= "   $module: $version\n";
+  }
+
+  return $yaml;
+}
+
 =item string = Glib::MakeHelper->postamble_clean (@files)
 
 Create and return the text of a realclean rule that cleans up after much 
@@ -155,7 +176,7 @@ sub postamble_clean
 	shift; # package name
 "
 realclean ::
-	-\$(RM_RF) build blib_done perl-\$(DISTNAME).spec ".join(" ", @_)."
+	-\$(RM_RF) build perl-\$(DISTNAME).spec ".join(" ", @_)."
 ";
 }
 
@@ -376,68 +397,46 @@ sub postamble_docs_full {
 	# of blib. basically what we need to wait on is the static/dynamic
 	# lib file to be created. the following trick is intended to handle
 	# both of those cases without causing the other to happen.
-	my $blib_done;
-
-	# this is very sloppy, because different makes have different
-	# conditional syntaxes.  we support three brands: nmake, BSD make, and
-	# GNU make.  On Windows, we use nmake.  On BSD we use BSD make unless
-	# the environment variable FORCE_GMAKE is set, in which case we use
-	# gmake.  Everywhere else, we use gmake.
-	require Config;
-	if ($Config::Config{make} eq 'nmake') {
-		$blib_done = "
-!If \"\$(LINKTYPE)\" == \"dynamic\"
-BLIB_DONE=\$(INST_DYNAMIC)
-!ELSE
-BLIB_DONE=\$(INST_STATIC)
-!ENDIF
-";
-	} elsif ($^O =~ m{^(freebsd|netbsd|openbsd)$}i && !$ENV{FORCE_GMAKE}) {
-		warn "Defaulting to BSD make; set FORCE_GMAKE if you want GNU make\n";
-		$blib_done = "
-.if \$(LINKTYPE) == dynamic
-BLIB_DONE=\$(INST_DYNAMIC)
-.else
-BLIB_DONE=\$(INST_STATIC)
-.endif
-";
-	} else {
-		# assuming GNU Make
-		$blib_done = "
-ifeq (\$(LINKTYPE), dynamic)
-	BLIB_DONE=\$(INST_DYNAMIC)
-else
-	BLIB_DONE=\$(INST_STATIC)
-endif
-";
-	}
 
 "
-BLIB_DONE=
-$blib_done
+BLIB_DONE=build/blib_done_\$(LINKTYPE)
+
+build/blib_done_dynamic :: \$(INST_DYNAMIC)
+	\$(NOECHO) \$(TOUCH) \$@
+
+build/blib_done_static :: \$(INST_STATIC)
+	\$(NOECHO) \$(TOUCH) \$@
+
+build/blib_done_ :: build/blib_done_dynamic
+	\$(NOECHO) \$(TOUCH) \$@
 
 # documentation stuff
+\$(INST_LIB)/Glib/GenPod.pm \$(INST_LIB)/Glib/ParseXSDoc.pm: pm_to_blib
+
 build/doc.pl :: Makefile @xs_files
-	$^X -I \$(INST_LIB) -I \$(INST_ARCHLIB) -MGlib::ParseXSDoc \\
+	\$(NOECHO) \$(ECHO) Parsing XS files...
+	\$(NOECHO) $^X -I \$(INST_LIB) -I \$(INST_ARCHLIB) -MGlib::ParseXSDoc \\
 		-e 'xsdocparse (qw(@xs_files))' > \$@
 
 # passing all of these files through the single podindex file, which is 
 # created at the same time, prevents problems with -j4 where xsdoc2pod would 
 # have multiple instances
-@gend_pods :: build/podindex \$(POD_DEPENDS)
+@gend_pods :: build/podindex
 
-build/podindex :: \$(BLIB_DONE) Makefile build/doc.pl
-	$^X -I \$(INST_LIB) -I \$(INST_ARCHLIB) -MGlib::GenPod -M\$(NAME) \\
+build/podindex :: \$(BLIB_DONE) Makefile build/doc.pl \$(POD_DEPENDS)
+	\$(NOECHO) \$(ECHO) Generating POD...
+	\$(NOECHO) $^X -I \$(INST_LIB) -I \$(INST_ARCHLIB) -MGlib::GenPod -M\$(NAME) \\
 		-e '$docgen_code'
 
 \$(INST_LIB)/\$(FULLEXT)/:
 	$^X -MExtUtils::Command -e mkpath \$@
 
 \$(INST_LIB)/\$(FULLEXT)/index.pod :: \$(INST_LIB)/\$(FULLEXT)/ build/podindex
-	$^X -e 'print \"\\n=head1 NAME\\n\\n\$(NAME) API Reference Pod Index\\n\\n=head1 PAGES\\n\\n=over\\n\\n\"' \\
+	\$(NOECHO) \$(ECHO) Creating POD index...
+	\$(NOECHO) $^X -e 'print \"\\n=head1 NAME\\n\\n\$(NAME) - API Reference Pod Index\\n\\n=head1 PAGES\\n\\n=over\\n\\n\"' \\
 		> \$(INST_LIB)/\$(FULLEXT)/index.pod
-	$^X -nae 'print \"=item L<\$\$F[1]>\\n\\n\";' < build/podindex >> \$(INST_LIB)/\$(FULLEXT)/index.pod
-	$^X -e 'print \"=back\\n\\n\";' >> \$(INST_LIB)/\$(FULLEXT)/index.pod
+	\$(NOECHO) $^X -nae 'print \"=item L<\$\$F[1]>\\n\\n\";' < build/podindex >> \$(INST_LIB)/\$(FULLEXT)/index.pod
+	\$(NOECHO) $^X -e 'print \"=back\\n\\n\";' >> \$(INST_LIB)/\$(FULLEXT)/index.pod
 "
 }
 
@@ -533,6 +532,35 @@ sub const_cccmd {
 	}
 	$inherited;
 }
+
+#
+# And, some black magick to help make learn to shut the hell up.
+#
+
+sub quiet_rule {
+	my $cmds = shift;
+	my @lines = split /\n/, $cmds;
+	foreach (@lines) {
+		if (/NOECHO/) {
+			# already quiet
+		} elsif (/XSUBPP/) {
+			s/^\t/\t\$(NOECHO) \$(ECHO) [ XS \$< ] && /;
+		} elsif (/CCCMD/) {
+			s/^\t/\t\$(NOECHO) \$(ECHO) [ CC \$< ] && /;
+		} elsif (/\bLD\b/) {
+			s/^\t/\t\$(NOECHO) \$(ECHO) [ LD \$@ ] && /;
+		} elsif (/[_\b]AR\b/) {
+			s/^\t/\t\$(NOECHO) \$(ECHO) [ AR \$@ ] && /;
+		}
+	}
+	return join "\n", @lines;
+}
+
+sub c_o { return quiet_rule (shift->SUPER::c_o (@_)); }
+sub xs_o { return quiet_rule (shift->SUPER::xs_o (@_)); }
+sub xs_c { return quiet_rule (shift->SUPER::xs_c (@_)); }
+sub dynamic_lib { return quiet_rule (shift->SUPER::dynamic_lib (@_)); }
+sub static_lib { return quiet_rule (shift->SUPER::static_lib (@_)); }
 
 1;
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.78.2.2 2008/01/09 20:50:54 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.85 2008/01/17 20:55:51 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -418,7 +418,7 @@ gperl_convert_flags (GType type,
 {
 	if (SvROK (val) && sv_derived_from (val, "Glib::Flags"))
         	return SvIV (SvRV (val));
-	if (SvROK (val) && SvTYPE (SvRV(val)) == SVt_PVAV) {
+	if (gperl_sv_is_array_ref (val)) {
 		AV* vals = (AV*) SvRV(val);
 		gint value = 0;
 		int i;
@@ -697,11 +697,14 @@ C<SvIV> instead.
 #ifdef WIN32
 # ifdef _MSC_VER
 #  define PORTABLE_STRTOLL(str, end, base) _strtoi64 (str, end, base)
+#  define PORTABLE_LL_FORMAT "%I64d"
 # else
 #  define PORTABLE_STRTOLL(str, end, base) strtol (str, end, base)
+#  define PORTABLE_LL_FORMAT "%ld"
 # endif
 #else
 # define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
+# define PORTABLE_LL_FORMAT "%lld"
 #endif
 
 gint64
@@ -731,8 +734,9 @@ newSVGInt64 (gint64 value)
 	STRLEN length;
 	SV *sv;
 
-	/* newSVpvf doesn't seem to work correctly. */
-	length = sprintf(string, "%lld", value);
+	/* newSVpvf doesn't seem to work correctly.
+	sv = newSVpvf (PORTABLE_LL_FORMAT, value); */
+	length = sprintf(string, PORTABLE_LL_FORMAT, value);
 	sv = newSVpv (string, length);
 
 	return sv;
@@ -749,11 +753,14 @@ uses C<SvUV> instead.
 #ifdef WIN32
 # ifdef _MSC_VER
 #  define PORTABLE_STRTOULL(str, end, base) _strtoui64 (str, end, base)
+#  define PORTABLE_ULL_FORMAT "%I64u"
 # else
 #  define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
+#  define PORTABLE_ULL_FORMAT "%lu"
 # endif
 #else
 # define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
+# define PORTABLE_ULL_FORMAT "%llu"
 #endif
 
 guint64
@@ -783,8 +790,9 @@ newSVGUInt64 (guint64 value)
 	STRLEN length;
 	SV *sv;
 
-	/* newSVpvf doesn't seem to work correctly. */
-	length = sprintf(string, "%llu", value);
+	/* newSVpvf doesn't seem to work correctly.
+	sv = newSVpvf (PORTABLE_ULL_FORMAT, value); */
+	length = sprintf(string, PORTABLE_ULL_FORMAT, value);
 	sv = newSVpv (string, length);
 
 	return sv;
@@ -1095,12 +1103,11 @@ parse_signal_hash (GType instance_type,
 	PERL_UNUSED_VAR (signal_name);
 
 	svp = hv_fetch (hv, "flags", 5, FALSE);
-	if (svp && (*svp) && SvOK (*svp))
+	if (svp && gperl_sv_is_defined (*svp))
 		s->flags = SvGSignalFlags (*svp);
 
 	svp = hv_fetch (hv, "param_types", 11, FALSE);
-	if (svp && (*svp) && SvROK (*svp)
-	    && SvTYPE (SvRV (*svp)) == SVt_PVAV) {
+	if (svp && gperl_sv_is_array_ref (*svp)) {
 		guint i;
 		AV * av = (AV*) SvRV (*svp);
 		s->n_params = av_len (av) + 1;
@@ -1118,7 +1125,7 @@ parse_signal_hash (GType instance_type,
 
 	svp = hv_fetch (hv, "class_closure", 13, FALSE);
 	if (svp && *svp) {
-		if (SvOK (*svp))
+		if (gperl_sv_is_defined (*svp))
 			s->class_closure =
 				gperl_closure_new (*svp, NULL, FALSE);
 		/* else the class closure is NULL */
@@ -1127,7 +1134,7 @@ parse_signal_hash (GType instance_type,
 	}
 
 	svp = hv_fetch (hv, "return_type", 11, FALSE);
-	if (svp && (*svp) && SvOK (*svp)) {
+	if (svp && gperl_sv_is_defined (*svp)) {
 		s->return_type = gperl_type_from_package (SvPV_nolen (*svp));
 		if (!s->return_type)
 			croak ("unknown or unregistered return type %s",
@@ -1170,7 +1177,7 @@ add_signals (GType instance_type, HV * signals)
 
 		/* parse the key's value... */
 		value = hv_iterval (signals, he);
-		if (SvROK (value) && SvTYPE (SvRV (value)) == SVt_PVHV) {
+		if (gperl_sv_is_hash_ref (value)) {
 			/*
 			 * value is a hash describing a new signal.
 			 */
@@ -1202,7 +1209,7 @@ add_signals (GType instance_type, HV * signals)
 				       signal_name);
 
 		} else if ((SvPOK (value) && SvLEN (value) > 0) ||
-		           (SvROK (value) && SvTYPE (SvRV (value)) == SVt_PVCV)) {
+		           gperl_sv_is_code_ref (value)) {
 			/*
 			 * a subroutine reference or method name to override
 			 * the class closure for this signal.
@@ -1333,7 +1340,7 @@ add_properties (GType instance_type, AV * properties)
 		GParamSpec * pspec = NULL;
 		if (sv_derived_from (sv, "Glib::ParamSpec"))
 			pspec = SvGParamSpec (sv);
-		else if (SVt_PVHV == SvTYPE (SvRV (sv))) {
+		else if (gperl_sv_is_hash_ref (sv)) {
 			HV * hv = (HV*) SvRV (sv);
 			SV ** svp;
 			SV * setter = NULL;
@@ -1422,7 +1429,7 @@ add_interfaces (GType instance_type, AV * interfaces)
 
         for (i = 0; i <= av_len (interfaces); i++) {
 		SV ** svp = av_fetch (interfaces, i, FALSE);
-		if (!svp || !SvOK (*svp))
+		if (!svp || !gperl_sv_is_defined (*svp))
 			croak ("encountered undefined interface name");
 
 		/* call the interface's setup function on this class. */
@@ -2172,17 +2179,17 @@ g_type_register_object (class, parent_package, new_package, ...);
 	for (i = 3 ; i < items ; i += 2) {
 		char * key = SvPV_nolen (ST (i));
 		if (strEQ (key, "signals")) {
-                        if (SvROK (ST (i+1)) && SvTYPE (SvRV (ST (i+1))) == SVt_PVHV)
+                        if (gperl_sv_is_hash_ref (ST (i+1)))
                                 add_signals (new_type, (HV*)SvRV (ST (i+1)));
                         else
                           	croak ("signals must be a hash of signalname => signalspec pairs");
                 } else if (strEQ (key, "properties")) {
-                        if (SvROK (ST (i+1)) && SvTYPE (SvRV (ST (i+1))) == SVt_PVAV)
+                        if (gperl_sv_is_array_ref (ST (i+1)))
                                 add_properties (new_type, (AV*)SvRV (ST (i+1)));
                         else
                           	croak ("properties must be an array of GParamSpecs");
                 } else if (strEQ (key, "interfaces")) {
-			if (SvROK (ST (i+1)) && SvTYPE (SvRV (ST (i+1))) == SVt_PVAV)
+			if (gperl_sv_is_array_ref (ST (i+1)))
 				add_interfaces (new_type, (AV*)SvRV (ST (i+1)));
 			else
 				croak ("interfaces must be an array of package names");
@@ -2273,22 +2280,22 @@ g_type_register_enum (class, name, ...)
 		sv = (SV*)ST (i+2);
 		/* default to the i based numbering */
 		values[i].value = i + 1;
-		if (SvROK(sv) && SvTYPE(SvRV(sv))==SVt_PVAV)
+		if (gperl_sv_is_array_ref (sv))
 		{
 			/* [ name => value ] syntax */
 			AV * av = (AV*)SvRV(sv);
 			/* value_name */
 			av2sv = av_fetch (av, 0, 0);
-			if (av2sv && *av2sv && SvOK(*av2sv))
+			if (av2sv && gperl_sv_is_defined (*av2sv))
 				values[i].value_name = SvPV_nolen (*av2sv);
 			else
 				croak ("invalid enum name and value pair, no name provided");
 			/* custom value */
 			av2sv = av_fetch (av, 1, 0);
-			if (av2sv && *av2sv && SvOK(*av2sv))
+			if (av2sv && gperl_sv_is_defined (*av2sv))
 				values[i].value = SvIV (*av2sv);
 		}
-		else if (SvOK (sv))
+		else if (gperl_sv_is_defined (sv))
 		{
 			/* name syntax */
 			values[i].value_name = SvPV_nolen (sv);
@@ -2359,22 +2366,22 @@ g_type_register_flags (class, name, ...)
 		sv = (SV*)ST (i+2);
 		/* default to the i based numbering */
 		values[i].value = 1 << i;
-		if (SvROK(sv) && SvTYPE(SvRV(sv))==SVt_PVAV)
+		if (gperl_sv_is_array_ref (sv))
 		{
 			/* [ name => value ] syntax */
 			AV * av = (AV*)SvRV(sv);
 			/* value_name */
 			av2sv = av_fetch (av, 0, 0);
-			if (av2sv && *av2sv && SvOK(*av2sv))
+			if (av2sv && gperl_sv_is_defined (*av2sv))
 				values[i].value_name = SvPV_nolen (*av2sv);
 			else
 				croak ("invalid flag name and value pair, no name provided");
 			/* custom value */
 			av2sv = av_fetch (av, 1, 0);
-			if (av2sv && *av2sv && SvOK(*av2sv))
+			if (av2sv && gperl_sv_is_defined (*av2sv))
 				values[i].value = SvIV (*av2sv);
 		}
-		else if (SvOK (sv))
+		else if (gperl_sv_is_defined (sv))
 		{
 			/* name syntax */
 			values[i].value_name = SvPV_nolen (sv);
@@ -2559,7 +2566,12 @@ hasn't been registered with the bindings by C<gperl_register_fundamental()>
 this function will croak.
 
 Returns the values as a list of hashes, one hash for each value, containing
-that value's name and nickname.
+the value, name and nickname, eg. for Glib::SignalFlags
+
+    { value => 8,
+      name  => 'G_SIGNAL_NO_RECURSE',
+      nick  => 'no-recurse'
+    }
 
 =cut
 void
@@ -2574,15 +2586,15 @@ list_values (class, const char * package)
 		croak ("%s is not registered with either GPerl or GLib",
 		       package);
 	/*
-	 * unfortunately, GFlagsValue and GEnumValue different structures
-	 * that happen to have identical definitions, so even though it
-	 * is very inviting to use the same code for them, it's not
-	 * technically a good idea.
+	 * GFlagsValue and GEnumValue are nearly the same, but differ in
+	 * that GFlagsValue is a guint for the value, but GEnumValue is gint
+	 * (and some enums do indeed use negatives, eg. GtkResponseType).
 	 */
 	if (G_TYPE_IS_ENUM (type)) {
 		GEnumValue * v = gperl_type_enum_get_values (type);
 		for ( ; v && v->value_nick && v->value_name ; v++) {
 			HV * hv = newHV ();
+			hv_store (hv, "value",5, newSViv (v->value), 0);
 			hv_store (hv, "nick", 4, newSVpv (v->value_nick, 0), 0);
 			hv_store (hv, "name", 4, newSVpv (v->value_name, 0), 0);
 			XPUSHs (sv_2mortal (newRV_noinc ((SV*)hv)));
@@ -2591,6 +2603,7 @@ list_values (class, const char * package)
 		GFlagsValue * v = gperl_type_flags_get_values (type);
 		for ( ; v && v->value_nick && v->value_name ; v++) {
 			HV * hv = newHV ();
+			hv_store (hv, "value",5, newSVuv (v->value), 0);
 			hv_store (hv, "nick", 4, newSVpv (v->value_nick, 0), 0);
 			hv_store (hv, "name", 4, newSVpv (v->value_name, 0), 0);
 			XPUSHs (sv_2mortal (newRV_noinc ((SV*)hv)));

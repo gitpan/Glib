@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.20 2005/11/13 16:43:43 muppetman Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.22 2008/01/07 18:50:07 kaffeetisch Exp $
  */
 
 =head2 GValue
@@ -66,7 +66,7 @@ gperl_value_from_sv (GValue * value,
 {
 	char* tmp;
 	GType type;
-	if (!sv || !SvOK (sv))
+	if (!gperl_sv_is_defined (sv))
 		return TRUE; /* use the GValue type's default */
 	type = G_TYPE_FUNDAMENTAL (G_VALUE_TYPE (value));
 	/*printf ("TYPE: %d, S: %s\n", type, SvPV_nolen(sv));*/
@@ -125,7 +125,7 @@ gperl_value_from_sv (GValue * value,
 			/* SVs need special treatment! */
 			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV))
 				g_value_set_boxed (value,
-				                   sv && SvOK (sv) 
+				                   gperl_sv_is_defined (sv)
 				                   ? sv : NULL);
 			else
 				g_value_set_boxed (value, gperl_get_boxed_check (sv, G_VALUE_TYPE(value)));

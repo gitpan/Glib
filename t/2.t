@@ -1,5 +1,6 @@
+#!/usr/bin/perl
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.8 2005/05/30 17:58:25 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.9 2007/12/22 19:00:48 kaffeetisch Exp $
 #
 # Really simple smoke tests for Glib::Object wrappers.
 #
@@ -8,11 +9,11 @@ use strict;
 use warnings;
 
 # Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl 1.t'
+# `make test'. After `make install' it should work as `perl 2.t'
 
 #########################
 
-use Test::More tests => 9;
+use Test::More tests => 10;
 BEGIN { use_ok('Glib'); Glib::Object->set_threadsafe (1); };
 
 #########################
@@ -45,6 +46,13 @@ my $obj3 = Glib::Object->new_from_pointer ($obj3_pointer);
 isa_ok ($obj3, 'Glib::Object');
 is ($obj3, $obj2);
 is ($obj3->{key}, $obj2->{key});
+
+# regression tests
+
+# make sure calling a Glib::Object method on something invalid results in an
+# error message, not in a segmentation fault
+eval { Glib::Object->get (123); };
+like ($@, qr/is not of type Glib::Object/);
 
 
 __END__

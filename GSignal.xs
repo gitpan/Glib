@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.28 2006/08/07 18:17:19 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.31 2008/01/07 18:50:06 kaffeetisch Exp $
  */
 
 =head2 GSignal
@@ -390,8 +390,7 @@ get_gtype_or_croak (SV * object_or_class_name)
 {
 	GType gtype;
 
-	if (object_or_class_name &&
-	    SvOK (object_or_class_name) &&
+	if (gperl_sv_is_defined (object_or_class_name) &&
 	    SvROK (object_or_class_name)) {
 		GObject * object = SvGObject (object_or_class_name);
 		if (!object)
@@ -629,9 +628,45 @@ g_signal_query (SV * object_or_class_name, const char * name)
 ##					     guint		*signal_id_p,
 ##					     GQuark		*detail_p,
 ##					     gboolean		 force_detail_quark);
+
 ##GSignalInvocationHint* g_signal_get_invocation_hint (gpointer    instance);
-##
-##
+=for apidoc
+=for signature $ihint = $instance->signal_get_invocation_hint
+Get a reference to a hash describing the innermost signal currently active
+on C<$instance>.  Returns undef if no signal emission is active.  This
+invocation hint is the same object passed to signal emission hooks, and
+contains these keys:
+
+=over
+
+=item signal_name
+
+The name of the signal being emitted.
+
+=item detail
+
+The detail passed on for this emission.  For example, a C<notify> signal will
+have the property name as the detail.
+
+=item run_type
+
+The current stage of signal emission, one of "run-first", "run-last", or
+"run-cleanup".
+
+=back
+
+=cut
+SV*
+g_signal_get_invocation_hint (GObject *instance)
+    PREINIT:
+        GSignalInvocationHint *ihint;
+    CODE:
+        ihint = g_signal_get_invocation_hint (instance);
+        RETVAL = ihint ? newSVGSignalInvocationHint (ihint) : &PL_sv_undef;
+    OUTPUT:
+        RETVAL
+
+
 ##/* --- signal emissions --- */
 ##void	g_signal_stop_emission		    (gpointer		  instance,
 ##					     guint		  signal_id,

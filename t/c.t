@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.7 2005/10/05 19:03:39 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.8 2008/01/17 20:55:52 kaffeetisch Exp $
 #
 
 #
@@ -11,7 +11,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 14;
+use Test::More tests => 15;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -69,6 +69,41 @@ eval {
 	1;
 };
 ok ($@, 'failed register_flag with undef');
+
+my @actual_values = Glib::Type->list_values ('TestEnum');
+my @expected_values = (
+  {
+    value => 1,
+    name => 'value-one',
+    nick => 'value-one',
+  },
+  {
+    value => 2,
+    name => 'value-two',
+    nick => 'value-two',
+  },
+  {
+    value => 3,
+    name => 'value-three',
+    nick => 'value-three',
+  },
+  {
+    value => 42,
+    name => 'value-four',
+    nick => 'value-four',
+  },
+  {
+    value => 5,
+    name => 'value-five',
+    nick => 'value-five',
+  },
+  {
+    value => 6,
+    name => 'value-six',
+    nick => 'value-six',
+  },
+);
+is_deeply (\@actual_values, \@expected_values, 'list_interfaces');
 
 package Tester;
 

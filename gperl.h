@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.49 2007/09/15 14:10:12 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.54 2008/01/07 19:17:08 kaffeetisch Exp $
  */
 
 #ifndef _GPERL_H_
@@ -75,6 +75,15 @@ void gperl_argv_update (GPerlArgv *pargv);
 void gperl_argv_free (GPerlArgv *pargv);
 
 char * gperl_format_variable_for_output (SV * sv);
+
+gboolean gperl_sv_is_defined (SV *sv);
+
+#define gperl_sv_is_array_ref(sv) \
+	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVAV)
+#define gperl_sv_is_code_ref(sv) \
+	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVCV)
+#define gperl_sv_is_hash_ref(sv) \
+	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVHV)
 
 /* internal trickery */
 gpointer gperl_type_class (GType type);
@@ -248,8 +257,8 @@ typedef GPerlFilename GPerlFilename_ornull;
 
 #define newSVGObject(obj)	(gperl_new_object ((obj), FALSE))
 #define newSVGObject_noinc(obj)	(gperl_new_object ((obj), TRUE))
-#define SvGObject(sv)		(gperl_get_object (sv))
-#define SvGObject_ornull(sv)	((sv && SvOK (sv)) ? SvGObject (sv) : NULL)
+#define SvGObject(sv)		(gperl_get_object_check (sv, G_TYPE_OBJECT))
+#define SvGObject_ornull(sv)	(gperl_sv_is_defined (sv) ? SvGObject (sv) : NULL)
 
 
 /*

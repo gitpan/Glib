@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007 by the gtk2-perl team (see the file AUTHORS for
+# Copyright (C) 2003-2008 by the gtk2-perl team (see the file AUTHORS for
 # the full list)
 #
 # This library is free software; you can redistribute it and/or modify it under
@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.112.2.4 2008/01/09 21:01:06 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Glib.pm,v 1.118 2008/03/10 20:26:27 kaffeetisch Exp $
 #
 
 package Glib;
@@ -63,7 +63,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.164';
+our $VERSION = '1.180';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -530,7 +530,7 @@ bignum/bigint will automatically use L<Math::BigInt::Lite> if it's available.
 
 =back
 
-=head1 Exports
+=head1 EXPORTS
 
 For the most part, gtk2-perl avoids exporting things.  Nothing is exported by
 default, but some functions and constants in Glib are available by request;
@@ -611,7 +611,7 @@ patches and tests here and there.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003-2007 by muppet and the gtk2-perl team
+Copyright 2003-2008 by muppet and the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.69.2.3 2008/01/09 20:49:05 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.74 2008/01/08 05:58:56 muppetman Exp $
  */
 
 /*
@@ -797,7 +797,7 @@ gperl_get_object (SV * sv)
 {
 	MAGIC *mg;
 
-	if (!sv || !SvOK (sv) || !SvROK (sv) || !(mg = mg_find (SvRV (sv), PERL_MAGIC_ext)))
+	if (!gperl_sv_is_defined (sv) || !SvROK (sv) || !(mg = mg_find (SvRV (sv), PERL_MAGIC_ext)))
 		return NULL;
 	return (GObject *) mg->mg_ptr;
 }
@@ -1308,8 +1308,7 @@ g_object_find_property (object_or_class_name, ...)
 	GType type = G_TYPE_INVALID;
 	gchar *name = NULL;
     PPCODE:
-	if (object_or_class_name &&
-	    SvOK (object_or_class_name) &&
+	if (gperl_sv_is_defined (object_or_class_name) &&
 	    SvROK (object_or_class_name)) {
 		GObject * object = SvGObject (object_or_class_name);
 		if (!object)

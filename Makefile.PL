@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.66.2.1 2007/10/14 18:57:33 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.71 2008/02/24 17:27:02 kaffeetisch Exp $
 #
 
 BEGIN { require 5.008; }
@@ -121,7 +121,7 @@ our $glib = ExtUtils::Depends->new ('Glib');
 # add -I. and -I./build to the include path so we can find our own files.
 # this will be inherited by dependant modules, so they can find their
 # generated files.
-$glib->set_inc ($glibcfg{cflags} . $gthreadcfg{cflags} . ' -I. ');
+$glib->set_inc (' -I. ' . $glibcfg{cflags} . $gthreadcfg{cflags});
 $glib->set_libs ($glibcfg{libs} . $gthreadcfg{libs});
 my $cwd = cwd();
 $glib->add_typemaps (map {File::Spec->catfile($cwd,$_)} 'typemap');
@@ -135,6 +135,11 @@ $glib->save_config ('build/IFiles.pm');
 our @exports;
 require 'Glib.exports';
 
+my $configure_requires =
+  Glib::MakeHelper->get_configure_requires_yaml(%PREREQ_PM);
+
+my $no_index_xs = "- " . join "\n  - ", @xs_files;
+
 WriteMakefile(
     NAME		=> 'Glib',
     VERSION_FROM	=> 'Glib.pm', # finds $VERSION
@@ -144,10 +149,21 @@ WriteMakefile(
     MAN3PODS		=> $glib ? \%pod_files : {},
     FUNCLIST		=> \@exports,
     DL_FUNCS		=> { Glib => [] },
+
     $glib ? $glib->get_makefile_vars : (),
+
+    EXTRA_META    => qq/
+$configure_requires
+no_index:
+    package:
+    - MY
+    file:
+    - xsapi.pod.foot
+    $no_index_xs
+/,
 );
 
-=unstable
+#=unstable
 
 print <<__EOW__;
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -155,12 +171,12 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
    This is an unstable development release of Glib.  The API is not
    frozen and things are subject to change at any time.  Report any
    bugs to gtk-perl-list AT gnome DOT org as soon as possible.
-   Please use the 1.14x series for important work.
+   Please use the 1.16x series for important work.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
 
-=cut
+#=cut
 
 =frozen
 
@@ -188,7 +204,8 @@ build/doc.pl :: \$(INST_LIB)/Glib/ParseXSDoc.pm
 build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 
 \$(INST_LIB)/\$(FULLEXT)/xsapi.pod :: build/doc.pl apidoc.pl xsapi.pod.head xsapi.pod.foot
-	$^X apidoc.pl xsapi.pod.head xsapi.pod.foot build/doc.pl > \$@
+	\$(NOECHO) \$(ECHO) Creating XS API documentation...
+	\$(NOECHO) $^X apidoc.pl xsapi.pod.head xsapi.pod.foot build/doc.pl > \$@
 
 "
 	     . Glib::MakeHelper->postamble_clean ()
@@ -209,7 +226,7 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 
 __END__
 
-Copyright (C) 2003-2006 by the gtk2-perl team (see the file AUTHORS for
+Copyright (C) 2003-2007 by the gtk2-perl team (see the file AUTHORS for
 the full list)
 
 This library is free software; you can redistribute it and/or modify it under
