@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.71 2008/02/24 17:27:02 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.74 2008/03/14 22:05:45 kaffeetisch Exp $
 #
 
 BEGIN { require 5.008; }
@@ -138,8 +138,6 @@ require 'Glib.exports';
 my $configure_requires =
   Glib::MakeHelper->get_configure_requires_yaml(%PREREQ_PM);
 
-my $no_index_xs = "- " . join "\n  - ", @xs_files;
-
 WriteMakefile(
     NAME		=> 'Glib',
     VERSION_FROM	=> 'Glib.pm', # finds $VERSION
@@ -154,16 +152,10 @@ WriteMakefile(
 
     EXTRA_META    => qq/
 $configure_requires
-no_index:
-    package:
-    - MY
-    file:
-    - xsapi.pod.foot
-    $no_index_xs
 /,
 );
 
-#=unstable
+=unstable
 
 print <<__EOW__;
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -176,7 +168,7 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
 
-#=cut
+=cut
 
 =frozen
 
@@ -196,6 +188,9 @@ __EOW__
 sub MY::postamble
 {
 	require 'MakeHelper.pm';
+	# $glib will be undefined if any of our dependencies couldn't be found;
+	# don't do anything in this case.
+	return unless defined $glib;
 	return "
 # these are special for Glib since it's providing the modules,
 # it just has to make sure that they are ready before it can go

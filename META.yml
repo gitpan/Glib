@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Glib
-version:             1.180
+version:             1.181
 abstract:            Perl wrappers for the GLib utility and Object libraries
 license:             ~
 author:              ~
@@ -16,24 +16,3 @@ meta-spec:
 configure_requires:
    ExtUtils::Depends: 0.200
    ExtUtils::PkgConfig: 1.00
-
-no_index:
-    package:
-    - MY
-    file:
-    - xsapi.pod.foot
-    - Glib.xs
-  - GError.xs
-  - GUtils.xs
-  - GLog.xs
-  - GType.xs
-  - GBoxed.xs
-  - GObject.xs
-  - GValue.xs
-  - GClosure.xs
-  - GSignal.xs
-  - GMainLoop.xs
-  - GIOChannel.xs
-  - GParamSpec.xs
-  - GKeyFile.xs
-  - GBookmarkFile.xs
