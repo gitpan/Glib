@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.85 2008/01/17 20:55:51 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.86 2008/03/30 17:05:26 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -694,16 +694,31 @@ C<SvIV> instead.
 # include <stdlib.h>
 #endif
 
+#if GLIB_CHECK_VERSION (2, 12, 0)
+# define PORTABLE_STRTOLL(str, end, base) g_ascii_strtoll (str, end, base)
+#else
+# ifdef WIN32
+#  ifdef _MSC_VER
+#   if (_MSC_VER >= 1300)
+#    define PORTABLE_STRTOLL(str, end, base) _strtoi64 (str, end, base)
+#   else
+#    define PORTABLE_STRTOLL(str, end, base) _atoi64 (str)
+#   endif
+#  else
+#   define PORTABLE_STRTOLL(str, end, base) strtol (str, end, base)
+#  endif
+# else
+#  define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
+# endif
+#endif
+
 #ifdef WIN32
 # ifdef _MSC_VER
-#  define PORTABLE_STRTOLL(str, end, base) _strtoi64 (str, end, base)
-#  define PORTABLE_LL_FORMAT "%I64d"
+#   define PORTABLE_LL_FORMAT "%I64d"
 # else
-#  define PORTABLE_STRTOLL(str, end, base) strtol (str, end, base)
 #  define PORTABLE_LL_FORMAT "%ld"
 # endif
 #else
-# define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
 # define PORTABLE_LL_FORMAT "%lld"
 #endif
 
@@ -750,16 +765,31 @@ uses C<SvUV> instead.
 
 =cut
 
+#if GLIB_CHECK_VERSION (2, 2, 0)
+# define PORTABLE_STRTOULL(str, end, base) g_ascii_strtoull (str, end, base)
+#else
+# ifdef WIN32
+#  ifdef _MSC_VER
+#   if (_MSC_VER >= 1300)
+#    define PORTABLE_STRTOULL(str, end, base) _strtoui64 (str, end, base)
+#   else
+#    define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
+#   endif
+#  else
+#   define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
+#  endif
+# else
+#  define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
+# endif
+#endif
+
 #ifdef WIN32
 # ifdef _MSC_VER
-#  define PORTABLE_STRTOULL(str, end, base) _strtoui64 (str, end, base)
 #  define PORTABLE_ULL_FORMAT "%I64u"
 # else
-#  define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
 #  define PORTABLE_ULL_FORMAT "%lu"
 # endif
 #else
-# define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
 # define PORTABLE_ULL_FORMAT "%llu"
 #endif
 

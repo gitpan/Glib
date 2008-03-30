@@ -1,4 +1,4 @@
-Glib version 1.181
+Glib version 1.182
 ==================
 
 This module provides perl access to Glib and GLib's GObject libraries.
@@ -71,7 +71,7 @@ or newer.
 You'll also need the following modules in order to build the Glib module
 from source:
 
-  ExtUtils::Depends >= 0.200
+  ExtUtils::Depends >= 0.300
   ExtUtils::PkgConfig >= 1.00
 
 
@@ -102,4 +102,4 @@ You should have received a copy of the GNU Library General Public License along
 with this library; if not, write to the Free Software Foundation, Inc., 59
 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 
-# $Id: README,v 1.82 2008/03/14 23:55:42 kaffeetisch Exp $
+# $Id: README,v 1.83 2008/03/30 17:26:05 kaffeetisch Exp $

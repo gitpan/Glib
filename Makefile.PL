@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.74 2008/03/14 22:05:45 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.77 2008/03/30 17:26:03 kaffeetisch Exp $
 #
 
 BEGIN { require 5.008; }
@@ -12,7 +12,7 @@ use Cwd;
 
 # minimum required version of dependencies we need to build
 our %build_reqs = (
-	'perl-ExtUtils-Depends'   => '0.200',
+	'perl-ExtUtils-Depends'   => '0.300',
 	'perl-ExtUtils-PkgConfig' => '1.00',
 	'Glib'                    => '2.0.0',
 );
@@ -40,6 +40,16 @@ unless (eval "use ExtUtils::Depends '$build_reqs{'perl-ExtUtils-Depends'}';"
 require 'MakeHelper.pm';
 
 mkdir 'build', 0777;
+
+# If the package can't be found, warn and exit with status 0 to indicate to
+# CPAN testers that their system is not supported.
+my %glibcfg;
+unless (eval { %glibcfg = ExtUtils::PkgConfig->find ("gobject-2.0 >= $build_reqs{Glib}");
+	       1; })
+{
+	warn $@;
+	exit 0;
+}
 
 # this is the order in which we want the api docs from the XS files to
 # appear in Glib::xsapi
@@ -88,8 +98,6 @@ our %pod_files = (
    '$(INST_LIB)/$(FULLEXT)/xsapi.pod' => '$(INST_MAN3DIR)/Glib::xsapi.$(MAN3EXT)',
    Glib::MakeHelper->do_pod_files (@xs_files),
 );
-
-my %glibcfg = ExtUtils::PkgConfig->find ('gobject-2.0 >= '.$build_reqs{Glib});
 
 # optional thread-safety
 my $nothreads;
@@ -150,9 +158,7 @@ WriteMakefile(
 
     $glib ? $glib->get_makefile_vars : (),
 
-    EXTRA_META    => qq/
-$configure_requires
-/,
+    EXTRA_META		=> $configure_requires,
 );
 
 =unstable

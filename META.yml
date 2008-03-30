@@ -1,18 +1,17 @@
 --- #YAML:1.0
 name:                Glib
-version:             1.181
+version:             1.182
 abstract:            Perl wrappers for the GLib utility and Object libraries
 license:             ~
 author:              ~
 generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
-    ExtUtils::Depends:             0.200
+    ExtUtils::Depends:             0.300
     ExtUtils::PkgConfig:           1.00
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html
     version: 1.3
-
 configure_requires:
-   ExtUtils::Depends: 0.200
+   ExtUtils::Depends: 0.300
    ExtUtils::PkgConfig: 1.00

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.15 2007/09/15 14:10:13 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.16 2008/03/30 17:11:27 kaffeetisch Exp $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.
@@ -30,10 +30,6 @@ is (Glib::MAJOR_VERSION, $version[0], 'MAJOR_VERSION');
 is (Glib::MINOR_VERSION, $version[1], 'MINOR_VERSION');
 is (Glib::MICRO_VERSION, $version[2], 'MICRO_VERSION');
 
-print "user name: ".Glib::get_user_name."\n";
-print "real name: ".Glib::get_real_name."\n";
-print "home dir: ".Glib::get_home_dir."\n";
-print "tmp dir: ".Glib::get_tmp_dir."\n";
 ok (defined (Glib::get_user_name), "Glib::get_user_name");
 ok (defined (Glib::get_real_name), "Glib::get_real_name");
 ok (defined (Glib::get_home_dir), "Glib::get_home_dir");

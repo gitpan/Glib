@@ -1,3 +1,41 @@
+2008-03-30  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* Makefile.PL
+	* NEWS
+	* README: Stable release 1.182, requiring ExtUtils::Depends >=
+	0.300.
+
+2008-03-30  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs: For the 64 bit integer converters: use
+	g_ascii_strtoll, g_ascii_strtoull, and _atoi64 when available.
+	Only use _strtoi64 and _strtoui64 if _MSC_VER >= 1300.
+
+	* GenPod.pm: Add setters set_copyright, set_year, set_authors, and
+	set_main_mod for the corresponding package variables.
+
+	* MakeHelper.pm (postamble_docs_full): Use more portable ways to
+	quote commands and strings, partly by using the new functions
+	mentioned above.
+	(postamble_rpms): Don't do anything unless $ENV{GPERL_BUILD_RPMS}
+	is set.
+	(quiet_rule): Use two lines for the prettified commands so that
+	long commands don't get even longer.
+	(do_pod_files): Prettify information message.
+
+	* t/1.t
+	* t/filename.t
+	* t/g.t: Fix failures on MSWin32.
+
+	* ParseXSDoc.pm (clean_out_empty_pods): Stop being chatty.
+
+2008-03-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: Trap exceptions thrown by EU::PkgConfig->find.
+	When one occurs, exit with status 0 to indicate to CPAN testers
+	that their system isn't supported.
+
 2008-03-14  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm
