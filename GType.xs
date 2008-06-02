@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.86 2008/03/30 17:05:26 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.90 2008/05/22 21:23:30 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -100,7 +100,7 @@ gperl_register_fundamental (GType gtype, const char * package)
 	G_UNLOCK (types_by_package);
 	G_UNLOCK (packages_by_type);
 
-	if (g_type_is_a (gtype, G_TYPE_FLAGS))
+	if (g_type_is_a (gtype, G_TYPE_FLAGS) && gtype != G_TYPE_FLAGS)
 		gperl_set_isa (package, "Glib::Flags");
 }
 
@@ -382,7 +382,7 @@ gperl_convert_flag_one (GType type,
 			const char * val_p)
 {
 	SV *r;
-	GFlagsValue * vals = gperl_type_flags_get_values (type);
+	GFlagsValue * vals;
 	gint ret;
 	if (gperl_try_convert_flag (type, val_p, &ret))
 		return ret;
@@ -1924,6 +1924,8 @@ Glib's reference documentation generator (see L<Glib::GenPod>).
 =cut
 
 BOOT:
+	gperl_register_fundamental (G_TYPE_ENUM, "Glib::Enum");
+	gperl_register_fundamental (G_TYPE_FLAGS, "Glib::Flags");
 	gperl_register_fundamental (G_TYPE_CHAR, "Glib::Char");
 	gperl_register_fundamental (G_TYPE_UCHAR, "Glib::UChar");
 	gperl_register_fundamental (G_TYPE_INT, "Glib::Int");
@@ -1982,18 +1984,10 @@ g_type_register (class, const char * parent_class, new_class, ...)
 	 * tear-up in Glib::ParseXSDoc.  So, here it is as an xsub.
 	 */
 
-	/* check for flags and enum specially, since those aren't registered
-	 * in the fundamentals hash (causes problems if they are) */
-	if (strEQ (parent_class, "Glib::Enum")) {
-		parent_type = G_TYPE_ENUM;
-	} else if (strEQ (parent_class, "Glib::Flags")) {
-		parent_type = G_TYPE_FLAGS;
-	} else {
-		parent_type = gperl_type_from_package (parent_class);
-		if (!parent_type)
-			croak ("package %s is not registered with the GLib type system",
-			       parent_class);
-	}
+	parent_type = gperl_type_from_package (parent_class);
+	if (!parent_type)
+		croak ("package %s is not registered with the GLib type system",
+		       parent_class);
 
 	base_type = G_TYPE_FUNDAMENTAL (parent_type);
 	switch (base_type) {
@@ -2710,7 +2704,7 @@ as_arrayref (SV *a, b, swap)
     CODE:
 {
 	GType gtype;
-	char *package;
+	const char *package;
         gint a_;
 
 	package = sv_reftype (SvRV (a), TRUE);
@@ -2725,12 +2719,13 @@ as_arrayref (SV *a, b, swap)
 int
 eq (SV *a, SV *b, int swap)
     ALIAS:
-       ge = 1
+       ne = 1
+       ge = 2
 
     CODE:
 {
 	GType gtype;
-	char *package;
+	const char *package;
         gint a_, b_;
 
 	package = sv_reftype (SvRV (a), TRUE);
@@ -2741,7 +2736,8 @@ eq (SV *a, SV *b, int swap)
 	RETVAL = FALSE;
         switch (ix) {
           case 0: RETVAL = a_ == b_; break;
-          case 1: RETVAL = (a_ & b_) == b_; break;
+          case 1: RETVAL = a_ != b_; break;
+          case 2: RETVAL = (a_ & b_) == b_; break;
         }
 }
     OUTPUT:
@@ -2757,7 +2753,7 @@ union (SV *a, SV *b, int swap)
     CODE:
 {
 	GType gtype;
-	char *package;
+	const char *package;
         gint a_, b_;
 
 	package = sv_reftype (SvRV (a), TRUE);

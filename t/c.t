@@ -1,5 +1,7 @@
+#!/usr/bin/perl
+# vim: set filetype=perl :
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.8 2008/01/17 20:55:52 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.11 2008/05/22 21:23:44 kaffeetisch Exp $
 #
 
 #
@@ -11,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 15;
+use Test::More tests => 23;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -24,6 +26,8 @@ eval {
 	1;
 };
 ok (!$@, 'register_enum');
+is_deeply ([Glib::Type->list_ancestors ('TestEnum')],
+	   ['TestEnum', 'Glib::Enum']);
 
 $@ = undef;
 eval {
@@ -33,6 +37,8 @@ eval {
 	1;
 };
 ok (!$@, 'register_flags');
+is_deeply ([Glib::Type->list_ancestors ('TestFlags')],
+	   ['TestFlags', 'Glib::Flags']);
 
 $@ = undef;
 eval {
@@ -178,6 +184,21 @@ is_deeply (\@{ $obj->get ('some_flags') }, ['value-one', 'value-two'],
 
 ok ($obj->get ('some_flags') & $obj->get ('some_flags'),
     '& is overloaded');
+
+eval {
+  $obj->set (some_flags => []);
+  $obj->set (some_flags => undef);
+};
+ok ($@ eq '', 'empty flags values do not croak');
+ok ($obj->get ('some_flags') == [], 'empty flags values work');
+
+$obj->set (some_flags => [qw/value-one value-two/]);
+
+ok ($obj->get ('some_flags') == [qw/value-one value-two/], '== is overloaded');
+ok ($obj->get ('some_flags') != [qw/value-one/], '!= is overloaded');
+
+ok ($obj->get ('some_flags') eq [qw/value-one value-two/], 'eq is overloaded');
+ok ($obj->get ('some_flags') ne [qw/value-one/], 'ne is overloaded');
 
 __END__
 

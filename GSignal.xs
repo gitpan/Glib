@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.31 2008/01/07 18:50:06 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GSignal.xs,v 1.31.2.1 2008/05/31 18:27:16 kaffeetisch Exp $
  */
 
 =head2 GSignal
@@ -416,7 +416,7 @@ parse_signal_name_or_croak (const char * detailed_name,
 	if (!g_signal_parse_name (detailed_name, instance_type, &signal_id,
 				  detail, TRUE))
 		croak ("Unknown signal %s for object of type %s", 
-			detailed_name, instance_type);
+			detailed_name, g_type_name (instance_type));
 	return signal_id;
 }
 
@@ -709,16 +709,24 @@ g_signal_add_emission_hook (object_or_class_name, detailed_signal, hook_func, ho
 	SV * hook_data
     PREINIT:
 	GType           itype;
+	GObjectClass *  object_class;
 	guint           signal_id;
 	GQuark          quark;
 	GPerlCallback * callback;
     CODE:
 	itype = get_gtype_or_croak (object_or_class_name);
+
+	/* See the xsub for g_object_find_property in GObject.xs for why the
+	 * class ref/unref stunt is necessary. */
+	object_class = g_type_class_ref (itype);
+
 	signal_id = parse_signal_name_or_croak (detailed_signal, itype, &quark);
 	callback = gperl_signal_emission_hook_create (hook_func, hook_data);
 	RETVAL = g_signal_add_emission_hook
 			(signal_id, quark, gperl_signal_emission_hook,
 			 callback, (GDestroyNotify)gperl_callback_destroy);
+
+	g_type_class_unref (object_class);
     OUTPUT:
 	RETVAL
 

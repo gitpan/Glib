@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.27 2008/01/07 19:17:08 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GBoxed.xs,v 1.28 2008/05/04 12:49:53 kaffeetisch Exp $
  */
 
 =head2 GBoxed
@@ -632,7 +632,7 @@ copy (SV * sv)
 	BoxedInfo * boxed_info;
 	GPerlBoxedWrapperClass * class;
 	gpointer boxed;
-	char * package;
+	const char * package;
     CODE:
 	/* the sticky part is that we have to decipher from the SV what gtype
 	 * we actually have; but the SV may have been blessed into some
@@ -671,7 +671,7 @@ DESTROY (sv)
 	SV * sv
     PREINIT:
 	BoxedInfo * boxed_info;
-	char * class;
+	const char * class;
 	GPerlBoxedDestroyFunc destroy;
     CODE:
 	if (!gperl_sv_is_defined (sv) || !SvROK (sv) || !SvRV (sv))

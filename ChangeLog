@@ -1,3 +1,49 @@
+2008-06-02  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Stable release 1.183.
+
+2008-05-31  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	Merge from HEAD:
+
+	* GSignal.xs: In the xsub for g_signal_add_emission_hook, make
+	sure that the type class exists before we try to fetch information
+	about one of its signals.
+
+2008-05-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs
+	* Glib.pm
+	* t/c.t: Overload '!=' and 'ne' for flags values for consistency.
+
+2008-05-20  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GClosure.xs (gperl_callback_invoke): Put a mortal copy of the
+	user data on the stack to avoid prematurely destroying it in
+	certain cases.  Patch by Kevin Ryde.
+
+	* t/c.t: Test that empty flags values ([], undef) work.
+
+	* GType.xs (gperl_convert_flag_one): Don't call
+	gperl_type_flags_get_values needlessly.
+
+2008-05-04  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBoxed.xs
+	* GType.xs: Use const char* to store the return value of
+	sv_reftype.
+
+	* Subclass.pm: Improve the documentation of GET_PROPERTY and
+	SET_PROPERTY.  (Patch by Kevin Ryde)
+
+2008-04-19  muppet <scott@asofyet.org>
+
+	* xs/GType.xs
+	* t/c.t: Register Glib::Enum and Glib::Flags.  Remove special case
+	logic for these from Glib::Type::register().
+
 2008-03-30  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm
