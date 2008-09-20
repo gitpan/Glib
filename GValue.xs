@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.22 2008/01/07 18:50:07 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GValue.xs,v 1.24 2008/09/06 13:28:30 kaffeetisch Exp $
  */
 
 =head2 GValue
@@ -244,6 +244,11 @@ _gperl_sv_from_value_internal (const GValue * value,
                                                  FALSE);
 
 		case G_TYPE_PARAM:
+			/* can have NULL here fetching object properties of
+			 * type G_TYPE_PARAM with no value set yet, or from
+			 * ->get_default_value of such a
+			 * property. newSVGParamSpec handles NULL by returning
+			 * undef. */
 			return newSVGParamSpec (g_value_get_param (value));
 
 		case G_TYPE_OBJECT:

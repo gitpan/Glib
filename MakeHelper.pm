@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.44 2008/03/30 17:21:39 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.45 2008/08/31 19:24:23 kaffeetisch Exp $
 #
 
 package Glib::MakeHelper;
@@ -435,7 +435,7 @@ build/podindex :: \$(BLIB_DONE) Makefile build/doc.pl \$(POD_DEPENDS)
 	\$(NOECHO) \$(ECHO) Creating POD index...
 	\$(NOECHO) $^X -e "print qq(\\n=head1 NAME\\n\\n\$(NAME) - API Reference Pod Index\\n\\n=head1 PAGES\\n\\n=over\\n\\n)" \\
 		> \$(INST_LIB)/\$(FULLEXT)/index.pod
-	\$(NOECHO) $^X -nae "print qq(=item L<\$\$F[1]>\\n\\n);" < build/podindex >> \$(INST_LIB)/\$(FULLEXT)/index.pod
+	\$(NOECHO) $^X -ne "print q(=item L<) . (split q( ))[1] . qq(>\\n\\n);" < build/podindex >> \$(INST_LIB)/\$(FULLEXT)/index.pod
 	\$(NOECHO) $^X -e "print qq(=back\\n\\n);" >> \$(INST_LIB)/\$(FULLEXT)/index.pod
 __EOM__
 }

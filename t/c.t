@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vim: set filetype=perl :
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.11 2008/05/22 21:23:44 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.13 2008/07/13 15:10:17 kaffeetisch Exp $
 #
 
 #
@@ -13,8 +13,42 @@ use warnings;
 
 #########################
 
-use Test::More tests => 23;
+use Test::More tests => 34;
 BEGIN { use_ok('Glib') };
+
+#########################
+
+#
+# Flags basics
+#
+
+my $f = Glib::ParamFlags->new (['readable', 'writable']); # with array
+isa_ok ($f, 'Glib::Flags');
+isa_ok ($f, 'Glib::ParamFlags');
+ok ($f == ['readable', 'writable'], "value");
+
+$f = Glib::ParamFlags->new ('readable'); # with plain string
+isa_ok ($f, 'Glib::Flags');
+isa_ok ($f, 'Glib::ParamFlags');
+ok ($f == ['readable'], "value");
+
+my $g = Glib::ParamFlags->new ($f + 'writable'); # from another
+isa_ok ($g, 'Glib::ParamFlags');
+ok ($g >= $f);
+
+$@ = undef;
+eval { my $h = Glib::Flags->new (['readable']); };
+ok ($@, "Will croak on trying to create plain old Glib::Flags");
+
+{
+  my $f = Glib::ParamFlags->new (['readable']);
+  my $g = $f;
+  $g += 'writable';
+  ok ($g == ['readable', 'writable'],
+      "overloaded +=");
+  ok ($f == ['readable'],
+      "overloaded += leaves original unchanged");
+}
 
 #########################
 
@@ -169,6 +203,10 @@ sub sig1
 }
 
 package main;
+
+#
+# App-registered flags.
+#
 
 my $obj = Tester->new;
 $obj->sig1 ('value-two', ['value-one', 'value-two']);

@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.9 2007/12/22 19:00:48 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.10 2008/08/03 16:01:14 kaffeetisch Exp $
 #
 # Really simple smoke tests for Glib::Object wrappers.
 #
@@ -18,7 +18,7 @@ BEGIN { use_ok('Glib'); Glib::Object->set_threadsafe (1); };
 
 #########################
 
-my $obj = new Glib::Object "Glib::Object";
+my $obj = Glib::Object->new;
 isa_ok ($obj, 'Glib::Object');
 
 $obj->freeze_notify;
@@ -34,9 +34,9 @@ ok(1);
 # that the magical hash wrappers work correctly, all in one convoluted
 # test.
 
-$obj = new Glib::Object;
+$obj = Glib::Object->new;
 isa_ok ($obj, 'Glib::Object');
-my $obj2 = new Glib::Object;
+my $obj2 = Glib::Object->new;
 isa_ok ($obj, 'Glib::Object');
 $obj2->{key} = 'val';
 $obj->set_data (obj2 => $obj2->get_pointer);

@@ -17,7 +17,7 @@
  * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
  * Boston, MA 02111-1307, USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GUtils.xs,v 1.10 2007/09/15 14:10:12 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GUtils.xs,v 1.11 2008/06/01 13:31:56 kaffeetisch Exp $
  */
 #include "gperl.h"
 
@@ -254,6 +254,24 @@ void g_set_application_name (const gchar *application_name);
 #
 ## Look for an executable in PATH, following execvp() rules
 #gchar*  g_find_program_in_path  (const gchar *program);
+
+=for apidoc __function__
+Return a string describing the given errno value, like "No such file
+or directory" for ENOENT.  This is translated into the user's
+preferred language and is a utf8 wide-char string (unlike a $!
+string (L<perlvar>) or POSIX::strerror (L<POSIX>) which are locale
+codeset bytes).
+=cut
+## note the returned string can be overwritten by the next call, so must copy
+const gchar *g_strerror (gint err);
+
+=for apidoc __function__
+Return a string describing the given signal number, like "Segmentation
+violation" for SIGSEGV.  This is translated into the user's preferred
+language and is a utf8 wide-char string.
+=cut
+## note the returned string can be overwritten by the next call, so must copy
+const gchar *g_strsignal (gint signum);
 
 ###
 ### Version information

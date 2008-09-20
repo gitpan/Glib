@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.90 2008/05/22 21:23:30 kaffeetisch Exp $
+ * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.94 2008/08/23 21:07:32 kaffeetisch Exp $
  */
 
 =head2 GType / GEnum / GFlags
@@ -399,7 +399,7 @@ gperl_convert_flag_one (GType type,
 		if (++vals && vals->value_nick)
 			sv_catpv (r, ", ");
 	}
-	croak ("FATAL: invalid flags %s value %s, expecting: %s",
+	croak ("FATAL: invalid %s value %s, expecting: %s",
 	       g_type_name (type), val_p, SvPV_nolen (r));
 
 	/* not reached */
@@ -430,7 +430,7 @@ gperl_convert_flags (GType type,
 	if (SvPOK (val))
 		return gperl_convert_flag_one (type, SvPV_nolen (val));
 
-	croak ("FATAL: invalid flags %s value %s, expecting a string scalar or an arrayref of strings",
+	croak ("FATAL: invalid %s value %s, expecting a string scalar or an arrayref of strings",
 	       g_type_name (type), SvPV_nolen (val));
 	return 0; /* not reached */
 }
@@ -2678,6 +2678,35 @@ Now That" section of L<Glib> for more info.
 =cut
 
 =for apidoc
+Create a new flags object with given bits.  This is for use from a
+subclass, it's not possible to create a C<Glib::Flags> object as such.
+For example,
+
+    my $f1 = Glib::ParamFlags->new ('readable');
+    my $f2 = Glib::ParamFlags->new (['readable','writable']);
+
+An object like this can then be used with the overloaded operators.
+=cut
+SV *
+new (const char *class, SV *a)
+    PREINIT:
+	GType gtype;
+    CODE:
+	gtype = gperl_fundamental_type_from_package (class);
+	if (! gtype || ! g_type_is_a (gtype, G_TYPE_FLAGS)) {
+		croak ("package %s is not registered with the GLib type system "
+		       "as a flags type",
+		       class);
+	}
+	if (gtype == G_TYPE_FLAGS) {
+		croak ("cannot create Glib::Flags (only subclasses)");
+	}
+	RETVAL = gperl_convert_back_flags
+			(gtype, gperl_convert_flags (gtype, a));
+    OUTPUT:
+	RETVAL
+
+=for apidoc
 =for arg b (SV*)
 =for arg swap (integer)
 =cut
@@ -2744,7 +2773,7 @@ eq (SV *a, SV *b, int swap)
         RETVAL
 
 SV *
-union (SV *a, SV *b, int swap)
+union (SV *a, SV *b, SV *swap)
     ALIAS:
         sub = 1
         intersect = 2
@@ -2758,8 +2787,8 @@ union (SV *a, SV *b, int swap)
 
 	package = sv_reftype (SvRV (a), TRUE);
 	gtype = gperl_fundamental_type_from_package (package);
-        a_ = gperl_convert_flags (gtype, swap ? b : a);
-        b_ = gperl_convert_flags (gtype, swap ? a : b);
+        a_ = gperl_convert_flags (gtype, SvTRUE (swap) ? b : a);
+        b_ = gperl_convert_flags (gtype, SvTRUE (swap) ? a : b);
 
         switch (ix) {
           case 0: a_ |= b_; break;

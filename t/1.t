@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.16 2008/03/30 17:11:27 kaffeetisch Exp $
+# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.17 2008/06/01 13:31:57 kaffeetisch Exp $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.
@@ -13,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 24;
+use Test::More tests => 26;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -74,6 +74,9 @@ SKIP: {
 }
 
 is (Glib::Markup::escape_text ("<gtk2-perl>"), "&lt;gtk2-perl&gt;");
+
+ok (defined Glib::strerror (2));
+ok (defined Glib::strsignal (11));
 
 __END__
 
