@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vim: set filetype=perl :
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/c.t,v 1.13 2008/07/13 15:10:17 kaffeetisch Exp $
+# $Id: c.t 1028 2008-10-05 12:49:32Z tsch $
 #
 
 #

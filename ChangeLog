@@ -1,3 +1,81 @@
+2009-02-13  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Stable release 1.201.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GClosure.xs (gperl_closure_marshal): Synchronize the way signals
+	with no return value are handled with how it's done in
+	gperl_signal_class_closure_marshal.  This means that Perl handlers
+	for these kinds of signals are now always called in void context,
+	as they should be.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MANIFEST
+	* GType.xs (gperl_signal_class_closure_marshal)
+	* t/signal_marshal.t: Correctly handle signals with no return type
+	when invoking signal class closures.  Patch by Kevin Ryde.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs (gperl_register_fundamental_full): Handle
+	wrapper_class_by_type being NULL gracefully.  Patch by Kevin Ryde.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBoxed.xs (gperl_register_boxed)
+	* GObject.xs (gperl_register_object)
+	* GType.xs (gperl_register_fundamental): When inserting into the
+	package → type hash tables, use g_hash_table_replace instead of
+	_insert so that the new string pointer is used as the key.  Patch
+	by Kevin Ryde.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	Merge this old commit from trunk.  Without it, the 2008-11-03
+	change doesn't make sense.
+
+	* Glib.exports
+	* gperl.h: Properly export gperl_param_spec_type_from_package and
+	gperl_register_param_spec, they are meant to be public.
+
+2009-02-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/a.t
+	* GLog.xs: Make sure that messages with % chars in them make it
+	through Glib::log() and friends safely.
+
+2009-02-02  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* ParseXSDoc.pm (xsdocparse): Always use Data::Dumper on MSWin32
+	for serialization.  Storable seems to consistently fail there,
+	stating 'Magic number checking on storable file failed'.
+
+2008-11-15  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBoxed.xs (gperl_register_boxed): Use the copy of the passed-in
+	package name for the key of info_by_package to avoid problems when
+	the package name is dynamically allocated.
+
+	* GBoxed.xs (gperl_register_boxed)
+	* GObject.xs (gperl_register_object)
+	* GType.xs (gperl_register_fundamental): Always insert into the
+	lookup tables in the correct order to avoid prematurely freeing
+	the package name.
+
+2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs (gperl_type_from_package): Also try
+	gperl_param_spec_type_from_package on the package.
+
+2008-10-19  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: ExtUtils::MakeMaker 6.46 removed support for
+	EXTRA_META in favor of the new META_MERGE and META_ADD.  Adapt.
+
 2008-09-20  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm

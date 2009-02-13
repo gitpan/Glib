@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Subclass.pm,v 1.14 2008/05/04 12:44:22 kaffeetisch Exp $
+# $Id: Subclass.pm 1028 2008-10-05 12:49:32Z tsch $
 #
 
 package Glib::Object::Subclass;

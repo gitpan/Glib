@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GObject.xs,v 1.78 2008/09/07 10:32:13 kaffeetisch Exp $
+ * $Id: GObject.xs 1073 2009-02-05 13:59:42Z tsch $
  */
 
 /*
@@ -329,9 +329,19 @@ gperl_register_object (GType gtype,
 							  NULL);
 	}
 	class_info = class_info_new (gtype, package);
+
+	/* We need to insert into types_by_package first because there might
+	 * otherwise be trouble if we overwrite an entry: inserting into
+	 * types_by_type frees the class_info of the overwritten entry, so
+	 * that class_info->package is no longer valid at this point.
+	 *
+	 * Note also it's g_hash_table_replace() for types_by_package,
+	 * because the old key string in the old class_info will be freed
+	 * when types_by_type updates the value there.
+	 */
+	g_hash_table_replace (types_by_package, class_info->package, class_info);
 	g_hash_table_insert (types_by_type,
 	                     (gpointer) class_info->gtype, class_info);
-	g_hash_table_insert (types_by_package, class_info->package, class_info);
 	/* warn ("registered class %s to package %s\n", class_info->class, class_info->package); */
 
 	/* defer the actual ISA setup to Glib::Object::_LazyLoader */

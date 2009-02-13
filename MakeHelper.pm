@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/MakeHelper.pm,v 1.45 2008/08/31 19:24:23 kaffeetisch Exp $
+# $Id: MakeHelper.pm 1028 2008-10-05 12:49:32Z tsch $
 #
 
 package Glib::MakeHelper;

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/d.t,v 1.3 2004/05/04 22:11:24 muppetman Exp $
+# $Id: d.t 1028 2008-10-05 12:49:32Z tsch $
 #
 
 #

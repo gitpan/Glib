@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl.h,v 1.54 2008/01/07 19:17:08 kaffeetisch Exp $
+ * $Id: gperl.h 1069 2009-02-05 11:17:54Z tsch $
  */
 
 #ifndef _GPERL_H_
@@ -351,6 +351,10 @@ GParamSpec * SvGParamSpec (SV * sv);
 SV * newSVGParamFlags (GParamFlags flags);
 GParamFlags SvGParamFlags (SV * sv);
 
+void gperl_register_param_spec (GType gtype, const char * package);
+const char * gperl_param_spec_package_from_type (GType gtype);
+GType gperl_param_spec_type_from_package (const char * package);
+
 /*
  * gkeyfile.h / GKeyFile.xs
  */
@@ -368,8 +372,6 @@ GKeyFileFlags SvGKeyFileFlags (SV * sv);
 SV * newSVGBookmarkFile (GBookmarkFile * bookmark_file);
 GBookmarkFile * SvGBookmarkFile (SV * sv);
 #endif /* GLIB_CHECK_VERSION (2, 12, 0) */
-
-const char * gperl_param_spec_package_from_type (GType gtype);
 
 /*
  * gutils.h / GUtils.xs

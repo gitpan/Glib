@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GLog.xs,v 1.16 2006/03/04 17:17:30 kaffeetisch Exp $
+ * $Id: GLog.xs 1068 2009-02-03 19:25:54Z tsch $
  */
 
 #include "gperl.h"
@@ -235,7 +235,7 @@ MODULE = Glib::Log	PACKAGE = Glib	PREFIX = g_
 
 void g_log (class, gchar_ornull * log_domain, SV * log_level, const gchar *message)
     CODE:
-	g_log (log_domain, SvGLogLevelFlags (log_level), message);
+	g_log (log_domain, SvGLogLevelFlags (log_level), "%s", message);
 
 MODULE = Glib::Log	PACKAGE = Glib::Log	PREFIX = g_log_
 
@@ -292,7 +292,7 @@ error (class, gchar_ornull * domain, const gchar * message)
 		case 2: flags = G_LOG_LEVEL_CRITICAL; break;
 		case 3: flags = G_LOG_LEVEL_WARNING; break;
 	}
-	g_log (domain, flags, message);
+	g_log (domain, flags, "%s", message);
 
 ##
 ## these are not needed -- perl's print() and warn() do the job.

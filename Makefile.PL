@@ -1,5 +1,5 @@
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/Makefile.PL,v 1.79 2008/09/20 13:01:26 kaffeetisch Exp $
+# $Id: Makefile.PL 1029 2008-10-19 17:35:57Z tsch $
 #
 
 BEGIN { require 5.008; }
@@ -143,7 +143,7 @@ $glib->save_config ('build/IFiles.pm');
 our @exports;
 require 'Glib.exports';
 
-my $configure_requires =
+my $configure_requires_yaml =
   Glib::MakeHelper->get_configure_requires_yaml(%PREREQ_PM);
 
 WriteMakefile(
@@ -158,7 +158,9 @@ WriteMakefile(
 
     $glib ? $glib->get_makefile_vars : (),
 
-    EXTRA_META		=> $configure_requires,
+    $ExtUtils::MakeMaker::VERSION >= 6.46
+      ? (META_MERGE => { configure_requires => \%PREREQ_PM })
+      : (EXTRA_META => $configure_requires_yaml),
 );
 
 =unstable

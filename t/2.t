@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/2.t,v 1.10 2008/08/03 16:01:14 kaffeetisch Exp $
+# $Id: 2.t 1028 2008-10-05 12:49:32Z tsch $
 #
 # Really simple smoke tests for Glib::Object wrappers.
 #

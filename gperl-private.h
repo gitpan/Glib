@@ -3,7 +3,7 @@
  *
  * Licensed under the LGPL, see LICENSE file for more information.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/gperl-private.h,v 1.1 2006/03/04 17:17:31 kaffeetisch Exp $
+ * $Id: gperl-private.h 1028 2008-10-05 12:49:32Z tsch $
  */
 
 /*

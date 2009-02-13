@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GParamSpec.xs,v 1.26 2008/09/06 13:28:30 kaffeetisch Exp $
+ * $Id: GParamSpec.xs 1028 2008-10-05 12:49:32Z tsch $
  */
 
 #include "gperl.h"

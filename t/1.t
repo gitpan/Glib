@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/t/1.t,v 1.17 2008/06/01 13:31:57 kaffeetisch Exp $
+# $Id: 1.t 1028 2008-10-05 12:49:32Z tsch $
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.

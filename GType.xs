@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Header: /cvsroot/gtk2-perl/gtk2-perl-xs/Glib/GType.xs,v 1.94 2008/08/23 21:07:32 kaffeetisch Exp $
+ * $Id: GType.xs 1081 2009-02-05 16:36:12Z tsch $
  */
 
 =head2 GType / GEnum / GFlags
@@ -95,8 +95,16 @@ gperl_register_fundamental (GType gtype, const char * package)
 			                       (GDestroyNotify)g_free);
 	}
 	p = g_strdup (package);
+	/* We need to insert into types_by_package first because there might
+	 * otherwise be trouble if we overwrite an entry: inserting into
+	 * packages_by_type frees the copied package name.
+	 *
+	 * Note also it's g_hash_table_replace() for types_by_package, because
+	 * the old key string will be freed when packages_by_type updates the
+	 * value there.
+	 */
+	g_hash_table_replace (types_by_package, p, (gpointer) gtype);
 	g_hash_table_insert (packages_by_type, (gpointer) gtype, p);
-	g_hash_table_insert (types_by_package, p, (gpointer) gtype);
 	G_UNLOCK (types_by_package);
 	G_UNLOCK (packages_by_type);
 
@@ -211,10 +219,13 @@ registered with gperl_register_fundamental_full().
 GPerlValueWrapperClass *
 gperl_fundamental_wrapper_class_from_type (GType gtype)
 {
-	GPerlValueWrapperClass * res;
+	GPerlValueWrapperClass * res = NULL;
 	G_LOCK (wrapper_class_by_type);
-	res = (GPerlValueWrapperClass *)
-		g_hash_table_lookup (wrapper_class_by_type, (gpointer) gtype);
+	if (wrapper_class_by_type) {
+		res = (GPerlValueWrapperClass *)
+			g_hash_table_lookup (wrapper_class_by_type,
+			                     (gpointer) gtype);
+	}
 	G_UNLOCK (wrapper_class_by_type);
 	return res;
 }
@@ -544,6 +555,10 @@ gperl_type_from_package (const char * package)
 		return t;
 
 	t = gperl_fundamental_type_from_package (package);
+	if (t)
+		return t;
+
+	t = gperl_param_spec_type_from_package (package);
 	if (t)
 		return t;
 
@@ -914,6 +929,7 @@ gperl_signal_class_closure_marshal (GClosure *closure,
         /* does the function exist? then call it. */
         if (slot && GvCV (*slot)) {
 		SV * save_errsv;
+		gboolean want_return_value;
 		int flags;
 		dSP;
 
@@ -938,13 +954,14 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 		/* note: keep this as closely sync'ed as possible with the
 		 * definition of GPERL_CLOSURE_MARSHAL_CALL. */
 		save_errsv = sv_2mortal (newSVsv (ERRSV));
-		flags = G_EVAL | (return_value ? G_SCALAR : G_VOID|G_DISCARD);
+		want_return_value = return_value && G_VALUE_TYPE (return_value);
+		flags = G_EVAL | (want_return_value ? G_SCALAR : G_VOID|G_DISCARD);
 		call_method (SvPV_nolen (method_name), flags);
 		SPAGAIN;
 		if (SvTRUE (ERRSV)) {
 			gperl_run_exception_handlers ();
 
-		} else if (return_value) {
+		} else if (want_return_value) {
 			gperl_value_from_sv (return_value, POPs);
 			PUTBACK;
 		}
