@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
- * the full list)
+ * Copyright (C) 2003-2004, 2009 by the gtk2-perl team (see the file AUTHORS
+ * for the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GSignal.xs 1028 2008-10-05 12:49:32Z tsch $
+ * $Id: GSignal.xs 1104 2009-03-01 17:26:01Z tsch $
  */
 
 =head2 GSignal
@@ -270,6 +270,7 @@ gperl_signal_connect (SV * instance,
 	GObject * object;
 	GPerlClosure * closure;
 	GClosureMarshal marshaller = NULL;
+	gulong id;
 
 	object = gperl_get_object (instance);
 
@@ -292,16 +293,19 @@ gperl_signal_connect (SV * instance,
 			                      marshaller);
 
 	/* after is true only if we're called as signal_connect_after */
-	closure->id =
-		g_signal_connect_closure (object,
+	id =	g_signal_connect_closure (object,
 		                          detailed_signal,
 		                          (GClosure*) closure, 
 		                          flags & G_CONNECT_AFTER);
 
-	if (closure->id > 0)
+	if (id > 0) {
+		closure->id = id;
 		remember_closure (closure);
-	
-	return ((GPerlClosure*)closure)->id;
+	} else {
+		/* not connected, usually bad detailed_signal name */
+		g_closure_unref ((GClosure*) closure);
+	}
+	return id;
 }
 
 /*
@@ -538,7 +542,7 @@ g_signal_emit (instance, name, ...)
 	if (((guint)(items-ARGOFFSET)) != query.n_params) 
 		croak ("Incorrect number of arguments for emission of signal %s in class %s; need %d but got %d",
 		       name, G_OBJECT_TYPE_NAME (instance),
-		       query.n_params, items-ARGOFFSET);
+		       query.n_params, (gint) items-ARGOFFSET);
 
 	/* set up the parameters to g_signal_emitv.   this is an array
 	 * of GValues, where [0] is the emission instance, and the rest 
@@ -988,7 +992,7 @@ g_signal_chain_from_overridden (GObject * instance, ...)
 		       "expected %d, got %d",
 		       g_signal_name (ihint->signal_id),
 		       1 + query.n_params,
-		       items);
+		       (gint) items);
 
 	instance_and_params = g_new0 (GValue, 1 + query.n_params);
 

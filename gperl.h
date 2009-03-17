@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: gperl.h 1069 2009-02-05 11:17:54Z tsch $
+ * $Id: gperl.h 1052 2008-11-22 14:21:54Z tsch $
  */
 
 #ifndef _GPERL_H_
@@ -114,6 +114,7 @@ struct _GPerlValueWrapperClass {
 };
 
 void gperl_register_fundamental (GType gtype, const char * package);
+void gperl_register_fundamental_alias (GType gtype, const char * package);
 void gperl_register_fundamental_full (GType gtype, const char * package, GPerlValueWrapperClass * wrapper_class);
 
 GType gperl_fundamental_type_from_package (const char * package);
@@ -208,6 +209,7 @@ GPerlBoxedWrapperClass * gperl_default_boxed_wrapper_class (void);
 void gperl_register_boxed (GType gtype,
 			   const char * package,
 			   GPerlBoxedWrapperClass * wrapper_class);
+void gperl_register_boxed_alias (GType gtype, const char * package);
 
 SV * gperl_new_boxed (gpointer boxed, GType gtype, gboolean own);
 SV * gperl_new_boxed_copy (gpointer boxed, GType gtype);
@@ -222,6 +224,7 @@ const char * gperl_boxed_package_from_type (GType type);
  * GObject
  */
 void gperl_register_object (GType gtype, const char * package);
+void gperl_register_object_alias (GType gtype, const char * package);
 
 typedef void (*GPerlObjectSinkFunc) (GObject *);
 void gperl_register_sink_func (GType               gtype,
@@ -372,6 +375,32 @@ GKeyFileFlags SvGKeyFileFlags (SV * sv);
 SV * newSVGBookmarkFile (GBookmarkFile * bookmark_file);
 GBookmarkFile * SvGBookmarkFile (SV * sv);
 #endif /* GLIB_CHECK_VERSION (2, 12, 0) */
+
+#if GLIB_CHECK_VERSION (2, 6, 0)
+
+/*
+ * GOption.xs
+ */
+
+typedef GOptionContext GOptionContext_own;
+
+#define GPERL_TYPE_OPTION_CONTEXT (gperl_option_context_get_type ())
+GType gperl_option_context_get_type (void);
+
+#define SvGOptionContext(sv)		(gperl_get_boxed_check ((sv), GPERL_TYPE_OPTION_CONTEXT))
+#define newSVGOptionContext(val)	(gperl_new_boxed ((gpointer) (val), GPERL_TYPE_OPTION_CONTEXT, FALSE))
+#define newSVGOptionContext_own(val)	(gperl_new_boxed ((gpointer) (val), GPERL_TYPE_OPTION_CONTEXT, TRUE))
+
+typedef GOptionGroup GOptionGroup_own;
+
+#define GPERL_TYPE_OPTION_GROUP (gperl_option_group_get_type ())
+GType gperl_option_group_get_type (void);
+
+#define SvGOptionGroup(sv)		(gperl_get_boxed_check ((sv), GPERL_TYPE_OPTION_GROUP))
+#define newSVGOptionGroup(val)		(gperl_new_boxed ((gpointer) (val), GPERL_TYPE_OPTION_GROUP, FALSE))
+#define newSVGOptionGroup_own(val)	(gperl_new_boxed ((gpointer) (val), GPERL_TYPE_OPTION_GROUP, TRUE))
+
+#endif /* 2.6.0 */
 
 /*
  * gutils.h / GUtils.xs

@@ -1,8 +1,117 @@
+2009-03-17  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* Makefile.PL
+	* NEWS
+	* README: Stable release 1.220.
+
+2009-03-08  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.214.
+
+2009-03-08  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GClosure.xs (gperl_callback_invoke): Fix a giant leak by
+	properly unsetting all GValues used for the callback arguments.
+	Patch by Kevin Ryde.
+
+2009-03-08  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GenPod.pm (xsub_to_pod): Don't wrap the argument types of xsubs
+	with a superfluous pair of '=over' and '=back'.
+
+2009-03-08  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GenPod.pm (podify_enums_and_flags): Don't generate 'ENUMS AND
+	FLAGS' entries for Glib::Enum and Glib::Flags since they don't
+	have values anyway.
+
+2009-03-01  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/7.t
+	* GSignal.xs (gperl_signal_connect): Don't leak the GClosure
+	object when an invalid signal name is passed in.  Patch by
+	Kevin Ryde.
+
+2009-03-01  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs (gperl_fundamental_type_from_obj): Check the SV for
+	definedness before passing it to SvRV.  This fixes a test failure
+	on MSWin32 in t/c.t.
+
+2009-03-01  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/filename.t: Add more tests for Glib::filename_to_uri.  Patch
+	by Kevin Ryde.
+
+2009-02-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBoxed.xs
+	* GType.xs: Fix errors reported by podchecker.
+
+2009-02-21  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: Tell the CPAN indexer to ignore the package 'MY'
+	used by Glib::MakeHelper.
+
+2009-02-21  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GenPod.pm (xsdoc2pod): Instead of relying on one final '=cut',
+	close every opened POD paragraph separately.  This fixes POD
+	errors that occurred when '=for position COPYRIGHT' was used.
+	Original patch by Ryan Niebur.
+
+2009-02-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBookmarkFile.xs: Don't document Glib::BookmarkFile::set_added,
+	set_modified, and set_visited as functions; they're methods.
+
+	* t/h.t: Test Glib::BookmarkFile::set_added, set_modified, and
+	set_visited and their associated getters.
+
+2009-02-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm: Use an '=encoding utf8' directive for the AUTHORS POD
+	section so that non-ASCII characters are handled correctly.
+
 2009-02-13  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm
 	* NEWS
-	* README: Stable release 1.201.
+	* README: Unstable release 1.213.
+
+2009-02-11  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GError.xs: Document that Glib::Error->location returns raw
+	bytes.  Patch by Kevin Ryde.
+
+2009-02-11  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm: In the documentation for filename_from_uri, hint at
+	path separator issue.  Patch by Kevin Ryde.
+
+2009-02-11  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GOption.xs (copy_string): Fix C99-ism.  Patch by Kevin Ryde.
+
+2009-02-06  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/filename.t: Test Glib->filename_to_uri with hostname == undef.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MakeHelper.pm: Deprecate
+	Glib::MakeHelper->get_configure_requires_yaml in favor of EU::MM's
+	new META_MERGE and META_ADD features.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: Unconditionally use META_MERGE; so you now need
+	ExtUtils::MakeMaker >= 6.46 to roll a Glib tarball with a proper
+	META.yml.  Also, tell the CPAN indexer (via META.yml) to not index
+	xsapi.pod.head and xsapi.pod.foot.
 
 2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
@@ -26,6 +135,22 @@
 
 2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
+	* Glib.xs: In Glib::filename_from_uri and filename_to_uri, use the
+	gchar converters for the hostname.  Patch by Kevin Ryde.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GClosure.xs (gperl_callback_invoke): Use the <"%s", pointer>
+	pattern when passing an error string pointer to croak().
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs
+	* t/c.t: Make the various Glib::Flags methods more robust with
+	respect to receiving undefined input.  Patch by Kevin Ryde.
+
+2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
 	* GBoxed.xs (gperl_register_boxed)
 	* GObject.xs (gperl_register_object)
 	* GType.xs (gperl_register_fundamental): When inserting into the
@@ -35,12 +160,9 @@
 
 2009-02-05  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
-	Merge this old commit from trunk.  Without it, the 2008-11-03
-	change doesn't make sense.
-
-	* Glib.exports
-	* gperl.h: Properly export gperl_param_spec_type_from_package and
-	gperl_register_param_spec, they are meant to be public.
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.212.
 
 2009-02-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
@@ -54,6 +176,75 @@
 	for serialization.  Storable seems to consistently fail there,
 	stating 'Magic number checking on storable file failed'.
 
+2009-02-02  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.xs
+	* GSignal.xs: Hush some compiler warnings.
+
+2009-01-20  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm: Add documentation for Glib->filename_to_uri and
+	filename_from_uri.  Patch by Kevin Ryde.
+
+2009-01-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GParamSpec.xs
+	* t/e.t: Add Glib::ParamSpec->value_cmp.  Patch by Kevin Ryde.
+
+2009-01-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/e.t: Use UTF-8 instead of ISO-8859-1 to encode umlauts.
+
+2009-01-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GParamSpec.xs
+	* t/e.t: Add Glib::ParamSpec->value_validate.  Patch by Kevin
+	Ryde.
+
+2009-01-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/options.t: Don't use UTF-8 umlauts unconditionally as this
+	causes trouble on non-UTF-8 locales.
+
+2009-01-18  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MakeHelper.pm: Add
+	Glib::MakeHelper->postamble_precompiled_headers to generate a make
+	target for precompiling headers.
+
+	* Makefile.PL: Use the above to create a 'precompiled-headers'
+	target that precompiles gperl.h.  This speeds up the compilation
+	of Glib by 16% on my machine.
+
+2008-12-30  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs
+	* t/c.t: Allow calling Glib::Flags::as_arrayref directly, as an
+	alternative to the @{} syntax.  Patch by Kevin Ryde.
+
+2008-11-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* NEWS
+	* README: Unstable release 1.211.
+
+2008-11-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.xs
+	* GOption.xs (added)
+	* gperl.h
+	* Makefile.PL
+	* MANIFEST
+	* t/options.t (added)
+	* typemap: Add Glib::OptionContext and Glib::OptionGroup, wrapping
+	glib's command line option parser.
+
+2008-11-22  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* gperl-private.h: Don't include perl.h.  This header is always
+	included after gperl.h which includes everything already.  And
+	including perl.h alone doesn't work and isn't enough anyway.
+
 2008-11-15  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* GBoxed.xs (gperl_register_boxed): Use the copy of the passed-in
@@ -66,10 +257,69 @@
 	lookup tables in the correct order to avoid prematurely freeing
 	the package name.
 
+2008-11-12  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GObject.xs: Add newlines at the end of debugging messages that
+	lack them to keep perl from adding line number information.
+
 2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* GType.xs (gperl_type_from_package): Also try
 	gperl_param_spec_type_from_package on the package.
+
+2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.pm
+	* Makefile.PL
+	* NEWS
+	* README: Unstable release 1.210.
+
+2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs (add_interfaces): Fail loudly and with a clear error
+	message when we encounter an unknown interface when registering a
+	new type.
+
+2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/lazy-loader.t -> t/lazy_loader.t: Rename this test to blend in
+	with the others which use underscores to separate words.
+
+2008-11-03  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.exports
+	* gperl.h: Properly export gperl_param_spec_type_from_package and
+	gperl_register_param_spec, they are meant to be public.
+
+2008-11-02  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GType.xs: Use gperl_register_fundamental_alias to register the
+	"Glib::Uint" backwards-compatibility alias.
+
+2008-11-02  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GBoxed.xs
+	* GObject.xs
+	* GType.xs
+	* Glib.exports
+	* gperl.h: Provide gperl_register_boxed_alias,
+	gperl_register_fundamental_alias, and gperl_register_object_alias
+	to register aliases for other registered types.  An alias is a
+	package name that will resolve to the specified type, while the
+	type will still resolve to its originally registered package when
+	going the other way.
+
+2008-11-01  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/9.t
+	* GMainLoop.xs: Wrap g_child_watch_add as Glib::Child::watch_add.
+	Patch by Kevin Ryde.
+
+2008-11-01  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* GMainLoop.xs
+	* Glib.pm: Add constants Glib::SOURCE_CONTINUE and SOURCE_REMOVE
+	for use in source-type callbacks.  Patch by Kevin Ryde.
 
 2008-10-19  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 

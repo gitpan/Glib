@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+# Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
 # the full list)
 # 
 # This library is free software; you can redistribute it and/or modify it under
@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Id: typemap 1028 2008-10-05 12:49:32Z tsch $
+# $Id: typemap 1052 2008-11-22 14:21:54Z tsch $
 #
 
 TYPEMAP
@@ -81,6 +81,11 @@ GPerlFilename		T_GPERL_FILENAME
 GPerlFilename_const	T_GPERL_FILENAME
 GPerlFilename_own	T_GPERL_FILENAME_OWN
 GPerlFilename_ornull	T_GPERL_FILENAME_ORNULL
+
+GOptionContext *	T_GPERL_GENERIC_WRAPPER
+GOptionContext_own *	T_GPERL_GENERIC_WRAPPER
+GOptionGroup *		T_GPERL_GENERIC_WRAPPER
+GOptionGroup_own *	T_GPERL_GENERIC_WRAPPER
 
 GUserDirectory	T_GPERL_GENERIC_WRAPPER
 

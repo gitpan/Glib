@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GParamSpec.xs 1028 2008-10-05 12:49:32Z tsch $
+ * $Id: GParamSpec.xs 1061 2009-01-18 15:20:50Z tsch $
  */
 
 #include "gperl.h"
@@ -621,6 +621,64 @@ get_value_type (GParamSpec * pspec)
 	RETVAL = gperl_package_from_type (type);
 	if (!RETVAL)
 		RETVAL = g_type_name (type);
+    OUTPUT:
+	RETVAL
+
+
+MODULE = Glib::ParamSpec	PACKAGE = Glib::ParamSpec	PREFIX = g_param_
+
+=for apidoc
+=signature bool = $paramspec->value_validate ($value)
+=signature (bool, newval) = $paramspec->value_validate ($value)
+In scalar context return true if $value must be modified to be valid
+for $paramspec, or false if it's valid already.  In array context
+return also a new value which is $value made valid.
+
+$value must be the right type for $paramspec (with usual stringizing,
+numizing, etc).  C<value_validate> checks the further restrictions
+such as minimum and maximum for a numeric type or allowed characters
+in a string.  The "made valid" return is then for instance clamped to
+the min/max, or offending chars replaced by a substitutor.
+=cut
+void
+g_param_value_validate (GParamSpec * pspec, SV *value)
+    PREINIT:
+	GValue v = { 0, };
+	GType type;
+	int modify, retcount=1;
+    CODE:
+	type = G_PARAM_SPEC_VALUE_TYPE (pspec);
+	g_value_init (&v, type);
+	gperl_value_from_sv (&v, value);
+	modify = g_param_value_validate (pspec, &v);
+	ST(0) = sv_2mortal (boolSV (modify));
+	if (GIMME_V == G_ARRAY) {
+		ST(1) = sv_2mortal (gperl_sv_from_value (&v));
+		retcount = 2;
+	}
+	g_value_unset (&v);
+	XSRETURN(retcount);
+
+=for
+Compares I<value1> with I<value2> according to I<pspec>, and returns -1, 0 or
++1, if value1 is found to be less than, equal to or greater than value2,
+respectively.
+=cut
+int
+g_param_values_cmp (GParamSpec * pspec, SV *value1, SV *value2)
+    PREINIT:
+	GValue v1 = { 0, };
+	GValue v2 = { 0, };
+	GType type;
+    CODE:
+	type = G_PARAM_SPEC_VALUE_TYPE (pspec);
+	g_value_init (&v1, type);
+	g_value_init (&v2, type);
+	gperl_value_from_sv (&v1, value1);
+	gperl_value_from_sv (&v2, value2);
+	RETVAL = g_param_values_cmp (pspec, &v1, &v2);
+	g_value_unset (&v1);
+	g_value_unset (&v2);
     OUTPUT:
 	RETVAL
 

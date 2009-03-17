@@ -3,7 +3,7 @@
  *
  * Licensed under the LGPL, see LICENSE file for more information.
  *
- * $Id: gperl-private.h 1028 2008-10-05 12:49:32Z tsch $
+ * $Id: gperl-private.h 1051 2008-11-22 12:25:14Z tsch $
  */
 
 /*
@@ -13,8 +13,6 @@
 
 #ifndef _GPERL_PRIVATE_H_
 #define _GPERL_PRIVATE_H_
-
-#include "perl.h"
 
 /*
  * Thread-safety macros and helpers

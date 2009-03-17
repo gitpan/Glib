@@ -3,8 +3,9 @@
 # ParamSpec stuff.
 #
 use strict;
+use utf8;
 use Glib ':constants';
-use Test::More tests => 232;
+use Test::More tests => 243;
 
 # first register some types with which to play below.
 
@@ -160,9 +161,9 @@ push @params, $pspec;
 
 $pspec = Glib::ParamSpec->unichar ('unichar', 'Unichar',
 	                           'is that like unixsex?',
-	                           'ö', qw/readable/);
+	                           'Ã¶', qw/readable/);
 pspec_common_ok ($pspec, 'Unichar', qw/readable/, 'Glib::UInt');
-is ($pspec->get_default_value, 'ö', 'Unichar default');
+is ($pspec->get_default_value, 'Ã¶', 'Unichar default');
 push @params, $pspec;
 
 
@@ -215,3 +216,28 @@ foreach (@params) {
 my $object = Bar->new;
 my $x = $object->get ('param_spec');
 is ($x, undef);
+
+
+
+#
+# value_validate() and value_cmp()
+#
+{ my $p = Glib::ParamSpec->int ('name','nick','blurb',
+                                20, 50, 25, G_PARAM_READWRITE);
+  ok (! scalar ($p->value_validate('30')), "value 30 valid");
+  my @a = $p->value_validate('30');
+  is (@a, 2);
+  ok (! $a[0], "value 30 bool no modify (array context)");
+  is ($a[1], 30, "value 30 value unchanged");
+
+  my ($modif, $newval) = $p->value_validate(70);
+  ok ($modif, 'modify 70 to be in range');
+  is ($newval, 50, 'clamp 70 down to be in range');
+  ($modif, $newval) = $p->value_validate(-70);
+  ok ($modif, 'modify -70 to be in range');
+  is ($newval, 20, 'clamp -70 down to be in range');
+
+  is ($p->values_cmp(22, 33), -1);
+  is ($p->values_cmp(33, 22), 1);
+  is ($p->values_cmp(22, 22), 0);
+}

@@ -11,5 +11,4 @@ MAINTAINERS$
 \.spec$
 \.sw.$
 \.tar\.gz$
-\.releaserc
 \.svn

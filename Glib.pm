@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2008 by the gtk2-perl team (see the file AUTHORS for
+# Copyright (C) 2003-2009 by the gtk2-perl team (see the file AUTHORS for
 # the full list)
 #
 # This library is free software; you can redistribute it and/or modify it under
@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Id: Glib.pm 1091 2009-02-13 14:53:55Z tsch $
+# $Id: Glib.pm 1110 2009-03-17 17:54:34Z tsch $
 #
 
 package Glib;
@@ -36,6 +36,9 @@ use constant {
 	G_PRIORITY_DEFAULT_IDLE =>  200,
 	G_PRIORITY_LOW	        =>  300,
 	G_PARAM_READWRITE       => [qw/readable writable/],
+
+	SOURCE_CONTINUE         => 1,
+	SOURCE_REMOVE           => !1,
 };
 
 # export nothing by default.
@@ -63,7 +66,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.201';
+our $VERSION = '1.220';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -417,7 +420,7 @@ Example:
 
 =back
 
-Other functions for converting URIs are currently missing. Also, it might
+It might
 be useful to know that perl currently has no policy at all regarding
 filename issues, if your scalar happens to be in utf-8 internally it will
 use utf-8, if it happens to be stored as bytes, it will use it as-is.
@@ -437,7 +440,54 @@ this one is guaranteed to return valid utf-8, but the conversion is not
 necessarily reversible.  These functions are intended to be used for failsafe
 display of filenames, for example in gtk+ labels.
 
-Since gtk+ 2.6, Glib 1.12
+Since glib 2.6, Glib 1.12
+
+=back
+
+The following convert filenames to and from URI encoding.  (See also
+L<URI::file>.)
+
+=over 4
+
+=item $string = filename_to_uri ($filename, $hostname)
+
+=item $string = Glib->filename_to_uri ($filename, $hostname)
+
+Return a "file://" schema URI for a filename.  Unsafe and non-ascii chars in
+C<$filename> are escaped with URI "%" forms.
+
+C<$filename> must be an absolute path as a byte string in local filesystem
+encoding.  C<$hostname> is a utf-8 string, or empty or C<undef> for no host
+specified.  For example,
+
+    filename_to_uri ('/my/x%y/<dir>/foo.html', undef);
+    # returns 'file:///my/x%25y/%3Cdir%3E/foo.html'
+
+If C<$filename> is a relative path or C<$hostname> doesn't look like a
+hostname then C<filename_to_uri> croaks with a C<Glib::Error>.
+
+When using the class style C<< Glib->filename_to_uri >> remember that the
+C<$hostname> argument is mandatory.  If you forget then it looks like a
+2-argument call with filename of "Glib" and hostname of what you meant to be
+the filename.
+
+=item $filename = filename_from_uri ($uri)
+
+=item ($filename, $hostname) = filename_from_uri ($uri)
+
+Extract the filename and hostname from a "file://" schema URI.  In scalar
+context just the filename is returned, in array context both filename and
+hostname are returned.
+
+The filename returned is bytes in the local filesystem encoding and with the
+OS path separator character.  The hostname returned is utf-8.  For example,
+
+    ($f,$h) = filename_from_uri ('file://foo.com/r%26b/bar.html');
+    # returns '/r&b/bar.html' and 'foo.com' on Unix
+
+If C<$uri> is not a "file:", or is mal-formed, or the hostname part doesn't
+look like a host name then C<filename_from_uri> croaks with a
+C<Glib::Error>.
 
 =back
 
@@ -600,6 +650,8 @@ http://lists.gnome.org/.
 
 =head1 AUTHORS
 
+=encoding utf8
+
 muppet, E<lt>scott at asofyet dot orgE<gt>, who borrowed heavily from the work
 of Göran Thyni, E<lt>gthyni at kirra dot netE<gt> and Guillaume Cottenceau
 E<lt>gc at mandrakesoft dot comE<gt> on the first gtk2-perl module, and from
@@ -612,7 +664,7 @@ patches and tests here and there.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2003-2008 by muppet and the gtk2-perl team
+Copyright 2003-2009 by muppet and the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For

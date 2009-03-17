@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Id: Glib.exports 1069 2009-02-05 11:17:54Z tsch $
+# $Id: Glib.exports 1040 2008-11-03 20:34:43Z tsch $
 #
 
 @exports = qw(
@@ -67,9 +67,12 @@ gperl_param_spec_package_from_type
 gperl_param_spec_type_from_package
 gperl_prepend_isa
 gperl_register_boxed
+gperl_register_boxed_alias
 gperl_register_error_domain
 gperl_register_fundamental
+gperl_register_fundamental_alias
 gperl_register_object
+gperl_register_object_alias
 gperl_register_param_spec
 gperl_register_sink_func
 gperl_remove_exception_handler

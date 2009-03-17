@@ -1,5 +1,5 @@
 #
-# $Id: MakeHelper.pm 1028 2008-10-05 12:49:32Z tsch $
+# $Id: MakeHelper.pm 1083 2009-02-05 17:04:08Z tsch $
 #
 
 package Glib::MakeHelper;
@@ -142,8 +142,12 @@ sub read_source_list_file {
 
 Generates YAML code that lists every module found in I<%module_to_version>
 under the C<configure_requires> key.  This can be used with
-I<ExtUtils::MakeMaker>'s C<EXTRA_META> parameter to specify which modules are
+L<ExtUtils::MakeMaker>'s C<EXTRA_META> parameter to specify which modules are
 needed at I<Makefile.PL> time.
+
+This function is B<deprecated> since L<ExtUtils::MakeMaker> 6.46 removed
+support for C<EXTRA_META> in favor of the new keys C<META_MERGE> and
+C<META_ADD>.
 
 =cut
 
@@ -171,12 +175,14 @@ stuff in your Makefile.PL's WriteMakefile arguments.
 
 =cut
 
+our @ADDITIONAL_FILES_TO_CLEAN = ();
+
 sub postamble_clean
 {
 	shift; # package name
 "
 realclean ::
-	-\$(RM_RF) build perl-\$(DISTNAME).spec ".join(" ", @_)."
+	-\$(RM_RF) build perl-\$(DISTNAME).spec @ADDITIONAL_FILES_TO_CLEAN @_
 ";
 }
 
@@ -506,6 +512,37 @@ dist-srpms :: Makefile dist perl-\$(DISTNAME).spec \$(RPMS_DIR)/
 	cp \$(DISTNAME)-\$(VERSION).tar.gz \$(RPMS_DIR)/SOURCES/
 	rpmbuild -bs --nodeps --define \"_topdir \$(RPMS_DIR)\" perl-\$(DISTNAME).spec
 ";
+}
+
+=item string = Glib::MakeHelper->postamble_precompiled_headers (@headers)
+
+Create and return the text of Makefile rules for a 'precompiled-headers' target
+that precompiles I<@headers>.  If you call this before you call
+C<postamble_clean>, all temporary files will be removed by the 'realclean'
+target.
+
+=cut
+
+sub postamble_precompiled_headers
+{
+	shift; # package name
+	my @headers = @_;
+	my @precompiled_headers = ();
+	my $rules = "";
+	foreach my $header (@headers) {
+		my $output = $header . '.gch';
+		push @precompiled_headers, $output;
+		push @ADDITIONAL_FILES_TO_CLEAN, $output;
+		$rules .= <<PCH;
+
+$output: $header
+	\$(CCCMD) \$(CCCDLFLAGS) "-I\$(PERL_INC)" \$(PASTHRU_DEFINE) \$(DEFINE) $header
+PCH
+	}
+	$rules .= <<PCH;
+
+precompiled-headers: @precompiled_headers
+PCH
 }
 
 package MY;

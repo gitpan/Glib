@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: Glib.xs 1028 2008-10-05 12:49:32Z tsch $
+ * $Id: Glib.xs 1077 2009-02-05 14:39:12Z tsch $
  */
 
 #include "gperl.h"
@@ -100,18 +100,18 @@ gperl_filename_from_sv (SV *sv)
         dTHR;
 
         GError *error = NULL;
-        gchar *lname;
-        STRLEN len;
-        gchar *filename = SvPVutf8 (sv, len);
+        gchar *lname = NULL;
+        gsize output_length = 0;
+        STRLEN input_length = 0;
+        gchar *filename = SvPVutf8 (sv, input_length);
 
-	/* look out: len is the length of the input when we call, but
-	 * will be the length of the output when this call finishes. */
-        lname = g_filename_from_utf8 (filename, len, 0, &len, &error);
+        lname = g_filename_from_utf8 (filename, input_length,
+                                      0, &output_length, &error);
         if (!lname)
         	gperl_croak_gerror (NULL, error);
 
-        filename = gperl_alloc_temp (len + 1);
-        memcpy (filename, lname, len);
+        filename = gperl_alloc_temp (output_length + 1);
+        memcpy (filename, lname, output_length);
         g_free (lname);
 
         return filename;
@@ -386,6 +386,7 @@ BOOT:
 	GPERL_CALL_BOOT (boot_Glib__IO__Channel);
 #if GLIB_CHECK_VERSION (2, 6, 0)
 	GPERL_CALL_BOOT (boot_Glib__KeyFile);
+	GPERL_CALL_BOOT (boot_Glib__Option);
 #endif /* GLIB_CHECK_VERSION (2, 6, 0) */
 #if GLIB_CHECK_VERSION (2, 12, 0)
 	GPERL_CALL_BOOT (boot_Glib__BookmarkFile);
@@ -453,8 +454,14 @@ filename_from_uri (...)
 	if (!filename)
 		gperl_croak_gerror (NULL, error);
 	PUSHs (sv_2mortal (newSVpv (filename, 0)));
-	if (GIMME_V == G_ARRAY && hostname)
-		XPUSHs (sv_2mortal (newSVpv (hostname, 0)));
+	if (GIMME_V == G_ARRAY && hostname) {
+		/* The g_filename_from_uri() docs say hostname is utf8,
+		 * hence newSVGChar, though as of glib circa 2.16
+		 * hostname_validate() only actually allows ascii
+		 * alphanumerics, so utf8 doesn't actually come out.
+		 */
+		XPUSHs (sv_2mortal (newSVGChar (hostname)));
+	}
 	g_free (filename);
 	if (hostname) g_free (hostname);
 
@@ -468,12 +475,16 @@ filename_to_uri (...)
 	char * hostname = NULL;
 	GError * error = NULL;
     CODE:
+	/* The g_filename_to_uri() docs say hostname is utf8, hence SvGChar,
+	 * though as of glib circa 2.16 hostname_validate() only actually
+	 * allows ascii alphanumerics, so you can't in fact pass in utf8.
+	 */
 	if (items == 2) {
 		filename = SvPV_nolen (ST (0));
-		hostname = gperl_sv_is_defined (ST (1)) ? SvPV_nolen (ST (1)) : NULL;
+		hostname = gperl_sv_is_defined (ST (1)) ? SvGChar (ST (1)) : NULL;
 	} else if (items == 3) {
 		filename = SvPV_nolen (ST (1));
-		hostname = gperl_sv_is_defined (ST (2)) ? SvPV_nolen (ST (2)) : NULL;
+		hostname = gperl_sv_is_defined (ST (2)) ? SvGChar (ST (2)) : NULL;
 	} else {
 		croak ("Usage: Glib::filename_to_uri (filename, hostname)\n"
 		       " -or-  Glib->filename_to_uri (filename, hostname)\n"

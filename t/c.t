@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vim: set filetype=perl :
 #
-# $Id: c.t 1028 2008-10-05 12:49:32Z tsch $
+# $Id: c.t 1074 2009-02-05 14:14:54Z tsch $
 #
 
 #
@@ -13,7 +13,7 @@ use warnings;
 
 #########################
 
-use Test::More tests => 34;
+use Test::More tests => 51;
 BEGIN { use_ok('Glib') };
 
 #########################
@@ -48,6 +48,14 @@ ok ($@, "Will croak on trying to create plain old Glib::Flags");
       "overloaded +=");
   ok ($f == ['readable'],
       "overloaded += leaves original unchanged");
+}
+
+foreach my $method (qw(bool as_arrayref eq union sub intersect xor all)) {
+  my $func = Glib::Flags->can($method);
+  ok ($func, "Glib::Flags::$method() func found");
+  no warnings;
+  ok (do { eval { $func->(undef, undef, 0) }; 1 },
+      'Glib::Flags::$method() no segfault if passed a non-reference');
 }
 
 #########################
@@ -216,6 +224,7 @@ $obj->set (some_enum => 'value-two');
 is ($obj->get ('some_enum'), 'value-two', 'enum property, after set');
 
 is_deeply (\@{ $obj->get ('some_flags') }, ['value-one'], 'flags property');
+is_deeply ($obj->get('some_flags')->as_arrayref, ['value-one'], 'flags property');
 $obj->set (some_flags => ['value-one', 'value-two']);
 is_deeply (\@{ $obj->get ('some_flags') }, ['value-one', 'value-two'],
 	   'flags property, after set');
@@ -240,7 +249,7 @@ ok ($obj->get ('some_flags') ne [qw/value-one/], 'ne is overloaded');
 
 __END__
 
-Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for the
+Copyright (C) 2003-2005, 2009 by the gtk2-perl team (see the file AUTHORS for the
 full list)
 
 This library is free software; you can redistribute it and/or modify it under

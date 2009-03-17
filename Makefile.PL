@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.PL 1029 2008-10-19 17:35:57Z tsch $
+# $Id: Makefile.PL 1110 2009-03-17 17:54:34Z tsch $
 #
 
 BEGIN { require 5.008; }
@@ -72,6 +72,7 @@ our @xs_files = qw(
 # Check version before including
 if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.6.0')) {
 	push @xs_files, 'GKeyFile.xs';
+	push @xs_files, 'GOption.xs';
 }
 
 if (ExtUtils::PkgConfig->atleast_version ('glib-2.0', '2.12.0')) {
@@ -143,9 +144,6 @@ $glib->save_config ('build/IFiles.pm');
 our @exports;
 require 'Glib.exports';
 
-my $configure_requires_yaml =
-  Glib::MakeHelper->get_configure_requires_yaml(%PREREQ_PM);
-
 WriteMakefile(
     NAME		=> 'Glib',
     VERSION_FROM	=> 'Glib.pm', # finds $VERSION
@@ -156,11 +154,15 @@ WriteMakefile(
     FUNCLIST		=> \@exports,
     DL_FUNCS		=> { Glib => [] },
 
-    $glib ? $glib->get_makefile_vars : (),
+    META_MERGE => {
+      configure_requires => \%PREREQ_PM,
+      no_index => {
+        files => [qw/xsapi.pod.head xsapi.pod.foot/],
+        package => 'MY',
+      },
+    },
 
-    $ExtUtils::MakeMaker::VERSION >= 6.46
-      ? (META_MERGE => { configure_requires => \%PREREQ_PM })
-      : (EXTRA_META => $configure_requires_yaml),
+    $glib ? $glib->get_makefile_vars : (),
 );
 
 =unstable
@@ -171,7 +173,7 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
    This is an unstable development release of Glib.  The API is not
    frozen and things are subject to change at any time.  Report any
    bugs to gtk-perl-list AT gnome DOT org as soon as possible.
-   Please use the 1.18x series for important work.
+   Please use the 1.20x series for important work.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
@@ -211,6 +213,7 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 	\$(NOECHO) $^X apidoc.pl xsapi.pod.head xsapi.pod.foot build/doc.pl > \$@
 
 "
+	     . Glib::MakeHelper->postamble_precompiled_headers (qw/gperl.h/)
 	     . Glib::MakeHelper->postamble_clean ()
 	     . Glib::MakeHelper->postamble_docs_full (
 			DEPENDS => $glib,

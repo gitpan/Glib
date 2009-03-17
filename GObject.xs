@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GObject.xs 1073 2009-02-05 13:59:42Z tsch $
+ * $Id: GObject.xs 1072 2009-02-05 13:57:30Z tsch $
  */
 
 /*
@@ -369,6 +369,44 @@ gperl_register_object (GType gtype,
 		class_info_finish_loading (class_info);
 }
 
+=item void gperl_register_object_alias (GType gtype, const char * package)
+
+Makes I<package> an alias for I<type>.  This means that the package name
+specified by I<package> will be mapped to I<type> by
+I<gperl_object_type_from_package>, but I<gperl_object_package_from_type> won't
+map I<type> to I<package>.  This is useful if you want to change the canonical
+package name of a type while preserving backwards compatibility with code which
+uses I<package> to specify I<type>.
+
+In order for this to make sense, another package name should be registered for
+I<type> with I<gperl_register_object>.
+
+=cut
+
+void
+gperl_register_object_alias (GType gtype,
+			     const char * package)
+{
+	ClassInfo *class_info;
+
+	G_LOCK (types_by_type);
+	class_info = (ClassInfo *)
+		g_hash_table_lookup (types_by_type, (gpointer) gtype);
+	G_UNLOCK (types_by_type);
+
+	if (!class_info) {
+		croak ("cannot register alias %s for the unregistered type %s",
+		       package, g_type_name (gtype));
+	}
+
+	G_LOCK (types_by_package);
+	/* associate package with the same class_info.  class_info is still
+	   owned by types_by_type.  types_by_package doesn't have a
+	   free-function installed, so that's ok. */
+	g_hash_table_insert (types_by_package, (char *) package, class_info);
+	G_UNLOCK (types_by_package);
+}
+
 
 =item void gperl_register_sink_func (GType gtype, GPerlObjectSinkFunc func)
 
@@ -663,7 +701,7 @@ gobject_destroy_wrapper (SV *obj)
         	return;
 
 #ifdef NOISY
-        warn ("gobject_destroy_wrapper (%p)[%d]", obj,
+        warn ("gobject_destroy_wrapper (%p)[%d]\n", obj,
               SvREFCNT ((SV*)REVIVE_UNDEAD(obj)));
 #endif
         obj = REVIVE_UNDEAD(obj);
@@ -730,7 +768,7 @@ gperl_new_object (GObject * object,
 	/* take the easy way out if we can */
 	if (!object) {
 #ifdef NOISY
-		warn ("gperl_new_object (NULL) => undef");
+		warn ("gperl_new_object (NULL) => undef\n");
 #endif
 		return &PL_sv_undef;
 	}
@@ -789,7 +827,7 @@ gperl_new_object (GObject * object,
                  * object */
 
 #ifdef NOISY
-		warn ("gperl_new_object%d %s(%p)[%d] => %s (%p) (NEW)", own,
+		warn ("gperl_new_object%d %s(%p)[%d] => %s (%p) (NEW)\n", own,
 		      G_OBJECT_TYPE_NAME (object), object, object->ref_count,
 		      gperl_object_package_from_type (G_OBJECT_TYPE (object)),
 		      SvRV (sv));
@@ -812,7 +850,7 @@ gperl_new_object (GObject * object,
         }
 
 #ifdef NOISY
-	warn ("gperl_new_object%d %s(%p)[%d] => %s (%p)[%d] (PRE-OWN)", own,
+	warn ("gperl_new_object%d %s(%p)[%d] => %s (%p)[%d] (PRE-OWN)\n", own,
 	      G_OBJECT_TYPE_NAME (object), object, object->ref_count,
 	      gperl_object_package_from_type (G_OBJECT_TYPE (object)),
 	      SvRV (sv), SvREFCNT (SvRV (sv)));
@@ -1076,7 +1114,7 @@ DESTROY (SV *sv)
         if (!object) /* Happens on object destruction. */
                 return;
 #ifdef NOISY
-        warn ("DESTROY< (%p)[%d] => %s (%p)[%d]",
+        warn ("DESTROY< (%p)[%d] => %s (%p)[%d]\n",
               object, object->ref_count,
               gperl_object_package_from_type (G_OBJECT_TYPE (object)),
               sv, SvREFCNT (SvRV(sv)));

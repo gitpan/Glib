@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2005, 2009 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GType.xs 1081 2009-02-05 16:36:12Z tsch $
+ * $Id: GType.xs 1103 2009-03-01 17:03:05Z tsch $
  */
 
 =head2 GType / GEnum / GFlags
@@ -112,6 +112,45 @@ gperl_register_fundamental (GType gtype, const char * package)
 		gperl_set_isa (package, "Glib::Flags");
 }
 
+=item void gperl_register_fundamental_alias (GType gtype, const char * package)
+
+Makes I<package> an alias for I<type>.  This means that the package name
+specified by I<package> will be mapped to I<type> by
+I<gperl_fundamental_type_from_package>, but
+I<gperl_fundamental_package_from_type> won't map I<type> to I<package>.  This
+is useful if you want to change the canonical package name of a type while
+preserving backwards compatibility with code which uses I<package> to specify
+I<type>.
+
+In order for this to make sense, another package name should be registered for
+I<type> with I<gperl_register_fundamental> or
+I<gperl_register_fundamental_full>.
+
+=cut
+
+void
+gperl_register_fundamental_alias (GType gtype,
+				  const char * package)
+{
+	const char * res;
+
+	G_LOCK (packages_by_type);
+	res = (const char *)
+		g_hash_table_lookup (packages_by_type, (gpointer) gtype);
+	G_UNLOCK (packages_by_type);
+
+	if (!res) {
+		croak ("cannot register alias %s for the unregistered type %s",
+		       package, g_type_name (gtype));
+	}
+
+	G_LOCK (types_by_package);
+	g_hash_table_insert (types_by_package,
+			     (char *) package,
+			     (gpointer) gtype);
+	G_UNLOCK (types_by_package);
+}
+
 =item GPerlValueWrapperClass
 
 Specifies the vtable that is to be used to convert fundamental types to and
@@ -191,6 +230,23 @@ gperl_fundamental_type_from_package (const char * package)
 	res = (GType) g_hash_table_lookup (types_by_package, package);
 	G_UNLOCK (types_by_package);
 	return res;
+}
+
+/* objref should be a reference to a blessed something; the return is
+   G_TYPE_NONE if it's any other SV.  Is it worth making this public?  Leave
+   it private for now.  */
+static GType
+gperl_fundamental_type_from_obj (SV *objref)
+{
+	SV *obj;
+	const char *package;
+	if (!gperl_sv_is_defined (objref))
+		return G_TYPE_NONE;  /* ref is not defined */
+	obj = SvRV(objref);
+	if (obj == NULL)
+		return G_TYPE_NONE;  /* ref is not a reference */
+	package = sv_reftype (obj, TRUE);
+	return gperl_fundamental_type_from_package (package);
 }
 
 =item const char * gperl_fundamental_package_from_type (GType gtype)
@@ -374,13 +430,13 @@ gperl_try_convert_flag (GType type,
 	while (vals && vals->value_nick && vals->value_name) {
 		if (gperl_str_eq (val_p, vals->value_name) ||
 		    gperl_str_eq (val_p, vals->value_nick)) {
-                        *val = vals->value;
-                        return TRUE;
+			*val = vals->value;
+			return TRUE;
 		}
 		vals++;
 	}
 
-        return FALSE;
+	return FALSE;
 }
 
 =item gint gperl_convert_flag_one (GType type, const char * val)
@@ -428,7 +484,7 @@ gperl_convert_flags (GType type,
 		     SV * val)
 {
 	if (SvROK (val) && sv_derived_from (val, "Glib::Flags"))
-        	return SvIV (SvRV (val));
+		return SvIV (SvRV (val));
 	if (gperl_sv_is_array_ref (val)) {
 		AV* vals = (AV*) SvRV(val);
 		gint value = 0;
@@ -454,9 +510,9 @@ flags_as_arrayref (GType type,
 	AV * flags = newAV ();
 	while (vals && vals->value_nick && vals->value_name) {
 		if ((val & vals->value) == vals->value) {
-                	val -= vals->value;
+			val -= vals->value;
 			av_push (flags, newSVpv (vals->value_nick, 0));
-                }
+		}
 		vals++;
 	}
 	return newRV_noinc ((SV*) flags);
@@ -476,13 +532,13 @@ gperl_convert_back_flags (GType type,
 
 	if (package) {
 		return sv_bless (newRV_noinc (newSViv (val)), gv_stashpv (package, TRUE));
-        } else {
-                /* return as non-blessed array, and warn. */
-                warn ("GFlags %s has no registered perl package, returning as array",
-                      g_type_name (type));
+	} else {
+		/* return as non-blessed array, and warn. */
+		warn ("GFlags %s has no registered perl package, returning as array",
+		      g_type_name (type));
 
 		return flags_as_arrayref (type, val);
-        }
+	}
 }
 
 =back
@@ -893,8 +949,8 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 	gchar * tmp;
 	SV * method_name;
 	STRLEN i;
-        HV *stash;
-        SV **slot;
+	HV *stash;
+	SV **slot;
 	/* see GClosure.xs and gperl_marshal.h for an explanation.  we can't
 	 * use that code because this is a different style of closure, but we
 	 * need to emulate it very closely. */
@@ -922,12 +978,12 @@ gperl_signal_class_closure_marshal (GClosure *closure,
 		if (*tmp == '-') *tmp = '_';
 
 	stash = gperl_object_stash_from_type (query.itype);
-        assert (stash);
+	assert (stash);
 	tmp = SvPV (method_name, i);
-        slot = hv_fetch (stash, tmp, i, 0);
+	slot = hv_fetch (stash, tmp, i, 0);
 
-        /* does the function exist? then call it. */
-        if (slot && GvCV (*slot)) {
+	/* does the function exist? then call it. */
+	if (slot && GvCV (*slot)) {
 		SV * save_errsv;
 		gboolean want_return_value;
 		int flags;
@@ -1378,11 +1434,11 @@ static void
 add_properties (GType instance_type, AV * properties)
 {
 	GObjectClass *oclass;
-        int propid;
+	int propid;
 
 	oclass = g_type_class_ref (instance_type);
 
-        for (propid = 0; propid <= av_len (properties); propid++) {
+	for (propid = 0; propid <= av_len (properties); propid++) {
 		SV * sv = *av_fetch (properties, propid, 1);
 		GParamSpec * pspec = NULL;
 		if (sv_derived_from (sv, "Glib::ParamSpec"))
@@ -1449,19 +1505,19 @@ install_overrides (GType type)
 		slot = hv_fetch (stash, "_INSTALL_OVERRIDES",
 		                 sizeof ("_INSTALL_OVERRIDES") - 1,
 		                 FALSE);
-	        if (slot && GvCV (*slot)) {
-	                dSP;
-	                ENTER;
-	                SAVETMPS;
-	                PUSHMARK (SP);
+		if (slot && GvCV (*slot)) {
+			dSP;
+			ENTER;
+			SAVETMPS;
+			PUSHMARK (SP);
 			if (!name)
 				name = gperl_object_package_from_type (type);
-	                XPUSHs (sv_2mortal (newSVpv (name, PL_na)));
-	                PUTBACK;
-	                call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
-	                FREETMPS;
-	                LEAVE;
-	        }
+			XPUSHs (sv_2mortal (newSVpv (name, PL_na)));
+			PUTBACK;
+			call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
+			FREETMPS;
+			LEAVE;
+		}
 	}
 
 	g_slist_free (types);
@@ -1470,14 +1526,22 @@ install_overrides (GType type)
 static void
 add_interfaces (GType instance_type, AV * interfaces)
 {
-        int i;
+	int i;
 	SV * class_name =
 		newSVpv (gperl_object_package_from_type (instance_type), 0);
 
-        for (i = 0; i <= av_len (interfaces); i++) {
+	for (i = 0; i <= av_len (interfaces); i++) {
+		GType interface_type;
+
 		SV ** svp = av_fetch (interfaces, i, FALSE);
 		if (!svp || !gperl_sv_is_defined (*svp))
 			croak ("encountered undefined interface name");
+
+		interface_type = gperl_object_type_from_package (SvPV_nolen (*svp));
+		if (!interface_type) {
+			croak ("encountered unregistered interface %s",
+			       SvPV_nolen (*svp));
+		}
 
 		/* call the interface's setup function on this class. */
 		{
@@ -1566,8 +1630,8 @@ gperl_type_get_property (GObject * object,
 		 GValue * value,
 		 GParamSpec * pspec)
 {
-        HV *stash;
-        SV **slot;
+	HV *stash;
+	SV **slot;
 	SV * getter;
 
 	prop_handler_lookup (G_OBJECT_TYPE (object), property_id, NULL, &getter);
@@ -1587,34 +1651,34 @@ gperl_type_get_property (GObject * object,
 		return;
 	}
 
-        stash = gperl_object_stash_from_type (pspec->owner_type);
-        assert (stash);
-        slot = hv_fetch (stash, "GET_PROPERTY", sizeof ("GET_PROPERTY") - 1, 0);
+	stash = gperl_object_stash_from_type (pspec->owner_type);
+	assert (stash);
+	slot = hv_fetch (stash, "GET_PROPERTY", sizeof ("GET_PROPERTY") - 1, 0);
 
-        /* does the function exist? then call it. */
-        if (slot && GvCV (*slot)) {
-                  dSP;
+	/* does the function exist? then call it. */
+	if (slot && GvCV (*slot)) {
+		  dSP;
 
-                  ENTER;
-                  SAVETMPS;
+		  ENTER;
+		  SAVETMPS;
 
-                  PUSHMARK (SP);
-                  XPUSHs (sv_2mortal (gperl_new_object (object, FALSE)));
-                  XPUSHs (sv_2mortal (newSVGParamSpec (pspec)));
-                  PUTBACK;
+		  PUSHMARK (SP);
+		  XPUSHs (sv_2mortal (gperl_new_object (object, FALSE)));
+		  XPUSHs (sv_2mortal (newSVGParamSpec (pspec)));
+		  PUTBACK;
 
-                  if (1 != call_sv ((SV *)GvCV (*slot), G_SCALAR))
-                          croak ("%s->GET_PROPERTY didn't return exactly one value", HvNAME (stash));
+		  if (1 != call_sv ((SV *)GvCV (*slot), G_SCALAR))
+			  croak ("%s->GET_PROPERTY didn't return exactly one value", HvNAME (stash));
 
-                  SPAGAIN;
+		  SPAGAIN;
 
-                  gperl_value_from_sv (value, POPs);
+		  gperl_value_from_sv (value, POPs);
 
-                  PUTBACK;
-                  FREETMPS;
-                  LEAVE;
+		  PUTBACK;
+		  FREETMPS;
+		  LEAVE;
 
-        } else {
+	} else {
 		/* no GET_PROPERTY; look in the wrapper hash. */
 		SV * val = _gperl_fetch_wrapper_key
 				(object, g_param_spec_get_name (pspec), FALSE);
@@ -1634,8 +1698,8 @@ gperl_type_set_property (GObject * object,
                          const GValue * value,
                          GParamSpec * pspec)
 {
-        HV  * stash;
-        SV ** slot;
+	HV  * stash;
+	SV ** slot;
 	SV  * setter;
 
 	prop_handler_lookup (G_OBJECT_TYPE (object), property_id, &setter, NULL);
@@ -1654,29 +1718,29 @@ gperl_type_set_property (GObject * object,
 		return;
 	}
 
-        stash = gperl_object_stash_from_type (pspec->owner_type);
-        assert (stash);
-        slot = hv_fetch (stash, "SET_PROPERTY", sizeof ("SET_PROPERTY") - 1, 0);
+	stash = gperl_object_stash_from_type (pspec->owner_type);
+	assert (stash);
+	slot = hv_fetch (stash, "SET_PROPERTY", sizeof ("SET_PROPERTY") - 1, 0);
 
-        /* does the function exist? then call it. */
-        if (slot && GvCV (*slot)) {
-                  dSP;
+	/* does the function exist? then call it. */
+	if (slot && GvCV (*slot)) {
+		  dSP;
 
-                  ENTER;
-                  SAVETMPS;
+		  ENTER;
+		  SAVETMPS;
 
-                  PUSHMARK (SP);
-                  XPUSHs (sv_2mortal (gperl_new_object (object, FALSE)));
-                  XPUSHs (sv_2mortal (newSVGParamSpec (pspec)));
-                  XPUSHs (sv_2mortal (gperl_sv_from_value (value)));
-                  PUTBACK;
+		  PUSHMARK (SP);
+		  XPUSHs (sv_2mortal (gperl_new_object (object, FALSE)));
+		  XPUSHs (sv_2mortal (newSVGParamSpec (pspec)));
+		  XPUSHs (sv_2mortal (gperl_sv_from_value (value)));
+		  PUTBACK;
 
-                  call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
+		  call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
 
-                  FREETMPS;
-                  LEAVE;
+		  FREETMPS;
+		  LEAVE;
 
-        } else {
+	} else {
 		/* no SET_PROPERTY.  fall back to setting the value into
 		 * a key with the pspec's name in the wrapper hash. */
 		SV * val = _gperl_fetch_wrapper_key
@@ -1696,53 +1760,53 @@ gperl_type_finalize (GObject * instance)
 	int do_nonperl = 1;
 	GObjectClass *class;
 
-        /* BIG BUG:
-         * we walk down the class hierarchy and call all
-         * FINALIZE_INSTANCE functions for perl.
-         * We also call the first non-perl finalize function.
-         * This does NOT work when we have gobject -> perl -> non-perl -> perl.
-         * In this case we should probably remove the perl SV so that later
-         * invocations will not try to call into perl.
-          (i.e. check wrapper_sv, steal wrapper_sv, finalize)
-         */
+	/* BIG BUG:
+	 * we walk down the class hierarchy and call all
+	 * FINALIZE_INSTANCE functions for perl.
+	 * We also call the first non-perl finalize function.
+	 * This does NOT work when we have gobject -> perl -> non-perl -> perl.
+	 * In this case we should probably remove the perl SV so that later
+	 * invocations will not try to call into perl.
+	  (i.e. check wrapper_sv, steal wrapper_sv, finalize)
+	 */
 
         class = G_OBJECT_GET_CLASS (instance);
 
-        do {
-                /* call finalize for each perl class and the topmost non-perl class */
-        	if (class->finalize == gperl_type_finalize) {
-                        if (!PL_in_clean_objs) {
-                                HV *stash = gperl_object_stash_from_type (G_TYPE_FROM_CLASS (class));
-                                SV **slot = hv_fetch (stash, "FINALIZE_INSTANCE", sizeof ("FINALIZE_INSTANCE") - 1, 0);
+	do {
+		/* call finalize for each perl class and the topmost non-perl class */
+		if (class->finalize == gperl_type_finalize) {
+			if (!PL_in_clean_objs) {
+				HV *stash = gperl_object_stash_from_type (G_TYPE_FROM_CLASS (class));
+				SV **slot = hv_fetch (stash, "FINALIZE_INSTANCE", sizeof ("FINALIZE_INSTANCE") - 1, 0);
 
-                                instance->ref_count += 2; /* HACK: temporarily revive the object. */
+				instance->ref_count += 2; /* HACK: temporarily revive the object. */
 
-                                /* does the function exist? then call it. */
-                                if (slot && GvCV (*slot)) {
-                                          dSP;
+				/* does the function exist? then call it. */
+				if (slot && GvCV (*slot)) {
+					  dSP;
 
-                                          ENTER;
-                                          SAVETMPS;
+					  ENTER;
+					  SAVETMPS;
 
-                                          PUSHMARK (SP);
-                                          XPUSHs (sv_2mortal (gperl_new_object (instance, FALSE)));
-                                          PUTBACK;
+					  PUSHMARK (SP);
+					  XPUSHs (sv_2mortal (gperl_new_object (instance, FALSE)));
+					  PUTBACK;
 
-                                          call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
+					  call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
 
-                                          FREETMPS;
-                                          LEAVE;
-                                }
+					  FREETMPS;
+					  LEAVE;
+				}
 
-                                instance->ref_count -= 2; /* HACK END */
-                        }
-                } else if (do_nonperl) {
-                        class->finalize (instance);
-                        do_nonperl = 0;
-                }
+				instance->ref_count -= 2; /* HACK END */
+			}
+		} else if (do_nonperl) {
+			class->finalize (instance);
+			do_nonperl = 0;
+		}
 
-                class = g_type_class_peek_parent (class);
-        } while (class);
+		class = g_type_class_peek_parent (class);
+	} while (class);
 }
 
 static void
@@ -1755,36 +1819,36 @@ gperl_type_instance_init (GObject * instance)
 	 * inside out, we will need to worry about making sure we get
 	 * blessed into the right class!
 	 */
-        SV *obj;
-        HV *stash = gperl_object_stash_from_type (G_OBJECT_TYPE (instance));
-        SV **slot;
+	SV *obj;
+	HV *stash = gperl_object_stash_from_type (G_OBJECT_TYPE (instance));
+	SV **slot;
 	g_assert (stash != NULL);
 
 	obj = sv_2mortal (gperl_new_object (instance, FALSE));
-        /* we need to re-bless the wrapper because classes change
-         * during construction of an object. */
+	/* we need to re-bless the wrapper because classes change
+	 * during construction of an object. */
 	sv_bless (obj, stash);
 
 	/* get the INIT_INSTANCE sub from this package. */
-        slot = hv_fetch (stash, "INIT_INSTANCE", sizeof ("INIT_INSTANCE") - 1, 0);
+	slot = hv_fetch (stash, "INIT_INSTANCE", sizeof ("INIT_INSTANCE") - 1, 0);
 
 #ifdef NOISY
-	warn ("gperl_type_instance_init  %s (%p) => %s\n",
+	warn ("gperl_type_instance_init	 %s (%p) => %s\n",
 	      G_OBJECT_TYPE_NAME (instance), instance, SvPV_nolen (obj));
 #endif
 
-        /* does the function exist? then call it. */
-        if (slot && GvCV (*slot)) {
-                dSP;
-                ENTER;
-                SAVETMPS;
-                PUSHMARK (SP);
-                XPUSHs (obj);
-                PUTBACK;
-                call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
-                FREETMPS;
-                LEAVE;
-        }
+	/* does the function exist? then call it. */
+	if (slot && GvCV (*slot)) {
+		dSP;
+		ENTER;
+		SAVETMPS;
+		PUSHMARK (SP);
+		XPUSHs (obj);
+		PUTBACK;
+		call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
+		FREETMPS;
+		LEAVE;
+	}
 }
 
 static GQuark gperl_type_reg_quark (void) G_GNUC_CONST;
@@ -1891,21 +1955,21 @@ gperl_type_base_init (gpointer class)
 		stash = gv_stashpv (package, FALSE);
 		g_assert (stash != NULL);
 
-        	slot = hv_fetch (stash, "INIT_BASE", sizeof ("INIT_BASE")-1, 0);
+		slot = hv_fetch (stash, "INIT_BASE", sizeof ("INIT_BASE")-1, 0);
 
 		if (slot && GvCV (*slot)) {
-	                dSP;
-	                ENTER;
-	                SAVETMPS;
-	                PUSHMARK (SP);
+			dSP;
+			ENTER;
+			SAVETMPS;
+			PUSHMARK (SP);
 			/* remember, use the bottommost package name! */
-	                XPUSHs (sv_2mortal (newSVpv
+			XPUSHs (sv_2mortal (newSVpv
 				(g_type_name (G_TYPE_FROM_CLASS (class)), 0)));
-	                PUTBACK;
-	                call_sv ((SV*) GvCV (*slot), G_VOID|G_DISCARD);
-	                FREETMPS;
-	                LEAVE;
-	        }
+			PUTBACK;
+			call_sv ((SV*) GvCV (*slot), G_VOID|G_DISCARD);
+			FREETMPS;
+			LEAVE;
+		}
 	}
 
 	g_static_rec_mutex_unlock (&base_init_lock);
@@ -1961,10 +2025,7 @@ BOOT:
 	 * same gtype, we get the mappings for two packages to one gtype, but
 	 * only one mapping (the last and correct one) from type to package.
 	 */
-	G_LOCK (types_by_package);
-	g_hash_table_insert (types_by_package, "Glib::Uint",
-			     (gpointer) G_TYPE_UINT);
-	G_UNLOCK (types_by_package);
+	gperl_register_fundamental_alias (G_TYPE_UINT, "Glib::Uint");
 
 
 =for apidoc
@@ -2220,16 +2281,16 @@ g_type_register_object (class, parent_package, new_package, ...);
 	for (i = 3 ; i < items ; i += 2) {
 		char * key = SvPV_nolen (ST (i));
 		if (strEQ (key, "signals")) {
-                        if (gperl_sv_is_hash_ref (ST (i+1)))
-                                add_signals (new_type, (HV*)SvRV (ST (i+1)));
-                        else
-                          	croak ("signals must be a hash of signalname => signalspec pairs");
-                } else if (strEQ (key, "properties")) {
-                        if (gperl_sv_is_array_ref (ST (i+1)))
-                                add_properties (new_type, (AV*)SvRV (ST (i+1)));
-                        else
-                          	croak ("properties must be an array of GParamSpecs");
-                } else if (strEQ (key, "interfaces")) {
+			if (gperl_sv_is_hash_ref (ST (i+1)))
+				add_signals (new_type, (HV*)SvRV (ST (i+1)));
+			else
+				croak ("signals must be a hash of signalname => signalspec pairs");
+		} else if (strEQ (key, "properties")) {
+			if (gperl_sv_is_array_ref (ST (i+1)))
+				add_properties (new_type, (AV*)SvRV (ST (i+1)));
+			else
+				croak ("properties must be an array of GParamSpecs");
+		} else if (strEQ (key, "interfaces")) {
 			if (gperl_sv_is_array_ref (ST (i+1)))
 				add_interfaces (new_type, (AV*)SvRV (ST (i+1)));
 			else
@@ -2454,7 +2515,7 @@ inheritance, whereas Perl's @ISA allows multiple inheritance.
 This returns the package names of the ancestral types in reverse order, with
 the root of the tree at the end of the list.
 
-See also L<list_interfaces ()|list = Glib::Type-E<gt>list_interfaces ($package)>.
+See also L<list_interfaces ()|/"list = Glib::Type-E<gt>B<list_interfaces> ($package)">.
 
 =cut
 void
@@ -2731,91 +2792,87 @@ int
 bool (SV *a, b, swap)
     PROTOTYPE: $;@
     CODE:
-        RETVAL = !!gperl_convert_flags (
-                     gperl_fundamental_type_from_package (
-                       sv_reftype (SvRV (a), TRUE)
-                     ),
-                     a
-                   );
+	RETVAL = !!gperl_convert_flags (
+		     gperl_fundamental_type_from_obj (a),
+		     a
+		   );
     OUTPUT:
-        RETVAL
+	RETVAL
 
 =for apidoc
-=for arg b (SV*)
-=for arg swap (integer)
+=for signature ref = $a->as_arrayref
+=for arg ... (__hide__)
 =cut
 SV *
-as_arrayref (SV *a, b, swap)
+as_arrayref (SV *a, ...)
     PROTOTYPE: $;@
     CODE:
 {
+	/* overload @{} calls here with the usual three args "a,b,swap", but
+	 * "b" and "swap" have no meaning.  Using "..." to ignore them lets
+	 * users call method-style with no args "$f->as_arrayref" too.
+	 */
 	GType gtype;
-	const char *package;
-        gint a_;
+	gint a_;
 
-	package = sv_reftype (SvRV (a), TRUE);
-	gtype = gperl_fundamental_type_from_package (package);
-        a_ = gperl_convert_flags (gtype, a);
+	gtype = gperl_fundamental_type_from_obj (a);
+	a_ = gperl_convert_flags (gtype, a);
 
-        RETVAL = flags_as_arrayref (gtype, a_);
+	RETVAL = flags_as_arrayref (gtype, a_);
 }
     OUTPUT:
-        RETVAL
+	RETVAL
 
 int
 eq (SV *a, SV *b, int swap)
     ALIAS:
-       ne = 1
-       ge = 2
+	ne = 1
+	ge = 2
 
     CODE:
 {
 	GType gtype;
-	const char *package;
-        gint a_, b_;
+	gint a_, b_;
 
-	package = sv_reftype (SvRV (a), TRUE);
-	gtype = gperl_fundamental_type_from_package (package);
-        a_ = gperl_convert_flags (gtype, swap ? b : a);
-        b_ = gperl_convert_flags (gtype, swap ? a : b);
+	gtype = gperl_fundamental_type_from_obj (a);
+	a_ = gperl_convert_flags (gtype, swap ? b : a);
+	b_ = gperl_convert_flags (gtype, swap ? a : b);
 
 	RETVAL = FALSE;
-        switch (ix) {
-          case 0: RETVAL = a_ == b_; break;
-          case 1: RETVAL = a_ != b_; break;
-          case 2: RETVAL = (a_ & b_) == b_; break;
-        }
+	switch (ix) {
+	  case 0: RETVAL = a_ == b_; break;
+	  case 1: RETVAL = a_ != b_; break;
+	  case 2: RETVAL = (a_ & b_) == b_; break;
+	}
 }
     OUTPUT:
-        RETVAL
+	RETVAL
 
 SV *
 union (SV *a, SV *b, SV *swap)
     ALIAS:
-        sub = 1
-        intersect = 2
-        xor = 3
-        all = 4
+	sub = 1
+	intersect = 2
+	xor = 3
+	all = 4
     CODE:
 {
 	GType gtype;
-	const char *package;
-        gint a_, b_;
+	gint a_, b_;
 
-	package = sv_reftype (SvRV (a), TRUE);
-	gtype = gperl_fundamental_type_from_package (package);
-        a_ = gperl_convert_flags (gtype, SvTRUE (swap) ? b : a);
-        b_ = gperl_convert_flags (gtype, SvTRUE (swap) ? a : b);
+	gtype = gperl_fundamental_type_from_obj (a);
+	a_ = gperl_convert_flags (gtype, SvTRUE (swap) ? b : a);
+	b_ = gperl_convert_flags (gtype, SvTRUE (swap) ? a : b);
 
-        switch (ix) {
-          case 0: a_ |= b_; break;
-          case 1: a_ &=~b_; break;
-          case 2: a_ &= b_; break;
-          case 3: a_ ^= b_; break;
-        }
+	switch (ix) {
+	  case 0: a_ |= b_; break;
+	  case 1: a_ &=~b_; break;
+	  case 2: a_ &= b_; break;
+	  case 3: a_ ^= b_; break;
+	}
 
-        RETVAL = gperl_convert_back_flags (gtype, a_);
+	RETVAL = gperl_convert_back_flags (gtype, a_);
 }
     OUTPUT:
-        RETVAL
+	RETVAL
 

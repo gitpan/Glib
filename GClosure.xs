@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003 by the gtk2-perl team (see the file AUTHORS for the full
- * list)
+ * Copyright (C) 2003-2009 by the gtk2-perl team (see the file AUTHORS for the
+ * full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GClosure.xs 1081 2009-02-05 16:36:12Z tsch $
+ * $Id: GClosure.xs 1107 2009-03-08 18:33:31Z tsch $
  */
 
 =head2 GClosure / GPerlClosure
@@ -366,6 +366,16 @@ gperl_callback_invoke (GPerlCallback * callback,
 	if (callback->n_params > 0) {
 		int i;
 
+                /* Crib note: must g_value_unset() even when asking for
+                 * G_VALUE_NOCOPY_CONTENTS.  A GObject is always
+                 * g_object_ref()ed for storage in a GValue, even under
+                 * G_VALUE_NOCOPY_CONTENTS (see code in
+                 * g_value_object_collect_value()).  Always reffing in
+                 * G_VALUE_COLLECT is in fact the recommended behaviour for
+                 * all ref-counted types (see the GTypeValueTable docs,
+                 * apparently to ensure objects remain alive for the
+                 * duration of a g_signal_emit_valist()).
+                 */
 		for (i = 0 ; i < callback->n_params ; i++) {
 			gchar * error = NULL;
 			GValue v = {0, };
@@ -388,9 +398,10 @@ gperl_callback_invoke (GPerlCallback * callback,
 						   error);
 				g_free (error);
 				/* this won't return */
-				croak (SvPV_nolen (errstr));
+				croak ("%s", SvPV_nolen (errstr));
 			}
 			sv = gperl_sv_from_value (&v);
+			g_value_unset (&v);
 			if (!sv) {
 				/* this should be very rare, too. */
 				PUTBACK;
