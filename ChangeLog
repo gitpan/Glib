@@ -1,3 +1,39 @@
+2009-03-29  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* copyright.pod
+	* Glib.pm
+	* NEWS
+	* README: Stable release 1.221.
+
+2009-03-29  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/a.t: Using multiple log levels breaks g_log on some platforms,
+	so don't do it on those platforms.  Tracked down by Wim Lewis, and
+	reported here: <http://bugzilla.gnome.org/show_bug.cgi?id=577137>.
+
+2009-03-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Glib.exports: Add gperl_option_context_get_type and
+	gperl_option_group_get_type to the export list so that dependent
+	modules link correctly on MSWin32.  Patch by Martin
+	Schlemmer.  (GNOME #576372)
+
+2009-03-24  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* t/h.t: Correct a skip count.  Patch by Stefan B.  (RT #44428)
+
+2009-03-19  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* Makefile.PL: Space-separate the libs and cflags strings from
+	gobject and gthread to avoid unwanted concatenation.  Patch by
+	Daniel Macks.  (RT #44055)
+
+2009-03-19  Torsten Schoenfeld  <kaffeetisch@gmx.de>
+
+	* MakeHelper.pm (postamble_docs_full): Use qq// instead of qq{} to
+	quote the copyright string in order to avoid problems with dmake.
+	Patch by Martin Schlemmer.  (GNOME #573099)
+
 2009-03-17  Torsten Schoenfeld  <kaffeetisch@gmx.de>
 
 	* Glib.pm

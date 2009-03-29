@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Glib
-version:            1.220
+version:            1.221
 abstract:           Perl wrappers for the GLib utility and Object libraries
 author:  []
 license:            unknown
@@ -9,6 +9,8 @@ configure_requires:
     ExtUtils::Depends:    0.300
     ExtUtils::MakeMaker:  0
     ExtUtils::PkgConfig:  1.00
+build_requires:
+    ExtUtils::MakeMaker:  0
 requires:
     ExtUtils::Depends:    0.300
     ExtUtils::PkgConfig:  1.00
@@ -20,7 +22,7 @@ no_index:
         - xsapi.pod.head
         - xsapi.pod.foot
     package:  MY
-generated_by:       ExtUtils::MakeMaker version 6.48
+generated_by:       ExtUtils::MakeMaker version 6.50
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

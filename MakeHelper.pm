@@ -1,5 +1,5 @@
 #
-# $Id: MakeHelper.pm 1083 2009-02-05 17:04:08Z tsch $
+# $Id: MakeHelper.pm 1112 2009-03-19 17:30:06Z tsch $
 #
 
 package Glib::MakeHelper;
@@ -362,7 +362,7 @@ sub postamble_docs_full {
 	if ($copyright) {
 		# this text has to be escaped for both make and the shell.
 		$copyright =~ s/\n/\\n/gm; # collapse to one line.
-		$copyright = "Glib::GenPod::set_copyright(qq{$copyright});";
+		$copyright = "Glib::GenPod::set_copyright(qq/$copyright/);";
 	}
 
 	# the module name specified explicitly overrides the one in a

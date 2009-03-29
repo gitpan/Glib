@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.PL 1110 2009-03-17 17:54:34Z tsch $
+# $Id: Makefile.PL 1113 2009-03-19 17:45:29Z tsch $
 #
 
 BEGIN { require 5.008; }
@@ -130,8 +130,8 @@ our $glib = ExtUtils::Depends->new ('Glib');
 # add -I. and -I./build to the include path so we can find our own files.
 # this will be inherited by dependant modules, so they can find their
 # generated files.
-$glib->set_inc (' -I. ' . $glibcfg{cflags} . $gthreadcfg{cflags});
-$glib->set_libs ($glibcfg{libs} . $gthreadcfg{libs});
+$glib->set_inc (' -I. ' . $glibcfg{cflags} . ' ' . $gthreadcfg{cflags});
+$glib->set_libs ($glibcfg{libs} . ' ' . $gthreadcfg{libs});
 my $cwd = cwd();
 $glib->add_typemaps (map {File::Spec->catfile($cwd,$_)} 'typemap');
 $glib->add_pm (%pm_files);
