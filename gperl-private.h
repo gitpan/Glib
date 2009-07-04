@@ -3,7 +3,7 @@
  *
  * Licensed under the LGPL, see LICENSE file for more information.
  *
- * $Id: gperl-private.h 1051 2008-11-22 12:25:14Z tsch $
+ * $Id$
  */
 
 /*

@@ -15,7 +15,7 @@
 # along with this library; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
 #
-# $Id: Glib.pm 1117 2009-03-29 14:35:14Z tsch $
+# $Id$
 #
 
 package Glib;
@@ -66,7 +66,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.221';
+our $VERSION = '1.222';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 

@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GError.xs 1087 2009-02-11 22:21:00Z tsch $
+ * $Id$
  */
 
 #include "gperl.h"

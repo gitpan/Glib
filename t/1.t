@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# $Id: 1.t 1028 2008-10-05 12:49:32Z tsch $
+# $Id$
 #
 # Basic test for Glib fundamentals.  make sure that the smoke does't get out,
 # and test most of the procedural things in Glib's toplevel namespace.

@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Glib
-version:            1.221
+version:            1.222
 abstract:           Perl wrappers for the GLib utility and Object libraries
 author:  []
 license:            unknown
@@ -19,10 +19,26 @@ no_index:
         - t
         - inc
     files:
+        - Glib.xs
+        - GError.xs
+        - GUtils.xs
+        - GLog.xs
+        - GType.xs
+        - GBoxed.xs
+        - GObject.xs
+        - GValue.xs
+        - GClosure.xs
+        - GSignal.xs
+        - GMainLoop.xs
+        - GIOChannel.xs
+        - GParamSpec.xs
+        - GKeyFile.xs
+        - GOption.xs
+        - GBookmarkFile.xs
         - xsapi.pod.head
         - xsapi.pod.foot
     package:  MY
-generated_by:       ExtUtils::MakeMaker version 6.50
+generated_by:       ExtUtils::MakeMaker version 6.52
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

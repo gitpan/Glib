@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: GSignal.xs 1104 2009-03-01 17:26:01Z tsch $
+ * $Id$
  */
 
 =head2 GSignal

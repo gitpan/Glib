@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vim: set filetype=perl :
 #
-# $Id: c.t 1074 2009-02-05 14:14:54Z tsch $
+# $Id$
 #
 
 #

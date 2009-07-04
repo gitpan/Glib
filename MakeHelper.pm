@@ -1,5 +1,5 @@
 #
-# $Id: MakeHelper.pm 1112 2009-03-19 17:30:06Z tsch $
+# $Id$
 #
 
 package Glib::MakeHelper;
@@ -362,6 +362,7 @@ sub postamble_docs_full {
 	if ($copyright) {
 		# this text has to be escaped for both make and the shell.
 		$copyright =~ s/\n/\\n/gm; # collapse to one line.
+		$copyright =~ s|/|\\/|g;   # escape slashes for qq//
 		$copyright = "Glib::GenPod::set_copyright(qq/$copyright/);";
 	}
 

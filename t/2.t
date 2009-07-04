@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# $Id: 2.t 1028 2008-10-05 12:49:32Z tsch $
+# $Id$
 #
 # Really simple smoke tests for Glib::Object wrappers.
 #

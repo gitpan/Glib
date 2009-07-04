@@ -16,7 +16,7 @@
  * along with this library; if not, write to the Free Software Foundation,
  * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
  *
- * $Id: gperl.h 1052 2008-11-22 14:21:54Z tsch $
+ * $Id$
  */
 
 #ifndef _GPERL_H_
