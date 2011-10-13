@@ -26,6 +26,8 @@ our @EXPORT = qw(
 	add_types
 	xsdoc2pod
 	podify_properties
+	podify_child_properties
+	podify_style_properties
 	podify_values
 	podify_signals
 	podify_ancestors
@@ -314,6 +316,12 @@ sub xsdoc2pod
 		$ret = podify_properties ($package);	
 		print "\n=head1 PROPERTIES\n\n$ret\n\n=cut\n\n" if ($ret);
 
+		$ret = podify_child_properties ($package);
+		print "\n=head1 CHILD PROPERTIES\n\n$ret\n\n=cut\n\n" if ($ret);
+
+		$ret = podify_style_properties ($package);
+		print "\n=head1 STYLE PROPERTIES\n\n$ret\n\n=cut\n\n" if ($ret);
+
 		$ret = podify_pods ($pkgdata->{pods}, 'post_properties');
 		print "$ret\n\n" if ($ret);
 
@@ -387,6 +395,7 @@ our %basic_types = (
 	'Glib::Int'     => 'integer',
 	'Glib::Uint'    => 'unsigned',
 	'Glib::Double'  => 'double',
+	'Glib::Float'   => 'float',
 	'Glib::Boolean' => 'boolean',
 
 	# sometimes we can get names that are already mapped...
@@ -417,20 +426,28 @@ our %basic_types = (
 	guint8   => 'unsigned',
 	guint16  => 'unsigned',
 	guint32  => 'unsigned',
+	glong    => 'integer',
 	gulong   => 'unsigned',
 	gshort   => 'integer',
 	guint    => 'integer',
 	gushort  => 'unsigned',
+	gint64   => '64 bit integer',
+	guint64  => '64 bit unsigned',
 	gfloat   => 'double',
 	gdouble  => 'double',
+	gsize    => 'unsigned',
+	gssize   => 'integer',
+	goffset  => '64 bit integer',
 	gchar    => 'string',
 
 	SV       => 'scalar',
 	UV       => 'unsigned',
 	IV       => 'integer',
 	CV       => 'subroutine',
+	AV       => 'arrayref',
 
 	gchar_length => 'string',
+	gchar_utf8_length => 'string',
 
 	FILE => 'file handle',
 	time_t => 'unix timestamp',
@@ -495,8 +512,14 @@ are no properties or I<$package> is not a Glib::Object.
 sub podify_properties {
 	my $package = shift;
 	my @properties;
-	eval { @properties = Glib::Object::list_properties($package); 1; };
-	return undef unless (@properties or not $@);
+	eval { @properties = Glib::Object::list_properties($package); 1; }
+	  || return undef;
+	return _podify_pspecs($package, @properties);
+}
+
+sub _podify_pspecs {
+	my ($package, @properties) = @_;
+	return undef unless (@properties);
 
 	# we have a non-zero number of properties, but there may still be
 	# none for this particular class.  keep a count of how many
@@ -510,12 +533,147 @@ sub podify_properties {
 		my $type = exists $basic_types{$p->{type}}
 		      ? $basic_types{$p->{type}}
 		      : $p->{type};
-		$str .= "=item '$p->{name}' ($type : $stat)\n\n";
+		my $default = _pspec_formatted_default($p);
+		$str .= "=item '$p->{name}' ($type : default $default : $stat)\n\n";
 		$str .= "$p->{descr}\n\n" if (exists ($p->{descr}));
 	}
 	$str .= "=back\n\n";
 
 	return $nmatch ? $str : undef;
+}
+
+# return a POD string which is the default value of $pspec, nicely formatted
+sub _pspec_formatted_default {
+  my ($pspec) = @_;
+  my $default = $pspec->get_default_value;
+  if (! defined $default) {
+    return 'undef';
+  }
+  my $pname = $pspec->get_name;
+  my $type = $pspec->get_value_type;
+
+  # Crib: "eq" here because Glib::Boolean->isa('Glib::Boolean') is false,
+  # it's not an actual perl module
+  if ($type eq 'Glib::Boolean') {
+    $default = ($default ? 'true' : 'false');
+
+  } elsif ($type->isa('Glib::Flags')) {
+    $default = join ",", @$default;
+
+  } elsif ($pspec->isa('Glib::Param::Unichar')) {
+    # $default is a single-char string, show as ordinal and string.
+    # $type is only Glib::UInt, so this must be before plain UInts below.
+    # Eg. Gtk2::Entry property "invisible-char".
+    $default = ord($default) . ' ' . Data::Dumper->new([$default])
+      ->Useqq(1)->Terse(1)->Indent(0)->Dump;
+
+  } elsif ($type eq 'Glib::Double' && $default == POSIX::DBL_MAX()) {
+    # Show DBL_MAX symbolically.
+    # Eg. Gtk2::Range property "fill-level" is DBL_MAX.
+    $default = "DBL_MAX";
+  } elsif ($type eq 'Glib::Double' && $default == - POSIX::DBL_MAX()) {
+    $default = "-DBL_MAX";
+  } elsif ($type eq 'Glib::Float' && $default == POSIX::FLT_MAX()) {
+    $default = "FLT_MAX";
+  } elsif ($type eq 'Glib::Float' && $default == - POSIX::FLT_MAX()) {
+    $default = "-FLT_MAX";
+
+  } elsif ($type eq 'Glib::Double' || $type eq 'Glib::Float') {
+    # Limit the decimals shown in floats,
+    # eg. Gtk2::Menu style property "arrow-scaling" is 0.7 and comes out as
+    # 0.6999999999 if not restricted a bit
+    $default = sprintf '%.6g', $default;
+
+  } elsif ($pname =~ /keyval/
+	   && $type eq 'Glib::UInt'
+	   && eval { require Gtk2; 1 }) {
+    # Keyvals in hex the same as gdkkeysyms.h, and show the symbol if known.
+    # The pspec type of keyvals is only UInt, must guess from the property
+    # name whether a uint is in fact a keyval.
+    # eg. Gtk2::Label property "mnemonic-keyval" is 0xFFFFFF=VoidSymbol
+    my $keyname = Gtk2::Gdk->keyval_name ($default);
+    $default = sprintf '0x%02X', $default;  # two or more hex digits
+    if (defined $keyname) {
+      $default = "$default $keyname";
+    }
+
+  } elsif ($type eq 'Glib::Int' && $default == POSIX::INT_MAX()) {
+    # Show INT_MAX symbolically
+    # eg. Gtk2::Paned property "max-position" is INT_MAX
+    $default = "INT_MAX";
+  } elsif ($type eq 'Glib::Int' && $default == POSIX::INT_MIN()) {
+    $default = "INT_MAX";
+  } elsif ($type eq 'Glib::UInt' && $default == POSIX::UINT_MAX()) {
+    $default = "UINT_MAX";
+
+  } else {
+    # Strings quoted for clarity, unprintables shown backslashed
+    # eg. Gtk2::UIManager property "ui" has newlines
+    # eg. Gtk2::TreeView style property "tree-line-pattern" is bytes "\001\001"
+    $default = Data::Dumper->new([$default])
+      ->Useqq(1)->Terse(1)->Indent(0)->Dump;
+  }
+
+  # Escape "<" to E<lt> etc.
+  # eg. Gtk2::UIManager property "ui" is "<ui></ui>"
+  $default = _pod_escape($default);
+
+  return $default;
+}
+
+# Return $str with characters escaped ready to appear in pod.  This means
+# non-ascii escaped to E<123> and "<" to E<lt>.  Strictly speaking "<" only
+# has to be escaped if it would be B<... etc, but it's easier to do it
+# always and might help some of the pod formatters.  $str is assumed to have
+# no non-printables (control chars etc).
+# (ENHANCE-ME: Is there a module to do char->pod like this?  Pod::Escapes is
+# the converse pod->char ...)
+sub _pod_escape {
+  my ($str) = @_;
+  $str =~ s{([^[:ascii:]])|(<)}
+	   {defined $1 ? ('E<'.ord($1).'>') : 'E<lt>'}eg;
+  return $str;
+}
+
+=item $string = podify_child_properties ($packagename)
+
+Pretty-print the child properties owned by the Gtk2::Container derivative
+I<$packagename> and return the text as a string.  Returns undef if there are
+no child properties or I<$package> is not a Gtk2::Container or similar class
+with a C<list_child_properties()> method.
+
+=cut
+
+sub podify_child_properties {
+	my ($package) = shift;
+	# Call list_child_properties() as a method so as to perhaps work on
+	# Goo::Canvas::Item which has a similar child properties scheme of
+	# its own (it's not a Gtk2::Container subclass), though that method
+	# is not wrapped as of Goo::Canvas 0.06.
+	if ($package->can('list_child_properties')) {
+	  return _podify_pspecs($package, $package->list_child_properties);
+	} else {
+	  return undef;
+	}
+}
+
+=item $string = podify_style_properties ($packagename)
+
+Pretty-print the style properties owned by the Gtk2::Widget derivative
+I<$packagename> and return the text as a string.  Returns undef if there are
+no style properties or I<$package> is not a Gtk2::Widget or similar class
+with a C<list_style_properties()> method.
+
+=cut
+
+sub podify_style_properties {
+	my ($package) = shift;
+	my @properties;
+	if ($package->can('list_style_properties')) {
+	  return _podify_pspecs($package, $package->list_style_properties);
+	} else {
+	  return undef;
+	}
 }
 
 =item $string = podify_values ($packagename)
@@ -1382,7 +1540,7 @@ mcfarland hacked this module together via irc and email over the next few days.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2003-2004 by the gtk2-perl team
+Copyright (C) 2003-2004, 2010, 2011 by the gtk2-perl team
 
 This library is free software; you can redistribute it and/or modify
 it under the terms of the Lesser General Public License (LGPL).  For 

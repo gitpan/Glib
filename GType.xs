@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2005, 2009 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2005, 2009, 2010 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -483,7 +483,7 @@ gint
 gperl_convert_flags (GType type,
 		     SV * val)
 {
-	if (SvROK (val) && sv_derived_from (val, "Glib::Flags"))
+	if (gperl_sv_is_ref (val) && sv_derived_from (val, "Glib::Flags"))
 		return SvIV (SvRV (val));
 	if (gperl_sv_is_array_ref (val)) {
 		AV* vals = (AV*) SvRV(val);
@@ -767,28 +767,18 @@ C<SvIV> instead.
 
 #if GLIB_CHECK_VERSION (2, 12, 0)
 # define PORTABLE_STRTOLL(str, end, base) g_ascii_strtoll (str, end, base)
-#else
-# ifdef WIN32
-#  ifdef _MSC_VER
-#   if (_MSC_VER >= 1300)
-#    define PORTABLE_STRTOLL(str, end, base) _strtoi64 (str, end, base)
-#   else
-#    define PORTABLE_STRTOLL(str, end, base) _atoi64 (str)
-#   endif
-#  else
-#   define PORTABLE_STRTOLL(str, end, base) strtol (str, end, base)
-#  endif
+#elif defined(_MSC_VER)
+# if _MSC_VER >= 1300
+#  define PORTABLE_STRTOLL(str, end, base) _strtoi64 (str, end, base)
 # else
-#  define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
+#  define PORTABLE_STRTOLL(str, end, base) _atoi64 (str)
 # endif
+#else
+# define PORTABLE_STRTOLL(str, end, base) strtoll (str, end, base)
 #endif
 
-#ifdef WIN32
-# ifdef _MSC_VER
-#   define PORTABLE_LL_FORMAT "%I64d"
-# else
-#  define PORTABLE_LL_FORMAT "%ld"
-# endif
+#if defined(_MSC_VER) || defined(__MSVCRT__)
+# define PORTABLE_LL_FORMAT "%I64d"
 #else
 # define PORTABLE_LL_FORMAT "%lld"
 #endif
@@ -838,28 +828,14 @@ uses C<SvUV> instead.
 
 #if GLIB_CHECK_VERSION (2, 2, 0)
 # define PORTABLE_STRTOULL(str, end, base) g_ascii_strtoull (str, end, base)
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+# define PORTABLE_STRTOULL(str, end, base) _strtoui64 (str, end, base)
 #else
-# ifdef WIN32
-#  ifdef _MSC_VER
-#   if (_MSC_VER >= 1300)
-#    define PORTABLE_STRTOULL(str, end, base) _strtoui64 (str, end, base)
-#   else
-#    define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
-#   endif
-#  else
-#   define PORTABLE_STRTOULL(str, end, base) strtoul (str, end, base)
-#  endif
-# else
-#  define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
-# endif
+# define PORTABLE_STRTOULL(str, end, base) strtoull (str, end, base)
 #endif
 
-#ifdef WIN32
-# ifdef _MSC_VER
-#  define PORTABLE_ULL_FORMAT "%I64u"
-# else
-#  define PORTABLE_ULL_FORMAT "%lu"
-# endif
+#if defined(_MSC_VER) || defined(__MSVCRT__)
+# define PORTABLE_ULL_FORMAT "%I64u"
 #else
 # define PORTABLE_ULL_FORMAT "%llu"
 #endif
@@ -1563,67 +1539,6 @@ add_interfaces (GType instance_type, AV * interfaces)
 }
 
 
-/* set value to the default value of the given pspec, if the pspec supports
- * default values.
- */
-static void
-get_default_property_value (GValue * value,
-                            GParamSpec * pspec)
-{
-	/* 
-	 * not all pspec types support a default value, and user code can
-	 * add pspec types; thus, glib does not provide a unified way to
-	 * get a default value for a param.  also, the default value member
-	 * may be at different offsets in the various param spec structs,
-	 * so to do this in pure C we'd have to create a whole slew of
-	 * helper functions to set the default values and put them in a
-	 * hash table (or an if-else tree -- since the type codes are dynamic,
-	 * we can't use them in a switch).  however, that would leave us with
-	 * code bloat and a maintenance problem, since we'd have to add code
-	 * for each new param type, and we'd never handle custom params.
-	 *
-	 * instead, let's use the existing infrastructure in the bindings,
-	 * and let perl's oo system do the hard work for us.  this will catch
-	 * any custom params as well (provided their default_value accessors
-	 * have been bound), at a slight cost in performance.
-	 */
-	const char * package;
-	GV * method = NULL;
-	HV * stash;
-	package = gperl_param_spec_package_from_type (G_PARAM_SPEC_TYPE (pspec));
-	if (!package)
-		croak ("Param spec type %s is not registered with GPerl",
-		       g_type_name (G_PARAM_SPEC_TYPE (pspec)));
-	stash = gv_stashpv (package, TRUE);
-	assert (stash);
-	method = gv_fetchmethod (stash, "get_default_value");
-
-	if (method) {
-		SV * sv;
-
-		dSP;
-		ENTER;
-		SAVETMPS;
-		PUSHMARK (SP);
-		PUSHs (sv_2mortal (newSVGParamSpec (pspec)));
-		PUTBACK;
-
-		call_sv ((SV *)GvCV (method), G_SCALAR);
-		SPAGAIN;
-
-		sv = POPs;
-		gperl_value_from_sv (value, sv);
-
-		PUTBACK;
-		FREETMPS;
-		LEAVE;
-
-	} else {
-		/* no method, so no way to fetch a default value.
-		 * do nothing. */
-	}
-}
-
 static void
 gperl_type_get_property (GObject * object,
 		 guint property_id,
@@ -1634,7 +1549,7 @@ gperl_type_get_property (GObject * object,
 	SV **slot;
 	SV * getter;
 
-	prop_handler_lookup (G_OBJECT_TYPE (object), property_id, NULL, &getter);
+	prop_handler_lookup (pspec->owner_type, property_id, NULL, &getter);
 	if (getter) {
 		dSP;
 		ENTER;
@@ -1687,7 +1602,7 @@ gperl_type_get_property (GObject * object,
 		else {
 			/* no value in the wrapper hash.  get the pspec's
 			 * default, if it has one. */
-			get_default_property_value (value, pspec);
+			g_param_value_set_default (pspec, value);
 		}
 	}
 }
@@ -1702,7 +1617,7 @@ gperl_type_set_property (GObject * object,
 	SV ** slot;
 	SV  * setter;
 
-	prop_handler_lookup (G_OBJECT_TYPE (object), property_id, &setter, NULL);
+	prop_handler_lookup (pspec->owner_type, property_id, &setter, NULL);
 	if (setter) {
 		dSP;
 		ENTER;
@@ -1747,7 +1662,7 @@ gperl_type_set_property (GObject * object,
 				(object, g_param_spec_get_name (pspec), TRUE);
 		if (val) {
 			SV * newval = sv_2mortal (gperl_sv_from_value (value));
-			SvSetSV (val, newval);
+			SvSetMagicSV (val, newval);
 		} else {
 			/* XXX couldn't create the key.  what to do? */
 		}
@@ -2018,6 +1933,9 @@ BOOT:
 	gperl_register_fundamental (G_TYPE_FLOAT, "Glib::Float");
 	gperl_register_fundamental (G_TYPE_DOUBLE, "Glib::Double");
 	gperl_register_fundamental (G_TYPE_BOOLEAN, "Glib::Boolean");
+#if GLIB_CHECK_VERSION (2, 10, 0)
+	gperl_register_fundamental (G_TYPE_GTYPE, "Glib::GType");
+#endif
 	gperl_register_boxed (GPERL_TYPE_SV, "Glib::Scalar", NULL);
 
 	/* i love nasty ugly hacks for backwards compat... Glib::UInt used
@@ -2168,7 +2086,7 @@ The signal accumulator is a special callback that can be used to collect return
 values of the various callbacks that are called during a signal emission.
 Generally, you can omit this parameter; custom accumulators are used to do
 things like stopping signal propagation by return value or creating a list of
-returns, etc.
+returns, etc.  See L<Glib::Object::Subclass/SIGNALS> for details.
 
 =back
 
@@ -2210,7 +2128,10 @@ are both optional in the hash form.  For example:
       ]
    );
 
-You can mix the two declaration styles as you like.
+You can mix the two declaration styles as you like.  If you have
+individual C<get_foo> / C<set_foo> methods with the operative code for
+a property then the C<get>/C<set> form is a handy way to go straight
+to that.
 
 =item interfaces => ARRAYREF
 
@@ -2696,18 +2617,18 @@ list_values (class, const char * package)
 		GEnumValue * v = gperl_type_enum_get_values (type);
 		for ( ; v && v->value_nick && v->value_name ; v++) {
 			HV * hv = newHV ();
-			hv_store (hv, "value",5, newSViv (v->value), 0);
-			hv_store (hv, "nick", 4, newSVpv (v->value_nick, 0), 0);
-			hv_store (hv, "name", 4, newSVpv (v->value_name, 0), 0);
+			gperl_hv_take_sv_s (hv, "value", newSViv (v->value));
+			gperl_hv_take_sv_s (hv, "nick", newSVpv (v->value_nick, 0));
+			gperl_hv_take_sv_s (hv, "name", newSVpv (v->value_name, 0));
 			XPUSHs (sv_2mortal (newRV_noinc ((SV*)hv)));
 		}
 	} else if (G_TYPE_IS_FLAGS (type)) {
 		GFlagsValue * v = gperl_type_flags_get_values (type);
 		for ( ; v && v->value_nick && v->value_name ; v++) {
 			HV * hv = newHV ();
-			hv_store (hv, "value",5, newSVuv (v->value), 0);
-			hv_store (hv, "nick", 4, newSVpv (v->value_nick, 0), 0);
-			hv_store (hv, "name", 4, newSVpv (v->value_name, 0), 0);
+			gperl_hv_take_sv_s (hv, "value", newSVuv (v->value));
+			gperl_hv_take_sv_s (hv, "nick", newSVpv (v->value_nick, 0));
+			gperl_hv_take_sv_s (hv, "name", newSVpv (v->value_name, 0));
 			XPUSHs (sv_2mortal (newRV_noinc ((SV*)hv)));
 		}
 	} else {
@@ -2785,26 +2706,36 @@ new (const char *class, SV *a)
 	RETVAL
 
 =for apidoc
-=for arg b (SV*)
-=for arg swap (integer)
+=for signature bool = $f->bool
+=for arg ... (__hide__)
+Return 1 if any bits are set in $f, or 0 if none are set.  This is the
+overload for $f in boolean context (like C<if>, etc).  You can call it
+as a method to get a true/false directly too.
 =cut
 int
-bool (SV *a, b, swap)
+bool (SV *f, ...)
     PROTOTYPE: $;@
     CODE:
 	RETVAL = !!gperl_convert_flags (
-		     gperl_fundamental_type_from_obj (a),
-		     a
+		     gperl_fundamental_type_from_obj (f),
+		     f
 		   );
     OUTPUT:
 	RETVAL
 
 =for apidoc
-=for signature ref = $a->as_arrayref
+=for signature aref = $f->as_arrayref
 =for arg ... (__hide__)
+Return the bits of $f as a reference to an array of strings, like
+['flagbit1','flagbit2'].  This is the overload function for C<@{}>,
+ie. arrayizing $f.  You can call it directly as a method too.
+
+Note that @$f gives the bits as a list, but as_arrayref gives an arrayref.
+If an arrayref is what you want then the method style
+somefunc()->as_arrayref can be more readable than [@{somefunc()}].
 =cut
 SV *
-as_arrayref (SV *a, ...)
+as_arrayref (SV *f, ...)
     PROTOTYPE: $;@
     CODE:
 {
@@ -2813,12 +2744,12 @@ as_arrayref (SV *a, ...)
 	 * users call method-style with no args "$f->as_arrayref" too.
 	 */
 	GType gtype;
-	gint a_;
+	gint f_;
 
-	gtype = gperl_fundamental_type_from_obj (a);
-	a_ = gperl_convert_flags (gtype, a);
+	gtype = gperl_fundamental_type_from_obj (f);
+	f_ = gperl_convert_flags (gtype, f);
 
-	RETVAL = flags_as_arrayref (gtype, a_);
+	RETVAL = flags_as_arrayref (gtype, f_);
 }
     OUTPUT:
 	RETVAL

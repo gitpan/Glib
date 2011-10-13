@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2006 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2006, 2010 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -95,6 +95,76 @@ G_LOCK_DEFINE_STATIC (types_by_package);
 G_LOCK_DEFINE_STATIC (nowarn_by_type);
 G_LOCK_DEFINE_STATIC (sink_funcs);
 
+
+static MGVTBL gperl_mg_vtbl;
+
+/*
+ * Attach a C<ptr> to the given C<sv>. It can be retrieved later using
+ * C<_gperl_find_mg> and removed again using C<_gperl_remove_mg>.
+ */
+
+void
+_gperl_attach_mg (SV * sv, void * ptr)
+{
+	sv_magicext (sv, NULL, PERL_MAGIC_ext, &gperl_mg_vtbl,
+		     (const char *)ptr, 0);
+}
+
+/*
+ * Retrieve the magic used to attach a pointer to the given C<sv> using
+ * C<_gperl_attach_mg>. The C<mg_ptr> member of the returned struct will contain
+ * the actual pointer attached to the scalar.
+ */
+
+MAGIC *
+_gperl_find_mg (SV * sv)
+{
+	MAGIC *mg;
+
+	if (SvTYPE (sv) < SVt_PVMG)
+		return NULL;
+
+	for (mg = SvMAGIC (sv); mg; mg = mg->mg_moremagic) {
+		if (mg->mg_type == PERL_MAGIC_ext
+		    && mg->mg_virtual == &gperl_mg_vtbl) {
+			assert (mg->mg_ptr);
+			return mg;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+ * Remove the association between a pointer attached to C<sv> using
+ * C<_gperl_attach_mg> and the C<sv>.
+ */
+
+void
+_gperl_remove_mg (SV * sv)
+{
+	MAGIC *mg, *prevmagic = NULL, *moremagic = NULL;
+
+	if (SvTYPE (sv) < SVt_PVMG || !SvMAGIC (sv))
+		return;
+
+	for (mg = SvMAGIC (sv); mg; prevmagic = mg, mg = moremagic) {
+		moremagic = mg->mg_moremagic;
+
+		if (mg->mg_type == PERL_MAGIC_ext
+		    && mg->mg_virtual == &gperl_mg_vtbl)
+			break;
+	}
+
+	if (prevmagic) {
+		prevmagic->mg_moremagic = moremagic;
+	} else {
+		SvMAGIC_set (sv, moremagic);
+	}
+
+	mg->mg_moremagic = NULL;
+	Safefree (mg);
+}
 
 static ClassInfo *
 class_info_new (GType gtype,
@@ -493,6 +563,15 @@ gperl_object_take_ownership (GObject * object)
 	g_object_unref (object);
 }
 
+#if GLIB_CHECK_VERSION (2, 10, 0)
+static void
+sink_initially_unowned (GObject *object)
+{
+	g_object_ref_sink (object);
+	g_object_unref (object);
+}
+#endif
+
 
 =item void gperl_object_set_no_warn_unreg_subclass (GType gtype, gboolean nowarn)
 
@@ -705,7 +784,7 @@ gobject_destroy_wrapper (SV *obj)
               SvREFCNT ((SV*)REVIVE_UNDEAD(obj)));
 #endif
         obj = REVIVE_UNDEAD(obj);
-        sv_unmagic (obj, PERL_MAGIC_ext);
+        _gperl_remove_mg (obj);
 
         /* we might want to optimize away the call to DESTROY here for non-perl classes. */
         SvREFCNT_dec (obj);
@@ -801,7 +880,7 @@ gperl_new_object (GObject * object,
                 /* this increases the combined object's refcount. */
                 obj = (SV *)newHV ();
                 /* attach magic */
-                sv_magic (obj, 0, PERL_MAGIC_ext, (const char *)object, 0);
+                _gperl_attach_mg (obj, object);
 
                 /* The SV has a ref to the C object.  If we are to own this
                  * object, then any other references will be taken care of
@@ -855,6 +934,7 @@ gperl_new_object (GObject * object,
 	      gperl_object_package_from_type (G_OBJECT_TYPE (object)),
 	      SvRV (sv), SvREFCNT (SvRV (sv)));
 #endif
+
 	if (own)
 		gperl_object_take_ownership (object);
 
@@ -874,6 +954,7 @@ gperl_new_object (GObject * object,
 }
 
 
+
 =item GObject * gperl_get_object (SV * sv)
 
 retrieve the GObject pointer from a Perl object.  Returns NULL if I<sv> is not
@@ -889,8 +970,9 @@ gperl_get_object (SV * sv)
 {
 	MAGIC *mg;
 
-	if (!gperl_sv_is_defined (sv) || !SvROK (sv) || !(mg = mg_find (SvRV (sv), PERL_MAGIC_ext)))
+	if (!gperl_sv_is_ref (sv) || !(mg = _gperl_find_mg (SvRV (sv))))
 		return NULL;
+
 	return (GObject *) mg->mg_ptr;
 }
 
@@ -907,21 +989,22 @@ GObject *
 gperl_get_object_check (SV * sv,
 			GType gtype)
 {
+	MAGIC *mg;
 	const char * package;
 	package = gperl_object_package_from_type (gtype);
 	if (!package)
 		croak ("INTERNAL: GType %s (%d) is not registered with GPerl!",
 		       g_type_name (gtype), gtype);
-	if (!sv || !SvROK (sv) || !sv_derived_from (sv, package))
+	if (!gperl_sv_is_ref (sv) || !sv_derived_from (sv, package))
 		croak ("%s is not of type %s",
 		       gperl_format_variable_for_output (sv),
 		       package);
-	if (!mg_find (SvRV (sv), PERL_MAGIC_ext))
+	if (!(mg = _gperl_find_mg (SvRV (sv))))
 		croak ("%s is not a proper Glib::Object "
-		       "(it doesn't contain magic)",
+		       "(it doesn't contain the right magic)",
 		       gperl_format_variable_for_output (sv));
 
-	return gperl_get_object (sv);
+	return (GObject *) mg->mg_ptr;
 }
 
 
@@ -1095,6 +1178,20 @@ Glib::Object is the corresponding Perl object class.  Glib::Objects are
 represented by blessed hash references, with a magical connection to the
 underlying C object.
 
+=head2 get and set
+
+Some subclasses of C<Glib::Object> override C<get> and C<set> with methods
+more useful to the subclass, for example C<Gtk2::TreeModel> getting and
+setting row contents.
+
+This is usually done when the subclass has no object properties.  Any object
+properties it or a further subclass does have can always be accessed with
+C<get_property> and C<set_property> (together with C<find_property> and
+C<list_properties> to enquire about them).
+
+Generic code for any object subclass can use the names C<get_property> and
+C<set_property> to be sure of getting the object properties as such.
+
 =cut
 
 BOOT:
@@ -1102,6 +1199,7 @@ BOOT:
 	gperl_register_object (G_TYPE_OBJECT, "Glib::Object");
 #if GLIB_CHECK_VERSION (2, 10, 0)
 	gperl_register_object (G_TYPE_INITIALLY_UNOWNED, "Glib::InitiallyUnowned");
+	gperl_register_sink_func (G_TYPE_INITIALLY_UNOWNED, sink_initially_unowned);
 #endif
 	wrapper_quark = g_quark_from_static_string ("Perl-wrapper-object");
 
@@ -1125,7 +1223,7 @@ DESTROY (SV *sv)
 	if (PL_in_clean_objs) {
                 /* be careful during global destruction. basically,
                  * don't bother, since refcounting is no longer meaningful. */
-                sv_unmagic (SvRV (sv), PERL_MAGIC_ext);
+                _gperl_remove_mg (SvRV (sv));
 
                 g_object_steal_qdata (object, wrapper_quark);
         } else {
@@ -1262,14 +1360,14 @@ g_object_new (class, ...)
 =for apidoc Glib::Object::get
 =for arg ... (list) list of property names
 
-Fetch and return the values for the object properties named in I<...>.
+Alias for C<get_property> (see L</get and set> above).
 
 =cut
 
 =for apidoc Glib::Object::get_property
 =for arg ... (__hide__)
 
-Alias for C<get>.
+Fetch and return the values for the object properties named in I<...>.
 
 =cut
 
@@ -1303,7 +1401,7 @@ g_object_get (object, ...)
 =for signature $object->set (key => $value, ...)
 =for arg ... key/value pairs
 
-Set object properties.
+Alias for C<set_property> (see L</get and set> above).
 
 =cut
 
@@ -1311,7 +1409,7 @@ Set object properties.
 =for signature $object->set_property (key => $value, ...)
 =for arg ... (__hide__)
 
-Alias for C<set>.
+Set object properties.
 
 =cut
 
@@ -1397,10 +1495,11 @@ The Glib::ParamFlags of the property
 =cut
 
 =for apidoc Glib::Object::find_property
-=for signature pspec = $object_or_class_name->find_property ($name)
+=for signature pspec or undef = $object_or_class_name->find_property ($name)
 =for arg name (string)
 =for arg ... (__hide__)
-Find the definition of object property I<$name> for I<$object_or_class_name>; for
+Find the definition of object property I<$name> for I<$object_or_class_name>.
+Return C<undef> if no such property.  For
 the returned data see L<Glib::Object::list_properties>.
 =cut
 void
@@ -1412,8 +1511,7 @@ g_object_find_property (object_or_class_name, ...)
 	GType type = G_TYPE_INVALID;
 	gchar *name = NULL;
     PPCODE:
-	if (gperl_sv_is_defined (object_or_class_name) &&
-	    SvROK (object_or_class_name)) {
+	if (gperl_sv_is_ref (object_or_class_name)) {
 		GObject * object = SvGObject (object_or_class_name);
 		if (!object)
 			croak ("wha?  NULL object in list_properties");
@@ -1472,8 +1570,8 @@ g_object_find_property (object_or_class_name, ...)
 				for (i = 0; i < n_props; i++)
 					PUSHs (sv_2mortal (newSVGParamSpec (props[i])));
 
-				g_free (props);
 			}
+			g_free (props); /* must free even when n_props==0 */
 		}
 
 		g_type_class_unref (object_class);
@@ -1506,8 +1604,8 @@ g_object_find_property (object_or_class_name, ...)
 				for (i = 0; i < n_props; i++)
 					PUSHs (sv_2mortal (newSVGParamSpec (props[i])));
 
-				g_free (props);
 			}
+			g_free (props); /* must free even when n_props==0 */
 		}
 
 		g_type_default_interface_unref (iface);

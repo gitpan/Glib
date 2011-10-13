@@ -5,7 +5,7 @@
 use strict;
 use utf8;
 use Glib ':constants';
-use Test::More tests => 243;
+use Test::More tests => 312;
 
 # first register some types with which to play below.
 
@@ -61,7 +61,22 @@ $pspec = Glib::ParamSpec->boolean ('boolean', 'Boolean',
 	                           TRUE, 'readable');
 pspec_common_ok ($pspec, 'Boolean', 'readable');
 ok ($pspec->get_default_value, "Boolean default (expect TRUE)");
+push @params, $pspec;
+{
+  $pspec = Glib::ParamSpec->boolean ('boolean-default-false',
+				     'Boolean-default-false',
+				     'Blurb',
+				     FALSE, 'readable');
+  is ($pspec->get_default_value, '');  # boolSV style empty '' return
+}
 
+
+$pspec = Glib::ParamSpec->string ('string', 'String',
+				  'Stringing you along with NULL default.',
+				  undef,
+				  'readable');
+pspec_common_ok ($pspec, 'String', 'readable', 'Glib::String');
+is ($pspec->get_default_value, undef, "String default NULL");
 push @params, $pspec;
 
 
@@ -134,6 +149,7 @@ $pspec = Glib::ParamSpec->boxed ('boxed', 'Boxed',
 	                         # we only know one boxed type at this point.
 	                         'Glib::Scalar', G_PARAM_READWRITE);
 pspec_common_ok ($pspec, 'Boxed', G_PARAM_READWRITE, 'Glib::Scalar');
+is ($pspec->get_default_value, undef, 'Boxed default');
 push @params, $pspec;
 
 
@@ -141,6 +157,7 @@ $pspec = Glib::ParamSpec->object ('object', 'Object',
 	                          'I object, Your Honor, that\'s pure conjecture!',
 	                          'Skeezle', G_PARAM_READWRITE);
 pspec_common_ok ($pspec, 'Object', G_PARAM_READWRITE, 'Skeezle');
+is ($pspec->get_default_value, undef, 'Object default');
 push @params, $pspec;
 
 
@@ -156,6 +173,7 @@ is ($pspec->get_blurb, '', 'Param blurb');
 ok ($pspec->get_flags == G_PARAM_READWRITE, 'Param flags');
 is ($pspec->get_value_type, 'Glib::Param::Enum', 'Param value type');
 ok (! $pspec->get_owner_type, 'Param owner type');
+is ($pspec->get_default_value, undef, 'Param default');
 push @params, $pspec;
 
 
@@ -165,6 +183,21 @@ $pspec = Glib::ParamSpec->unichar ('unichar', 'Unichar',
 pspec_common_ok ($pspec, 'Unichar', qw/readable/, 'Glib::UInt');
 is ($pspec->get_default_value, 'ö', 'Unichar default');
 push @params, $pspec;
+{
+  $pspec = Glib::ParamSpec->unichar ('unichar-nul', 'Unichar-Nul',
+				     'Blurb',
+				     "\0", # default
+				     qw/readable/);
+  is ($pspec->get_default_value, "\0",
+      'ParamSpec unichar - default zero byte');
+
+  $pspec = Glib::ParamSpec->unichar ('unichar-nul', 'Unichar-Nul',
+				     'Blurb',
+				     "0", # default
+				     qw/readable/);
+  is ($pspec->get_default_value, "0",
+      'ParamSpec unichar - default zero digit');
+}
 
 
 #
@@ -174,6 +207,7 @@ $pspec = Glib::ParamSpec->IV ('iv', 'IV',
 	                      'This is the same as Int',
 	                      -20, 10, -5, G_PARAM_READWRITE);
 isa_ok ($pspec, 'Glib::Param::Long', 'IV is actually Long');
+is ($pspec->get_default_value, -5, 'IV default');
 push @params, $pspec;
 
 
@@ -181,6 +215,7 @@ $pspec = Glib::ParamSpec->UV ('uv', 'UV',
 	                      'This is the same as UInt',
 	                      10, 20, 15, G_PARAM_READWRITE);
 isa_ok ($pspec, 'Glib::Param::ULong', 'UV is actually ULong');
+is ($pspec->get_default_value, 15, 'UV default');
 push @params, $pspec;
 
 
@@ -189,6 +224,7 @@ $pspec = Glib::ParamSpec->scalar ('scalar', 'Scalar',
 	                          G_PARAM_READWRITE);
 isa_ok ($pspec, 'Glib::Param::Boxed', 'Scalar is actually Boxed');
 is ($pspec->get_value_type, 'Glib::Scalar', 'boxed holding scalar');
+is ($pspec->get_default_value, undef, 'Scalar default');
 push @params, $pspec;
 
 
@@ -205,6 +241,143 @@ Glib::Type->register (
 
 foreach (@params) {
 	is ($_->get_owner_type, 'Bar', ref($_)." owner type after adding");
+}
+
+{
+  my $object = Bar->new;
+
+  # exercise default GET_PROPERTY fetching pspec default value
+  foreach my $pspec (@params) {
+    if ($pspec->get_flags & 'readable') {
+      my $pname = $pspec->get_name;
+      $object->get($pname);
+    }
+  }
+
+  is ($object->get_property('unichar'), ord('ö'),
+      'get_property() unichar default value (unicode code point number)');
+}
+
+
+SKIP: {
+	skip "GParamSpecOverride is new in glib 2.4.0", 27
+		unless Glib->CHECK_VERSION (2, 4, 0);
+
+	my $pbase = Glib::ParamSpec->boolean ('obool','obool', 'Blurb',
+					      0, G_PARAM_READWRITE);
+	is ($pspec->get_redirect_target, undef);
+
+	$pspec = Glib::ParamSpec->override ('over', $pbase);
+	isa_ok ($pspec, 'Glib::Param::Override');
+	is_deeply ($pspec->get_redirect_target, $pbase);
+	{
+	  my $pbase = Glib::ParamSpec->boolean ('obool',
+						'Obool',
+						'pbase blurb',
+						0, G_PARAM_READWRITE);
+	  is ($pbase->get_default_value, '');
+	  is ($pbase->get_redirect_target, undef);
+
+	  # p1 targetting pbase
+	  my $p1 = Glib::ParamSpec->override ('over', $pbase);
+	  isa_ok ($p1, 'Glib::Param::Override');
+	  # is_deeply() because paramspec is GBoxed, so no identical objects
+	  is_deeply ($p1->get_redirect_target, $pbase);
+
+	  is ($p1->get_blurb, 'pbase blurb');
+	  is ($p1->get_nick,  'Obool');
+	  is ($p1->get_default_value, '');
+
+	  # p2 targetting p1
+	  my $p2 = Glib::ParamSpec->override ('over-over', $p1);
+	  isa_ok ($p2, 'Glib::Param::Override');
+	  # is_deeply() because paramspec is GBoxed, so no identical objects
+	  is_deeply ($p2->get_redirect_target, $pbase);
+
+	  is ($p2->get_blurb, 'pbase blurb');
+	  is ($p2->get_nick,  'Obool');
+	  is ($p2->get_default_value, '');
+	}
+
+	{
+	  my $pbase = Glib::ParamSpec->unichar ('ounichar',
+						'Ounichar',
+						'pbase blurb',
+						'z',
+						G_PARAM_READWRITE);
+	  is ($pbase->get_default_value, 'z');
+	  is ($pbase->get_redirect_target, undef);
+
+	  # p1 targetting pbase
+	  my $p1 = Glib::ParamSpec->override ('over', $pbase);
+	  isa_ok ($p1, 'Glib::Param::Override');
+	  # is_deeply() because paramspec is GBoxed, so no identical objects
+	  is_deeply ($p1->get_redirect_target, $pbase);
+
+	  is ($p1->get_blurb, 'pbase blurb');
+	  is ($p1->get_nick,  'Ounichar');
+	  is ($p1->get_default_value, 'z');
+
+	  # p2 targetting p1
+	  my $p2 = Glib::ParamSpec->override ('over-over', $p1);
+	  isa_ok ($p2, 'Glib::Param::Override');
+	  # is_deeply() because paramspec is GBoxed, so no identical objects
+	  is_deeply ($p2->get_redirect_target, $pbase);
+
+	  is ($p2->get_blurb, 'pbase blurb');
+	  is ($p2->get_nick,  'Ounichar');
+	  is ($p2->get_default_value, 'z');
+	}
+}
+
+#
+# Since this is conditional on version, we don't want to overcomplicate
+# the testing logic above.
+#
+SKIP: {
+	skip "GParamSpecGType is new in glib 2.10.0", 18
+		unless Glib->CHECK_VERSION (2, 10, 0);
+	@params = ();
+
+	$pspec = Glib::ParamSpec->gtype ('object', 'Object Type',
+					 "Any object type",
+					 Glib::Object::,
+					 G_PARAM_READWRITE);
+	isa_ok ($pspec, 'Glib::Param::GType');
+	isa_ok ($pspec, 'Glib::ParamSpec');
+	is ($pspec->get_is_a_type, 'Glib::Object');
+	is ($pspec->get_value_type, 'Glib::GType');
+	push @params, $pspec;
+
+	$pspec = Glib::ParamSpec->gtype ('type', 'Any type', "Any type",
+					 undef, G_PARAM_READWRITE);
+	isa_ok ($pspec, 'Glib::Param::GType');
+	isa_ok ($pspec, 'Glib::ParamSpec');
+	is ($pspec->get_is_a_type, undef);
+	is ($pspec->get_value_type, 'Glib::GType');
+	push @params, $pspec;
+
+	Glib::Type->register ('Glib::Object' => 'Baz', properties => \@params);
+
+	my $baz = Glib::Object::new ('Baz');
+	isa_ok ($baz, 'Glib::Object');
+	is ($baz->get ('object'), 'Glib::Object');
+	is ($baz->get ('type'), undef);
+
+	$baz = Glib::Object::new ('Baz', object => 'Bar', type => 'Glib::ParamSpec');
+	isa_ok ($baz, 'Glib::Object');
+	is ($baz->get ('object'), 'Bar');
+	is ($baz->get ('type'), 'Glib::ParamSpec');
+
+	$baz->set (type => 'Bar');
+	is ($baz->get ('type'), 'Bar');
+	$baz->set (type => 'Glib::ParamSpec');
+	is ($baz->get ('type'), 'Glib::ParamSpec');
+
+        $baz->set (object => 'Glib::Object');
+	is ($baz->get ('object'), 'Glib::Object');
+        $baz->set (object => 'Glib::InitiallyUnowned');
+	is ($baz->get ('object'), 'Glib::InitiallyUnowned');
 }
 
 

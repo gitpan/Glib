@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
- * the full list)
+ * Copyright (C) 2003-2009 by the gtk2-perl team (see the file AUTHORS for the
+ * full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -38,15 +38,11 @@ arrays and the like.
 
 /****************************************************************************
  * GValue handling
- * 
+ *
  * we have code here to handle the fundamental types listed in the API
- * reference, plus the G_TYPE_ENUM and G_TYPE_FLAGS fundamentals.
- * we won't, however, handle any *other* fundamentals created by
- * g_type_fundamental_next().  if we want to handle that, we probably
- * need to move away from a switch statement to an array of function
- * pointers (at least for the non-standard ones) so that the perl bindings
- * for the library that creates these new fundamentals can register 
- * conversion functions for them.
+ * reference, plus the G_TYPE_ENUM and G_TYPE_FLAGS fundamentals.  new
+ * fundamentals created by g_type_fundamental_next() are handled by the
+ * GPerlValueWrapperClass machinery.
  */
 
 =item gboolean gperl_value_from_sv (GValue * value, SV * sv)
@@ -118,17 +114,30 @@ gperl_value_from_sv (GValue * value,
 			g_value_set_string(value, SvGChar(sv));
 			break;
 		case G_TYPE_POINTER:
+#if GLIB_CHECK_VERSION(2, 10, 0)
+			/* The fundamental type for G_TYPE_GTYPE is
+			 * G_TYPE_POINTER, so we have to treat this
+			 * specially. */
+			if (G_VALUE_TYPE (value) == G_TYPE_GTYPE) {
+				g_value_set_gtype (value, gperl_type_from_package (SvGChar (sv)));
+				break;
+			}
+#endif
 			g_value_set_pointer (value,
 			                     INT2PTR (gpointer, SvIV (sv)));
 			break;
 		case G_TYPE_BOXED:
 			/* SVs need special treatment! */
-			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV))
+			if (G_VALUE_HOLDS (value, GPERL_TYPE_SV)) {
 				g_value_set_boxed (value,
 				                   gperl_sv_is_defined (sv)
 				                   ? sv : NULL);
-			else
-				g_value_set_boxed (value, gperl_get_boxed_check (sv, G_VALUE_TYPE(value)));
+			} else {
+				g_value_set_static_boxed (
+					value,
+					gperl_get_boxed_check (
+						sv, G_VALUE_TYPE(value)));
+			}
 			break;
 		case G_TYPE_PARAM:
 			g_value_set_param(value, SvGParamSpec (sv));
@@ -222,6 +231,18 @@ _gperl_sv_from_value_internal (const GValue * value,
 			return newSVGChar (g_value_get_string (value));
 
 		case G_TYPE_POINTER:
+#if GLIB_CHECK_VERSION(2, 10, 0)
+			/* The fundamental type for G_TYPE_GTYPE is
+			 * G_TYPE_POINTER, so we have to treat this
+			 * specially. */
+			if (G_VALUE_TYPE (value) == G_TYPE_GTYPE) {
+				GType gtype = g_value_get_gtype (value);
+				return newSVGChar (
+				  gtype == G_TYPE_NONE
+				         ? NULL
+				         : gperl_package_from_type (gtype));
+			}
+#endif
 			return newSViv (PTR2IV (g_value_get_pointer (value)));
 
 		case G_TYPE_BOXED:

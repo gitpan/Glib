@@ -89,12 +89,12 @@ SV *
 newSVGSignalInvocationHint (GSignalInvocationHint * ihint)
 {
 	HV * hv = newHV ();
-	hv_store (hv, "signal_name", 11,
-	          newSVGChar (g_signal_name (ihint->signal_id)), 0);
-	hv_store (hv, "detail", 6,
-	          newSVGChar (g_quark_to_string (ihint->detail)), 0);
-	hv_store (hv, "run_type", 8,
-	          newSVGSignalFlags (ihint->run_type), 0);
+	gperl_hv_take_sv_s (hv, "signal_name",
+	                    newSVGChar (g_signal_name (ihint->signal_id)));
+	gperl_hv_take_sv_s (hv, "detail",
+	                    newSVGChar (g_quark_to_string (ihint->detail)));
+	gperl_hv_take_sv_s (hv, "run_type",
+	                    newSVGSignalFlags (ihint->run_type));
 	return newRV_noinc ((SV*)hv);
 }
 
@@ -115,20 +115,20 @@ newSVGSignalQuery (GSignalQuery * query)
 		return &PL_sv_undef;
 
 	hv = newHV ();
-	hv_store (hv, "signal_id", 9, newSViv (query->signal_id), 0);
-	hv_store (hv, "signal_name", 11,
-		  newSVpv (query->signal_name, 0), 0);
+	gperl_hv_take_sv_s (hv, "signal_id", newSViv (query->signal_id));
+	gperl_hv_take_sv_s (hv, "signal_name",
+	                    newSVpv (query->signal_name, 0));
 	GET_NAME (pkgname, query->itype);
 	if (pkgname)
-		hv_store (hv, "itype", 5, newSVpv (pkgname, 0), 0);
-	hv_store (hv, "signal_flags", 12,
-		  newSVGSignalFlags (query->signal_flags), 0);
+		gperl_hv_take_sv_s (hv, "itype", newSVpv (pkgname, 0));
+	gperl_hv_take_sv_s (hv, "signal_flags",
+	                    newSVGSignalFlags (query->signal_flags));
 	if (query->return_type != G_TYPE_NONE) {
 		GType t = query->return_type & ~G_SIGNAL_TYPE_STATIC_SCOPE;
 		GET_NAME (pkgname, t);
 		if (pkgname)
-			hv_store (hv, "return_type", 11,
-				  newSVpv (pkgname, 0), 0);
+			gperl_hv_take_sv_s (hv, "return_type",
+			                    newSVpv (pkgname, 0));
 	}
 	av = newAV ();
 	for (j = 0; j < query->n_params; j++) {
@@ -136,7 +136,7 @@ newSVGSignalQuery (GSignalQuery * query)
 		GET_NAME (pkgname, t);
 		av_push (av, newSVpv (pkgname, 0));
 	}
-	hv_store (hv, "param_types", 11, newRV_noinc ((SV*)av), 0);
+	gperl_hv_take_sv_s (hv, "param_types", newRV_noinc ((SV*)av));
 	/* n_params is inferred by the length of the av in param_types */
 
 	return newRV_noinc ((SV*)hv);
@@ -203,22 +203,12 @@ keep your code synchronized with them, or you may miss very important
 bugfixes.
 
 =cut
-static GHashTable * marshallers = NULL;
-G_LOCK_DEFINE_STATIC (marshallers);
 
-typedef struct {
-	GType           instance_type;
-	GClosureMarshal marshaller;
-} MarshallerData;
-
-static MarshallerData *
-marshaller_data_new (GType itype, GClosureMarshal func)
-{
-	MarshallerData * data = g_new0 (MarshallerData, 1);
-	data->instance_type = itype;
-	data->marshaller = func;
-	return data;
-}
+/* We need to store the custom marshallers indexed by (type, signal) tuples
+ * since signal names are not unique (GtkDialog and GtkInfoBar both have a
+ * "response" signal, for example). */
+static GHashTable * marshallers_by_type = NULL;
+G_LOCK_DEFINE_STATIC (marshallers_by_type);
 
 void
 gperl_signal_set_marshaller_for (GType instance_type,
@@ -227,26 +217,90 @@ gperl_signal_set_marshaller_for (GType instance_type,
 {
 	g_return_if_fail (instance_type != 0);
 	g_return_if_fail (detailed_signal != NULL);
-	G_LOCK (marshallers);
-	if (!marshaller && !marshallers) {
+	G_LOCK (marshallers_by_type);
+	if (!marshaller && !marshallers_by_type) {
 		/* nothing to do */
 	} else {
-		if (!marshallers)
-			marshallers =
-				g_hash_table_new_full (gperl_str_hash,
-				                       (GEqualFunc)gperl_str_eq,
-				                       g_free,
-				                       g_free);
+		GHashTable *marshallers_by_signal;
+		if (!marshallers_by_type)
+			marshallers_by_type =
+				g_hash_table_new_full (g_direct_hash,
+				                       g_direct_equal,
+				                       NULL,
+				                       (GDestroyNotify)
+				                         g_hash_table_destroy);
+		marshallers_by_signal = g_hash_table_lookup (
+		                          marshallers_by_type,
+		                          (gpointer) instance_type);
+		if (!marshallers_by_signal) {
+			marshallers_by_signal = g_hash_table_new_full (
+			                          g_str_hash,
+			                          g_str_equal,
+			                          g_free,
+			                          NULL);
+			g_hash_table_insert (marshallers_by_type,
+			                     (gpointer) instance_type,
+			                     marshallers_by_signal);
+		}
 		if (marshaller)
 			g_hash_table_insert
-					(marshallers,
+					(marshallers_by_signal,
 					 g_strdup (detailed_signal),
-					 marshaller_data_new (instance_type,
-					                      marshaller));
+					 marshaller);
 		else
-			g_hash_table_remove (marshallers, detailed_signal);
+			g_hash_table_remove (marshallers_by_signal,
+			                     detailed_signal);
 	}
-	G_UNLOCK (marshallers);
+	G_UNLOCK (marshallers_by_type);
+}
+
+/* Called with lock on marshallers_by_type held. */
+static GClosureMarshal
+lookup_specific_marshaller (GType specific_type,
+                            char * detailed_signal)
+{
+	GHashTable *marshallers_by_signal =
+		g_hash_table_lookup (marshallers_by_type,
+		                     (gpointer) specific_type);
+	if (marshallers_by_signal) {
+		return g_hash_table_lookup (marshallers_by_signal,
+		                            detailed_signal);
+	}
+	return NULL;
+}
+
+static GClosureMarshal
+lookup_marshaller (GType instance_type,
+                   char * detailed_signal)
+{
+	GClosureMarshal marshaller = NULL;
+	G_LOCK (marshallers_by_type);
+	if (marshallers_by_type) {
+		GType type = instance_type;
+		/* We need to walk the ancestry to make sure that, say,
+		 * GtkFileChooseDialog also gets the custom "response"
+		 * marshaller from GtkDialog.  This always terminates because
+		 * g_type_parent (G_TYPE_OBJECT) == 0. */
+		while (marshaller == NULL && type != 0) {
+			marshaller = lookup_specific_marshaller (
+			               type, detailed_signal);
+			type = g_type_parent (type);
+		}
+		/* We also need to look at interfaces. */
+		if (marshaller == NULL) {
+			GType *interface_types =
+				g_type_interfaces (instance_type, NULL);
+			GType *interface = interface_types;
+			/* interface_types is 0-terminated. */
+			while (marshaller == NULL && *interface != 0) {
+				marshaller = lookup_specific_marshaller (
+			                       *interface, detailed_signal);
+				interface++;
+			}
+		}
+	}
+	G_UNLOCK (marshallers_by_type);
+	return marshaller;
 }
 
 =item gulong gperl_signal_connect (SV * instance, char * detailed_signal, SV * callback, SV * data, GConnectFlags flags)
@@ -273,19 +327,7 @@ gperl_signal_connect (SV * instance,
 	gulong id;
 
 	object = gperl_get_object (instance);
-
-	G_LOCK (marshallers);
-	if (marshallers) {
-		MarshallerData * data = (MarshallerData*)
-			g_hash_table_lookup (marshallers, detailed_signal);
-		if (data) {
-			if (g_type_is_a (G_OBJECT_TYPE (object),
-			                 data->instance_type))
-				marshaller = data->marshaller;
-		}
-	}
-	G_UNLOCK (marshallers);
-
+	marshaller = lookup_marshaller (G_OBJECT_TYPE (object), detailed_signal);
 	closure = (GPerlClosure *)
 			gperl_closure_new_with_marshaller
 			                     (callback, data,
@@ -394,8 +436,7 @@ get_gtype_or_croak (SV * object_or_class_name)
 {
 	GType gtype;
 
-	if (gperl_sv_is_defined (object_or_class_name) &&
-	    SvROK (object_or_class_name)) {
+	if (gperl_sv_is_ref (object_or_class_name)) {
 		GObject * object = SvGObject (object_or_class_name);
 		if (!object)
 			croak ("bad object in signal_query");
@@ -616,10 +657,12 @@ g_signal_query (SV * object_or_class_name, const char * name)
 			croak ("couldn't ref type %s", g_type_name (itype));
 	}
 	signal_id = g_signal_lookup (name, itype);
-	if (0 == signal_id)
-		XSRETURN_UNDEF;
-	g_signal_query (signal_id, &query);
-	RETVAL = newSVGSignalQuery (&query);
+	if (0 == signal_id) {
+		RETVAL = &PL_sv_undef;
+	} else {
+		g_signal_query (signal_id, &query);
+		RETVAL = newSVGSignalQuery (&query);
+	}
 	if (oclass)
 		g_type_class_unref (oclass);
     OUTPUT:

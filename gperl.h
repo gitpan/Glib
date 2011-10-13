@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2005 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2005, 2010 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -37,56 +37,11 @@
 #include <glib-object.h>
 
 /*
- * miscellaneous
+ * filenames
  */
-
-/* never use this function directly.  use GPERL_CALL_BOOT. */
-void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
-
-/*
- * call the boot code of a module by symbol rather than by name.
- *
- * in a perl extension which uses several xs files but only one pm, you
- * need to bootstrap the other xs files in order to get their functions
- * exported to perl.  if the file has MODULE = Foo::Bar, the boot symbol
- * would be boot_Foo__Bar.
- */
-#define GPERL_CALL_BOOT(name)	\
-	{						\
-		extern XS(name);			\
-		_gperl_call_XS (aTHX_ name, cv, mark);	\
-	}
-
-gpointer gperl_alloc_temp (int nbytes);
 gchar *gperl_filename_from_sv (SV *sv);
 SV *gperl_sv_from_filename (const gchar *filename);
 
-gboolean gperl_str_eq (const char * a, const char * b);
-guint    gperl_str_hash (gconstpointer key);
-
-typedef struct {
-  int argc;
-  char **argv;
-  char **shadow;
-} GPerlArgv;
-
-GPerlArgv * gperl_argv_new ();
-void gperl_argv_update (GPerlArgv *pargv);
-void gperl_argv_free (GPerlArgv *pargv);
-
-char * gperl_format_variable_for_output (SV * sv);
-
-gboolean gperl_sv_is_defined (SV *sv);
-
-#define gperl_sv_is_array_ref(sv) \
-	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVAV)
-#define gperl_sv_is_code_ref(sv) \
-	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVCV)
-#define gperl_sv_is_hash_ref(sv) \
-	(gperl_sv_is_defined (sv) && SvROK (sv) && SvTYPE (SvRV(sv)) == SVt_PVHV)
-
-/* internal trickery */
-gpointer gperl_type_class (GType type);
 /*
  * enums and flags
  */
@@ -243,8 +198,13 @@ GObject * gperl_get_object_check (SV * sv, GType gtype);
 
 SV * gperl_object_check_type (SV * sv, GType gtype);
 
+void _gperl_attach_mg (SV * sv, void * ptr);
+MAGIC * _gperl_find_mg (SV * sv);
+void _gperl_remove_mg (SV * sv);
+
 /* typedefs and macros for use with the typemap */
-typedef gchar gchar_length;
+typedef gchar gchar_length; /* length in bytes */
+typedef gchar gchar_utf8_length; /* length in characters */
 typedef gchar gchar_own;
 typedef gchar gchar_ornull;
 typedef gchar gchar_own_ornull;
@@ -257,11 +217,13 @@ typedef gchar *GPerlFilename;
 typedef const gchar *GPerlFilename_const;
 typedef gchar *GPerlFilename_own;
 typedef GPerlFilename GPerlFilename_ornull;
+typedef GParamSpec GParamSpec_ornull;
 
 #define newSVGObject(obj)	(gperl_new_object ((obj), FALSE))
 #define newSVGObject_noinc(obj)	(gperl_new_object ((obj), TRUE))
 #define SvGObject(sv)		(gperl_get_object_check (sv, G_TYPE_OBJECT))
 #define SvGObject_ornull(sv)	(gperl_sv_is_defined (sv) ? SvGObject (sv) : NULL)
+#define newSVGParamSpec_ornull(sv)	newSVGParamSpec(sv)
 
 
 /*
@@ -409,6 +371,68 @@ GType gperl_option_group_get_type (void);
 GUserDirectory SvGUserDirectory (SV *sv);
 SV * newSVGUserDirectory (GUserDirectory dir);
 #endif
+
+/*
+ * miscellaneous
+ */
+
+/* never use this function directly.  use GPERL_CALL_BOOT. */
+void _gperl_call_XS (pTHX_ void (*subaddr) (pTHX_ CV *), CV * cv, SV ** mark);
+
+/*
+ * call the boot code of a module by symbol rather than by name.
+ *
+ * in a perl extension which uses several xs files but only one pm, you
+ * need to bootstrap the other xs files in order to get their functions
+ * exported to perl.  if the file has MODULE = Foo::Bar, the boot symbol
+ * would be boot_Foo__Bar.
+ */
+#ifndef XS_EXTERNAL
+# define XS_EXTERNAL(name) XS(name)
+#endif
+#define GPERL_CALL_BOOT(name)	\
+	{						\
+		extern XS_EXTERNAL (name);		\
+		_gperl_call_XS (aTHX_ name, cv, mark);	\
+	}
+
+gpointer gperl_alloc_temp (int nbytes);
+
+gboolean gperl_str_eq (const char * a, const char * b);
+guint    gperl_str_hash (gconstpointer key);
+
+typedef struct {
+  int argc;
+  char **argv;
+  char **shadow;
+} GPerlArgv;
+
+GPerlArgv * gperl_argv_new ();
+void gperl_argv_update (GPerlArgv *pargv);
+void gperl_argv_free (GPerlArgv *pargv);
+
+char * gperl_format_variable_for_output (SV * sv);
+
+gboolean gperl_sv_is_defined (SV *sv);
+
+#define gperl_sv_is_ref(sv) \
+	(gperl_sv_is_defined (sv) && SvROK (sv))
+#define gperl_sv_is_array_ref(sv) \
+	(gperl_sv_is_ref (sv) && SvTYPE (SvRV(sv)) == SVt_PVAV)
+#define gperl_sv_is_code_ref(sv) \
+	(gperl_sv_is_ref (sv) && SvTYPE (SvRV(sv)) == SVt_PVCV)
+#define gperl_sv_is_hash_ref(sv) \
+	(gperl_sv_is_ref (sv) && SvTYPE (SvRV(sv)) == SVt_PVHV)
+
+void gperl_hv_take_sv (HV *hv, const char *key, size_t key_length, SV *sv);
+
+/* helper wrapper for static string literals.  concatenating with "" enforces
+ * the restriction. */
+#define gperl_hv_take_sv_s(hv, key, sv) \
+	gperl_hv_take_sv (hv, "" key "", sizeof(key) - 1, sv)
+
+/* internal trickery */
+gpointer gperl_type_class (GType type);
 
 /*
  * helpful debugging stuff

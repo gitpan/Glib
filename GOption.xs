@@ -223,7 +223,7 @@ gperl_arg_info_table_destroy (GPerlArgInfoTable *table)
 static void
 handle_arg_data (GOptionEntry *entry, SV *ref, GHashTable *scalar_to_info)
 {
-	if (!SvROK (ref))
+	if (!gperl_sv_is_ref (ref))
 		croak ("encountered non-reference variable for the arg_value "
 		       "field");
 
@@ -458,6 +458,7 @@ initialize_scalar (gpointer key,
 {
 	SV *ref = key;
 	GPerlArgInfo *info = value;
+	PERL_UNUSED_VAR (data);
 
 	switch (info->arg) {
 	    case G_OPTION_ARG_NONE:
@@ -508,6 +509,9 @@ initialize_scalars (GOptionContext *context,
 		    GError **error)
 {
 	GPerlArgInfoTable *table = data;
+	PERL_UNUSED_VAR (context);
+	PERL_UNUSED_VAR (group);
+	PERL_UNUSED_VAR (error);
 	g_hash_table_foreach (table->scalar_to_info, initialize_scalar, NULL);
 	return TRUE;
 }
@@ -559,6 +563,7 @@ fill_in_scalar (gpointer key,
 	SV *ref = key;
 	GPerlArgInfo *info = value;
 	SV *sv = SvRV (ref);
+	PERL_UNUSED_VAR (data);
 
 	switch (info->arg) {
 	    case G_OPTION_ARG_NONE:
@@ -610,6 +615,9 @@ fill_in_scalars (GOptionContext *context,
 		 GError **error)
 {
 	GPerlArgInfoTable *table = data;
+	PERL_UNUSED_VAR (context);
+	PERL_UNUSED_VAR (group);
+	PERL_UNUSED_VAR (error);
 	g_hash_table_foreach (table->scalar_to_info, fill_in_scalar, NULL);
 	return TRUE;
 }

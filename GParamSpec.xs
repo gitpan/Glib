@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2004 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2003-2004, 2010 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -143,7 +143,7 @@ SV *
 newSVGParamSpec (GParamSpec * pspec)
 {
 	const gchar * pv;
-	HV * property = newHV ();
+	HV * property;
 	SV * sv;
 	HV * stash;
 	const char * package;
@@ -154,7 +154,8 @@ newSVGParamSpec (GParamSpec * pspec)
 	g_param_spec_ref (pspec);
 	g_param_spec_sink (pspec);
 
-	sv_magic ((SV*)property, 0, PERL_MAGIC_ext, (const char*)pspec, 0);
+	property = newHV ();
+	_gperl_attach_mg ((SV*)property, pspec);
 
 
 	/* for hysterical raisins (backward compatibility with the old
@@ -162,23 +163,23 @@ newSVGParamSpec (GParamSpec * pspec)
 	 * paramspec list returned from Glib::Object::list_properties())
 	 * we store a few select keys in the hash directly.
 	 */
-	hv_store (property, "name",  4,
-	          newSVpv (g_param_spec_get_name (pspec), 0), 0);
+	gperl_hv_take_sv_s (property, "name",
+	                    newSVpv (g_param_spec_get_name (pspec), 0));
 
 	/* map type names to package names, if possible */
 	pv = gperl_package_from_type (pspec->value_type);
 	if (!pv) pv = g_type_name (pspec->value_type);
-	hv_store (property, "type",  4, newSVpv (pv, 0), 0);
+	gperl_hv_take_sv_s (property, "type", newSVpv (pv, 0));
 
 	pv = gperl_package_from_type (pspec->owner_type);
 	if (!pv)
 		pv = g_type_name (pspec->owner_type);
 	if (pv)
-		hv_store (property, "owner_type", 10, newSVpv (pv, 0), 0);
+		gperl_hv_take_sv_s (property, "owner_type", newSVpv (pv, 0));
 
 	pv = g_param_spec_get_blurb (pspec);
-	if (pv) hv_store (property, "descr", 5, newSVpv (pv, 0), 0);
-	hv_store (property, "flags", 5, newSVGParamFlags (pspec->flags), 0) ;
+	if (pv) gperl_hv_take_sv_s (property, "descr", newSVpv (pv, 0));
+	gperl_hv_take_sv_s (property, "flags", newSVGParamFlags (pspec->flags));
 
 	/* wrap it, bless it, ship it. */
 	sv = newRV_noinc ((SV*)property);
@@ -202,7 +203,7 @@ GParamSpec *
 SvGParamSpec (SV * sv)
 {
 	MAGIC * mg;
-	if (!sv || !SvROK (sv) || !(mg = mg_find (SvRV (sv), PERL_MAGIC_ext)))
+	if (!gperl_sv_is_ref (sv) || !(mg = _gperl_find_mg (SvRV (sv))))
 		return NULL;
 	return (GParamSpec*) mg->mg_ptr;
 }
@@ -263,6 +264,9 @@ BOOT:
 	gperl_register_param_spec (G_TYPE_PARAM_OBJECT, "Glib::Param::Object");
 #if GLIB_CHECK_VERSION(2,4,0)
 	gperl_register_param_spec (G_TYPE_PARAM_OVERRIDE, "Glib::Param::Override");
+#endif
+#if GLIB_CHECK_VERSION(2,10,0)
+	gperl_register_param_spec (G_TYPE_PARAM_GTYPE, "Glib::Param::GType");
 #endif
 
 =for enum Glib::ParamFlags
@@ -486,12 +490,16 @@ g_param_spec_double (class, name, nick, blurb, minimum, maximum, default_value, 
 	RETVAL
 
 ##  GParamSpec* g_param_spec_string (const gchar *name, const gchar *nick, const gchar *blurb, const gchar *default_value, GParamFlags flags) 
+##
+## "default_value" can be NULL.  Not actually described in the docs as
+## of 2.18, but used that way in lots of the builtin classes
+##
 GParamSpec*
 g_param_spec_string (class, name, nick, blurb, default_value, flags)
 	const gchar *name
 	const gchar *nick
 	const gchar *blurb
-	const gchar *default_value
+	const gchar_ornull *default_value
 	GParamFlags flags
     C_ARGS:
 	name, nick, blurb, default_value, flags
@@ -549,6 +557,12 @@ param_spec (class, name, nick, blurb, package, flags)
 =for apidoc
 ParamSpec to be used for any generic perl scalar, including references to
 complex objects.
+
+Currently C<Gtk2::Builder> cannot set object properties of this type
+(there's no hooks for property value parsing, as of Gtk 2.20), so
+prefer the builtin types if buildable support for an object matters.
+A C<boxed> of C<Glib::Strv> can give an array of strings.  A signal
+handler callback can do most of what a coderef might.
 =cut
 GParamSpec*
 scalar (class, name, nick, blurb, flags)
@@ -569,6 +583,38 @@ scalar (class, name, nick, blurb, flags)
 #### value arrays.
 ###  GParamSpec* g_param_spec_value_array (const gchar *name, const gchar *nick, const gchar *blurb, GParamSpec *element_spec, GParamFlags flags) 
 
+
+#if GLIB_CHECK_VERSION(2, 4, 0)
+
+GParamSpec*
+g_param_spec_override (class, name, overridden)
+	const gchar *name
+	GParamSpec *overridden
+    C_ARGS:
+	name, overridden
+
+GParamSpec_ornull *
+g_param_spec_get_redirect_target (pspec)
+	GParamSpec *pspec
+
+#endif
+
+#if GLIB_CHECK_VERSION(2, 10, 0)
+
+=for apidoc
+=for arg is_a_type  The name of a class whose subtypes are allowed as values of the property.  Use C<undef> to allow any type.
+=cut
+GParamSpec*
+g_param_spec_gtype (class, name, nick, blurb, is_a_type, flags)
+	const gchar *name
+	const gchar *nick
+	const gchar *blurb
+	const gchar_ornull *is_a_type
+	GParamFlags flags
+    C_ARGS:
+	name, nick, blurb, is_a_type ? gperl_type_from_package (is_a_type) : G_TYPE_NONE, flags
+
+#endif
 
 
 ####
@@ -627,6 +673,94 @@ get_value_type (GParamSpec * pspec)
 
 
 MODULE = Glib::ParamSpec	PACKAGE = Glib::ParamSpec	PREFIX = g_param_
+
+=for apidoc
+(This is the C level C<g_param_value_set_default> function.)
+
+Note that on a C<Glib::Param::Unichar> the return is a single-char
+string.  This is the same as the constructor
+C<< Glib::ParamSpec->unichar >>, but it's not the same as
+C<Glib::Object> C<< get_property >> / C<< set_property >>, so an
+C<ord()> conversion is needed if passing the default value to a
+unichar C<set_property>.
+=cut
+SV *
+get_default_value (GParamSpec * pspec)
+    PREINIT:
+	GValue v = { 0, };
+	GType type;
+    CODE:
+	/* crib note: G_PARAM_SPEC_VALUE_TYPE() is suitable for
+	   GParamSpecOverride and gives the target's value type */
+	type = G_PARAM_SPEC_VALUE_TYPE (pspec);
+	g_value_init (&v, type);
+	g_param_value_set_default (pspec, &v);
+
+	if (type == G_TYPE_BOOLEAN) {
+	  /* For historical compatibility with what Perl-Gtk2 has done in
+             the past, return boolSV() style '' or 1 for a G_TYPE_BOOLEAN,
+             the same as gboolean typemap output, not the newSViv() style 0
+             or 1 which the generic gperl_sv_from_value() would give on
+             G_TYPE_BOOLEAN.
+
+             The two falses, '' vs 0, are of course the same in any boolean
+             context or arithmetic, but maybe someone has done a string
+             compare or something, so keep ''.
+
+             This applies to Glib::Param::Boolean and in the interests of
+             consistency also to a Glib::Param::Override targetting a
+             boolean, and also to any hypothetical other ParamSpec which had
+             value type G_TYPE_BOOLEAN, either a sub-type of
+             GParamSpecBoolean or just a completely separate one with
+             G_TYPE_BOOLEAN.  */
+
+	  RETVAL = boolSV (g_value_get_boolean (&v));
+
+        } else if (type == G_TYPE_UINT) {
+	  /* For historical compatibility with what Perl-Gtk2 has done in
+	     the past, return a single-char string for GParamSpecUnichar.
+	     The GValue for a GParamSpecUnichar is only a G_TYPE_UINT and
+	     gperl_sv_from_value() would give an integer.
+
+	     This applies to Glib::Param::Unichar and in the interests of
+	     consistency is applied also to a Glib::Param::Override
+	     targetting a unichar, and also to any sub-type of
+	     GParamUnichar.
+
+	     As noted in the POD above this is a bit unfortunate, since it
+	     means $obj->set_property() can't be simply called with
+	     $obj->find_property->get_default_value().  Watch this space for
+	     some sort of variation on get_default_value() which can go
+	     straight to set_property(), or to values_cmp() against a
+	     get_property(), etc. */
+
+	  GParamSpec *ptarget;
+#if GLIB_CHECK_VERSION(2, 4, 0)
+	  ptarget = g_param_spec_get_redirect_target(pspec);
+	  if (! ptarget) { ptarget = pspec; }
+#else
+	  ptarget = pspec;
+#endif
+	  if (g_type_is_a (G_PARAM_SPEC_TYPE(ptarget), G_TYPE_PARAM_UNICHAR)) {
+	    {
+	      gchar temp[6];
+	      gint length = g_unichar_to_utf8 (g_value_get_uint(&v), temp);
+	      RETVAL = newSVpv (temp, length);
+	      SvUTF8_on (RETVAL);
+	    }
+	  } else {
+	    /* a plain uint, not a unichar */
+	    goto plain_gvalue;
+	  }
+
+	} else {
+	plain_gvalue:
+	  RETVAL = gperl_sv_from_value (&v);
+	}
+	g_value_unset (&v);
+    OUTPUT:
+	RETVAL
+
 
 =for apidoc
 =signature bool = $paramspec->value_validate ($value)
@@ -711,23 +845,22 @@ MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Char
 
 =for object Glib::Param::Int - Paramspecs for integer types
 
+=for position post_hierarchy
+
+  Glib::ParamSpec
+  +----Glib::Param::Char
+
+  Glib::ParamSpec
+  +----Glib::Param::Long
+
+=cut
+
 =head1 DESCRIPTION
 
 This page documents the extra accessors available for all of the integer type
 paramspecs: Char, Int, and Long.  Perl really only supports full-size integers,
 so all of these methods return IVs; the distinction of integer size is
 important to the underlying C library and also determines the data value range.
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Char
-
-  Glib::ParamSpec
-  +----Glib::Param::Int
-
-  Glib::ParamSpec
-  +----Glib::Param::Long
 
 =cut
 
@@ -778,34 +911,22 @@ get_maximum (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-
-=for apidoc Glib::Param::Char::get_default_value __hide__
-=cut
-
-=for apidoc Glib::Param::Long::get_default_value __hide__
-=cut
-
-IV
-get_default_value (GParamSpec * pspec)
-    ALIAS:
-	Glib::Param::Int::get_default_value = 1
-	Glib::Param::Long::get_default_value = 2
-    CODE:
-	switch (ix) {
-	    case 0: RETVAL = G_PARAM_SPEC_CHAR (pspec)->default_value; break;
-	    case 1: RETVAL = G_PARAM_SPEC_INT (pspec)->default_value; break;
-	    case 2: RETVAL = G_PARAM_SPEC_LONG (pspec)->default_value; break;
-	    default: g_assert_not_reached (); RETVAL = 0;
-	}
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::UChar
 
  ## similarly, all unsigned integer types
 
 
 =for object Glib::Param::UInt
+
+=for position post_hierarchy
+
+  Glib::ParamSpec
+  +----Glib::Param::UChar
+
+  Glib::ParamSpec
+  +----Glib::Param::ULong
+
+=cut
 
 =head1 DESCRIPTION
 
@@ -814,17 +935,6 @@ integer type paramspecs: UChar, UInt, and ULong.  Perl really only supports
 full-size integers, so all of these methods return UVs; the distinction of
 integer size is important to the underlying C library and also determines the
 data value range.
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::UChar
-
-  Glib::ParamSpec
-  +----Glib::Param::UInt
-
-  Glib::ParamSpec
-  +----Glib::Param::ULong
 
 =cut
 
@@ -875,28 +985,6 @@ get_maximum (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-
-=for apidoc Glib::Param::UChar::get_default_value __hide__
-=cut
-
-=for apidoc Glib::Param::ULong::get_default_value __hide__
-=cut
-
-UV
-get_default_value (GParamSpec * pspec)
-    ALIAS:
-	Glib::Param::UInt::get_default_value = 1
-	Glib::Param::ULong::get_default_value = 2
-    CODE:
-	switch (ix) {
-	    case 0: RETVAL = G_PARAM_SPEC_UCHAR (pspec)->default_value; break;
-	    case 1: RETVAL = G_PARAM_SPEC_UINT (pspec)->default_value; break;
-	    case 2: RETVAL = G_PARAM_SPEC_ULONG (pspec)->default_value; break;
-	    default: g_assert_not_reached (); RETVAL = 0;
-	}
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Int64
 
 =for object Glib::Param::Int64
@@ -907,11 +995,6 @@ This page documents the extra accessors available for the signed 64 bit integer
 type paramspecs.  On 32 bit machines and even on some 64 bit machines, perl
 really only supports 32 bit integers, so all of these methods convert the
 values to and from Perl strings if necessary.
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Int64
 
 =cut
 
@@ -929,13 +1012,6 @@ get_maximum (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-gint64
-get_default_value (GParamSpec * pspec)
-    CODE:
-	RETVAL = G_PARAM_SPEC_INT64 (pspec)->default_value;
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::UInt64
 
 =for object Glib::Param::UInt64
@@ -946,11 +1022,6 @@ This page documents the extra accessors available for the unsigned 64 bit
 integer type paramspecs.  On 32 bit machines and even on some 64 bit machines,
 perl really only supports 32 bit integers, so all of these methods convert the
 values to and from Perl strings if necessary.
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::UInt64
 
 =cut
 
@@ -968,18 +1039,18 @@ get_maximum (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-guint64
-get_default_value (GParamSpec * pspec)
-    CODE:
-	RETVAL = G_PARAM_SPEC_UINT64 (pspec)->default_value;
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Float
 
  ## and again for the floating-point types
 
 =for object Glib::Param::Double
+
+=for position post_hierarchy
+
+  Glib::ParamSpec
+  +----Glib::Param::Float
+
+=cut
 
 =head1 DESCRIPTION
 
@@ -988,14 +1059,6 @@ floating-point type paramspecs: Float and Double.  Perl really only supports
 doubles, so all of these methods return NVs (that is, the C type "double"); the
 distinction of size is important to the underlying C library and also
 determines the data value range.
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Float
-
-  Glib::ParamSpec
-  +----Glib::Param::Double
 
 =cut
 
@@ -1036,24 +1099,6 @@ get_maximum (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-
-=for apidoc Glib::Param::Float::get_default_value __hide__
-=cut
-
-double
-get_default_value (GParamSpec * pspec)
-    ALIAS:
-	Glib::Param::Double::get_default_value = 1
-    CODE:
-	switch (ix) {
-	    case 0: RETVAL = G_PARAM_SPEC_FLOAT (pspec)->default_value; break;
-	    case 1: RETVAL = G_PARAM_SPEC_DOUBLE (pspec)->default_value; break;
-	    default: g_assert_not_reached (); RETVAL = 0.0;
-	}
-    OUTPUT:
-	RETVAL
-
-
 =for apidoc Glib::Param::Float::get_epsilon __hide__
 =cut
 
@@ -1070,37 +1115,7 @@ get_epsilon (GParamSpec * pspec)
     OUTPUT:
 	RETVAL
 
-MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Boolean
-
-=for position post_hierarchy
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Boolean
-
-=cut
-
-=for see_also Glib::ParamSpec
-=cut
-
-gboolean
-get_default_value (GParamSpec * pspec_boolean)
-    CODE:
-	RETVAL = G_PARAM_SPEC_BOOLEAN (pspec_boolean)->default_value;
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Enum
-
-=for position post_hierarchy
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Enum
-
-=cut
 
 =for see_also Glib::ParamSpec
 =cut
@@ -1114,27 +1129,7 @@ get_enum_class (GParamSpec * pspec_enum)
     OUTPUT:
 	RETVAL
 
-SV *
-get_default_value (GParamSpec * pspec_enum)
-    PREINIT:
-	GParamSpecEnum * penum;
-    CODE:
-	penum = G_PARAM_SPEC_ENUM (pspec_enum);
-	RETVAL = gperl_convert_back_enum (G_ENUM_CLASS_TYPE (penum->enum_class),
-	                                  penum->default_value);
-    OUTPUT:
-	RETVAL
-
 MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Flags
-
-=for position post_hierarchy
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Flags
-
-=cut
 
 =for see_also Glib::ParamSpec
 =cut
@@ -1148,74 +1143,45 @@ get_flags_class (GParamSpec * pspec_flags)
     OUTPUT:
 	RETVAL
 
-SV *
-get_default_value (GParamSpec * pspec_flags)
-    PREINIT:
-	GParamSpecFlags * pflags;
+MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::GType
+
+#if GLIB_CHECK_VERSION(2, 10, 0)
+
+=for section DESCRIPTION
+
+=head1 DESCRIPTION
+
+This object describes a parameter which holds the name of a class known to the
+GLib type system.  The name of the class is considered to be the common
+ancestor for valid values.  To create a param that allows any type name,
+specify C<undef> for the package name.  Beware, however, that although
+we say "any type name", this actually refers to any type registered
+with Glib; normal Perl packages will not work.
+
+=cut
+
+=for apidoc
+If C<undef>, then any class is allowed.
+=cut
+const gchar_ornull *
+get_is_a_type (GParamSpec * pspec_gtype)
     CODE:
-	pflags = G_PARAM_SPEC_FLAGS (pspec_flags);
-	RETVAL = gperl_convert_back_flags
-				(G_FLAGS_CLASS_TYPE (pflags->flags_class),
-				 pflags->default_value);
+	GParamSpecGType * p = G_PARAM_SPEC_GTYPE (pspec_gtype);
+	RETVAL = p->is_a_type == G_TYPE_NONE
+		? NULL
+		: gperl_package_from_type (p->is_a_type);
     OUTPUT:
 	RETVAL
 
-MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::String
+#endif
 
-=for position post_hierarchy
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::String
-
-=cut
-
-=for see_also Glib::ParamSpec
-=cut
-
-gchar *
-get_default_value (GParamSpec * pspec_string)
-    CODE:
-	RETVAL = G_PARAM_SPEC_STRING (pspec_string)->default_value;
-    OUTPUT:
-	RETVAL
-
-## the others are fairly uninteresting.
-##  string cset_first
-##  string cset_nth
-##  char substitutor
-##  bool null_fold_if_empty
-##  bool ensure_non_null
-
-MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::Unichar
-
-=for position post_hierarchy
-
-=head1 HIERARCHY
-
-  Glib::ParamSpec
-  +----Glib::Param::Unichar
-
-=cut
-
-=for see_also Glib::ParamSpec
-=cut
-
-gunichar
-get_default_value (GParamSpec * pspec_unichar)
-    CODE:
-	RETVAL = G_PARAM_SPEC_UNICHAR (pspec_unichar)->default_value;
-    OUTPUT:
-	RETVAL
-
-##MODULE = Glib::ParamSpec	PACKAGE = Glib::Param::ValueArray
-
-##element_spec
-##fixed_n_elements
-
-## G_TYPE_PARAM_PARAM, "Glib::Param::Param" -- no members
-## G_TYPE_PARAM_BOXED, "Glib::Param::Boxed" -- no members
-## G_TYPE_PARAM_POINTER, "Glib::Param::Pointer" -- no members
-## G_TYPE_PARAM_OBJECT, "Glib::Param::Object" -- no members
-## G_TYPE_PARAM_OVERRIDE, "Glib::Param::Override" -- no public members
+# These don't have their MODULE section since they have no or no interesting
+# members:
+## Glib::Param::Boolean
+## Glib::Param::String
+## Glib::Param::Unichar
+## Glib::Param::Param
+## Glib::Param::Boxed
+## Glib::Param::Pointer
+## Glib::Param::Object
+## Glib::Param::Override

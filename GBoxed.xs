@@ -379,7 +379,7 @@ default_boxed_unwrap (GType        gtype,
 
 	PERL_UNUSED_VAR (gtype);
 
-	if (!SvROK (sv))
+	if (!gperl_sv_is_ref (sv))
 		croak ("expected a blessed reference");
 
 	if (!sv_derived_from (sv, package))
@@ -579,6 +579,8 @@ strv_wrap (GType        gtype,
 	AV * av;
 	int i;
 	gchar ** strv;
+	PERL_UNUSED_VAR (gtype);
+	PERL_UNUSED_VAR (package);
 
 	if (!boxed)
 		return &PL_sv_undef;
@@ -602,12 +604,14 @@ strv_unwrap (GType        gtype,
 	     SV         * sv)
 {
 	gchar ** strv = NULL;
+	PERL_UNUSED_VAR (gtype);
+	PERL_UNUSED_VAR (package);
 
 	/* pass undef */
 	if (!gperl_sv_is_defined (sv))
 		return NULL;
 
-	if (SvROK (sv)) {
+	if (gperl_sv_is_ref (sv)) {
 		AV * av;
 		int n;
 
@@ -722,7 +726,7 @@ DESTROY (sv)
 	const char * class;
 	GPerlBoxedDestroyFunc destroy;
     CODE:
-	if (!gperl_sv_is_defined (sv) || !SvROK (sv) || !SvRV (sv))
+	if (!gperl_sv_is_ref (sv) || !SvRV (sv))
 		croak ("DESTROY called on a bad value");
 
 	/* we need to find the wrapper class associated with whatever type

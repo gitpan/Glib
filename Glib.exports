@@ -24,7 +24,10 @@ SvGKeyFile
 SvGParamFlags
 SvGParamSpec
 SvGSignalFlags
+_gperl_attach_mg
 _gperl_call_XS
+_gperl_find_mg
+_gperl_remove_mg
 gperl_alloc_temp
 gperl_argv_free
 gperl_argv_new
@@ -53,6 +56,7 @@ gperl_get_boxed_check
 gperl_get_object
 gperl_get_object_check
 gperl_handle_logs_for
+gperl_hv_take_sv
 gperl_install_exception_handler
 gperl_new_boxed
 gperl_new_boxed_copy
