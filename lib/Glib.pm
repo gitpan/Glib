@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU Library General Public License
 # along with this library; if not, write to the Free Software Foundation, Inc.,
-# 59 Temple Place - Suite 330, Boston, MA  02111-1307  USA.
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 # $Id$
 #
@@ -66,7 +66,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.241';
+our $VERSION = '1.242';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 

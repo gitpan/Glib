@@ -411,7 +411,6 @@ our %basic_types = (
 	bool     => 'boolean', # C++ keyword, but provided by the perl api
 	boolean  => 'boolean',
 	int      => 'integer',
-	char     => 'integer',
 	uint     => 'unsigned',
 	float    => 'double',
 	double   => 'double',
@@ -602,7 +601,7 @@ sub _pspec_formatted_default {
     # eg. Gtk2::Paned property "max-position" is INT_MAX
     $default = "INT_MAX";
   } elsif ($type eq 'Glib::Int' && $default == POSIX::INT_MIN()) {
-    $default = "INT_MAX";
+    $default = "INT_MIN";
   } elsif ($type eq 'Glib::UInt' && $default == POSIX::UINT_MAX()) {
     $default = "UINT_MAX";
 
