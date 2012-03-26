@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 by the gtk2-perl team (see the file AUTHORS)
+ * Copyright (c) 2006, 2012 by the gtk2-perl team (see the file AUTHORS)
  *
  * Licensed under the LGPL, see LICENSE file for more information.
  *
@@ -26,6 +26,11 @@ PerlInterpreter *_gperl_get_master_interp (void);
 			PERL_SET_CONTEXT (me);				\
 		}			 				\
 	}
+
+
+#ifndef PERL_IMPLICIT_CONTEXT
+GThread * _gperl_get_main_tid (void);
+#endif
 
 /*
  * Misc. stuff
