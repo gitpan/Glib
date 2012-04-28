@@ -43,4 +43,4 @@ no_index:
 requires:
   ExtUtils::Depends: 0.300
   ExtUtils::PkgConfig: 1.00
-version: 1.252
+version: 1.253

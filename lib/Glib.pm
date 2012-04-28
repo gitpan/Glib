@@ -30,15 +30,14 @@ our @ISA = qw(DynaLoader Exporter);
 use constant {
 	TRUE  => 1,
 	FALSE => !1, # can't use !TRUE at this point
+	SOURCE_CONTINUE => 1,
+	SOURCE_REMOVE   => !1,
 	G_PRIORITY_HIGH         => -100,
 	G_PRIORITY_DEFAULT      =>  0,
 	G_PRIORITY_HIGH_IDLE    =>  100,
 	G_PRIORITY_DEFAULT_IDLE =>  200,
 	G_PRIORITY_LOW	        =>  300,
 	G_PARAM_READWRITE       => [qw/readable writable/],
-
-	SOURCE_CONTINUE         => 1,
-	SOURCE_REMOVE           => !1,
 };
 
 # export nothing by default.
@@ -47,6 +46,8 @@ our %EXPORT_TAGS = (
 	constants => [qw/
 			TRUE
 			FALSE
+			SOURCE_CONTINUE
+			SOURCE_REMOVE
 			G_PRIORITY_HIGH
 			G_PRIORITY_DEFAULT
 			G_PRIORITY_HIGH_IDLE
@@ -66,7 +67,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.252';
+our $VERSION = '1.253';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
