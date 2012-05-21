@@ -67,7 +67,7 @@ our %EXPORT_TAGS = (
 our @EXPORT_OK = map { @$_ } values %EXPORT_TAGS;
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
-our $VERSION = '1.253';
+our $VERSION = '1.260';
 
 sub dl_load_flags { $^O eq 'darwin' ? 0x00 : 0x01 }
 
@@ -594,6 +594,8 @@ you can also get all of them with the export tag "all".
 
   TRUE
   FALSE
+  SOURCE_CONTINUE
+  SOURCE_REMOVE
   G_PRIORITY_HIGH
   G_PRIORITY_DEFAULT
   G_PRIORITY_HIGH_IDLE
