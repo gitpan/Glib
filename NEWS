@@ -1,8 +1,26 @@
+Overview of changes in Glib 1.261 (stable)
+==========================================
+
+* Add NEWS entries comparing 1.260 to 1.24x
+* Add the 64 bit integer converters to the linker exports
+* updated README file similar to Cairo (RT#74870)
+* Created %meta_merge which follows v2 of meta-spec
+
 Overview of changes in Glib 1.260 (stable)
 ==========================================
 
-* Tell CPAN to ignore POD fragments in Makefile.PL
-* Document that SOURCE_CONTINUE and _REMOVE can be exported
+ Since 1.24x (the previous stable series)
+ ----------------------------------------
+ * Make Glib::Object ref-counting compatible with perl >= 5.16.
+ * Make signal marshalling more thread-safe.
+ * Export the constants SOURCE_CONTINUE and SOURCE_REMOVE on request.
+ * Create and register a GType for GConnectFlags.
+ * Increase compatibility with older perls.
+
+ Since 1.253
+ -----------
+ * Tell CPAN to ignore POD fragments in Makefile.PL.
+ * Document that SOURCE_CONTINUE and _REMOVE can be exported.
 
 Overview of changes in Glib 1.253
 =================================
