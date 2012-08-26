@@ -25,19 +25,17 @@ use Cwd;
 
 # minimum required version of dependencies we need to build
 our %build_reqs = (
-	'perl-ExtUtils-Depends'   => '0.300',
-	'perl-ExtUtils-PkgConfig' => '1.00',
-	'Glib'                    => '2.0.0',
+	'glib' => '2.0.0',
 );
 our %PREREQ_PM = (
-	'ExtUtils::Depends'   => $build_reqs{'perl-ExtUtils-Depends'},
-	'ExtUtils::PkgConfig' => $build_reqs{'perl-ExtUtils-PkgConfig'},
+	'ExtUtils::Depends'   => '0.300',
+	'ExtUtils::PkgConfig' => '1.000',
 );
 
 # Writing a fake Makefile ensures that CPAN will pick up the correct
 # dependencies and install them.
-unless (eval "use ExtUtils::Depends '$build_reqs{'perl-ExtUtils-Depends'}';"
-           . "use ExtUtils::PkgConfig '$build_reqs{'perl-ExtUtils-PkgConfig'}';"
+unless (eval "use ExtUtils::Depends '$PREREQ_PM{'ExtUtils::Depends'}';"
+           . "use ExtUtils::PkgConfig '$PREREQ_PM{'ExtUtils::PkgConfig'}';"
            . "1") {
    warn "$@\n";
    WriteMakefile(
@@ -57,7 +55,7 @@ mkdir 'build', 0777;
 # If the package can't be found, warn and exit with status 0 to indicate to
 # CPAN testers that their system is not supported.
 my %glibcfg;
-unless (eval { %glibcfg = ExtUtils::PkgConfig->find ("gobject-2.0 >= $build_reqs{Glib}");
+unless (eval { %glibcfg = ExtUtils::PkgConfig->find ("gobject-2.0 >= $build_reqs{glib}");
 	       1; })
 {
 	warn $@;
@@ -208,7 +206,7 @@ WriteMakefile(
     $glib ? $glib->get_makefile_vars : (),
 );
 
-=unstable
+#=unstable
 
 print <<__EOW__;
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
@@ -216,11 +214,12 @@ WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
    This is an unstable development release of Glib.  The API is not
    frozen and things are subject to change at any time.  Report any
    bugs to gtk-perl-list AT gnome DOT org as soon as possible.
-   Please use the 1.24x series for important work.
+   Please use the 1.26x series for important work.
 
 WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 __EOW__
 
+#=cut
 
 =frozen
 
@@ -263,11 +262,11 @@ build/podindex :: \$(INST_LIB)/Glib/GenPod.pm
 			COPYRIGHT_FROM => 'copyright.pod',
 	       )
 	     . Glib::MakeHelper->postamble_rpms (
-			'GLIB' => $build_reqs{'Glib'},
+			'GLIB' => $build_reqs{'glib'},
 			'PERL_EXTUTILS_DEPENDS' =>
-				$build_reqs{'perl-ExtUtils-Depends'},
+				$PREREQ_PM{'ExtUtils::Depends'},
 			'PERL_EXTUTILS_PKGCONFIG' =>
-				$build_reqs{'perl-ExtUtils-PkgConfig'},
+				$PREREQ_PM{'ExtUtils::PkgConfig'},
 		);
 }
 

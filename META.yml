@@ -5,7 +5,7 @@ author:
 build_requires: {}
 configure_requires:
   ExtUtils::Depends: 0.300
-  ExtUtils::PkgConfig: 1.00
+  ExtUtils::PkgConfig: 1.000
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.6302, CPAN::Meta::Converter version 2.120921'
 license: lgpl
@@ -45,4 +45,4 @@ resources:
   license: http://www.gnu.org/licenses/lgpl-2.1.html
   repository: git://git.gnome.org/perl-Glib
   x_MailingList: https://mail.gnome.org/mailman/listinfo/gtk-perl-list
-version: 1.262
+version: 1.270

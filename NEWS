@@ -1,19 +1,24 @@
-Overview of changes in Glib 1.262 (stable)
-==========================================
+Overview of changes in Glib 1.270
+=================================
 
-* Properly specify our dependencies.
-* Distriubte a missing test file.
+* Correctly handle the boxed type for GError.
+* Ensure that custom signal marshallers are always used irregardless of the
+  spelling used for the signal name.
+* Make the stack handling of some marshallers more robust, in
+  preparation for custom Glib::Boxed converters that call back into Perl
+  code.
+* Add new C API gperl_register_boxed_synonym.
 
-Overview of changes in Glib 1.261 (stable)
-==========================================
+Overview of changes in Glib 1.261
+=================================
 
 * Add NEWS entries comparing 1.260 to 1.24x
 * Add the 64 bit integer converters to the linker exports
 * updated README file similar to Cairo (RT#74870)
 * Created %meta_merge which follows v2 of meta-spec
 
-Overview of changes in Glib 1.260 (stable)
-==========================================
+Overview of changes in Glib 1.260
+=================================
 
  Since 1.24x (the previous stable series)
  ----------------------------------------

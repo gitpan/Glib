@@ -117,7 +117,7 @@ struct _BoxedInfo {
 };
 
 
-BoxedInfo *
+static BoxedInfo *
 boxed_info_new (GType gtype,
 		const char * package,
 		GPerlBoxedWrapperClass * wrapper_class)
@@ -130,7 +130,16 @@ boxed_info_new (GType gtype,
 	return boxed_info;
 }
 
-void
+static BoxedInfo *
+boxed_info_copy (BoxedInfo * boxed_info)
+{
+	BoxedInfo * new_boxed_info;
+	new_boxed_info = g_new0 (BoxedInfo, 1);
+	memcpy (new_boxed_info, boxed_info, sizeof (BoxedInfo));
+	return new_boxed_info;
+}
+
+static void
 boxed_info_destroy (BoxedInfo * boxed_info)
 {
 	if (boxed_info) {
@@ -255,6 +264,42 @@ gperl_register_boxed_alias (GType gtype,
 	   free-function installed, so that's ok. */
 	g_hash_table_insert (info_by_package, (char *) package, boxed_info);
 	G_UNLOCK (info_by_package);
+}
+
+=item void gperl_register_boxed_synonym (GType registered_gtype, GType synonym_gtype)
+
+Registers I<synonym_gtype> as a synonym for I<registered_gtype>.  All boxed
+objects of type I<synonym_gtype> will then be treated as if they were of type
+I<registered_gtype>, and I<gperl_boxed_package_from_type> will return the
+package associated with I<registered_gtype>.
+
+I<registered_gtype> must have been registered with I<gperl_register_boxed>
+already.
+
+=cut
+
+void
+gperl_register_boxed_synonym (GType registered_gtype,
+                              GType synonym_gtype)
+{
+	BoxedInfo * registered_boxed_info, * synonym_boxed_info;
+
+	G_LOCK (info_by_gtype);
+
+	registered_boxed_info = (BoxedInfo *)
+		g_hash_table_lookup (info_by_gtype, (gpointer) registered_gtype);
+
+	if (!registered_boxed_info) {
+		croak ("cannot make %s synonymous to the unregistered type %s",
+		       g_type_name (synonym_gtype),
+		       g_type_name (registered_gtype));
+	}
+
+	synonym_boxed_info = boxed_info_copy (registered_boxed_info);
+	g_hash_table_insert (info_by_gtype, (gpointer) synonym_gtype,
+	                     synonym_boxed_info);
+
+	G_UNLOCK (info_by_gtype);
 }
 
 =item GType gperl_boxed_type_from_package (const char * package)
@@ -441,6 +486,10 @@ to a small wrapper structure which stores some metadata, such as whether
 the boxed structure should be destroyed when the wrapper is destroyed
 (controlled by I<own>; if the wrapper owns the object, the wrapper is in
 charge of destroying it's data).
+
+This function might end up calling other Perl code, so if you use it in XS code
+for a generic GType, make sure the stack pointer is set up correctly before the
+call, and restore it after the call.
 
 =cut
 SV *
@@ -697,6 +746,57 @@ static GPerlBoxedWrapperClass gstring_wrapper_class = {
 	NULL
 };
 
+
+#if GLIB_CHECK_VERSION (2, 26, 0)
+
+static SV*
+gerror_wrap (GType        gtype,
+	     const char * package,
+	     gpointer     boxed,
+	     gboolean     own)
+{
+	SV *sv;
+	GError *error;
+	PERL_UNUSED_VAR (gtype);
+	PERL_UNUSED_VAR (package);
+
+	if (!boxed)
+		return &PL_sv_undef;
+
+	error = (GError*) boxed;
+
+	sv = gperl_sv_from_gerror (error);
+
+	if (own)
+		g_error_free (error);
+
+	return sv;
+}
+
+static gpointer
+gerror_unwrap (GType        gtype,
+	       const char * package,
+	       SV         * sv)
+{
+	GError *error = NULL;
+	PERL_UNUSED_VAR (gtype);
+	PERL_UNUSED_VAR (package);
+
+	gperl_gerror_from_sv (sv, &error);
+
+	return error;
+}
+
+static GPerlBoxedWrapperClass gerror_wrapper_class = {
+	gerror_wrap,
+	gerror_unwrap,
+	NULL
+};
+
+#endif
+
+
+
 MODULE = Glib::Boxed	PACKAGE = Glib::Boxed
 
 BOOT:
@@ -706,7 +806,9 @@ BOOT:
 	gperl_register_boxed (G_TYPE_GSTRING, "Glib::GString", &gstring_wrapper_class);
 #if GLIB_CHECK_VERSION (2, 4, 0)
 	gperl_register_boxed (G_TYPE_STRV, "Glib::Strv", &strv_wrapper_class);
-	/*gperl_set_isa ("Glib::Strv", "Glib::Boxed");*/
+#endif
+#if GLIB_CHECK_VERSION (2, 26, 0)
+	gperl_register_boxed (G_TYPE_ERROR, "Glib::Error", &gerror_wrapper_class);
 #endif
 
 
@@ -762,7 +864,8 @@ copy (SV * sv)
 		       g_type_name (boxed_info->gtype), boxed_info->package);
 
 	boxed = class->unwrap (boxed_info->gtype, boxed_info->package, sv);
-	
+
+	/* No PUTBACK/SPAGAIN needed here. */
 	RETVAL = class->wrap (boxed_info->gtype, boxed_info->package, 
 	                      g_boxed_copy (boxed_info->gtype, boxed), TRUE);
     OUTPUT:

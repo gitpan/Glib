@@ -47,7 +47,7 @@
       "configure" : {
          "requires" : {
             "ExtUtils::Depends" : "0.300",
-            "ExtUtils::PkgConfig" : "1.00"
+            "ExtUtils::PkgConfig" : "1.000"
          }
       }
    },
@@ -68,5 +68,5 @@
       },
       "x_MailingList" : "https://mail.gnome.org/mailman/listinfo/gtk-perl-list"
    },
-   "version" : "1.262"
+   "version" : "1.270"
 }
