@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005,2012 by the gtk2-perl team (see the file AUTHORS for
+ * Copyright (C) 2005,2013 by the gtk2-perl team (see the file AUTHORS for
  * the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
@@ -262,7 +262,7 @@ g_key_file_load_from_data_dirs (key_file, file, flags)
 	GKeyFileFlags flags
     PREINIT:
     	GError *err = NULL;
-	gchar *full_path;
+	gchar *full_path = NULL;
 	gboolean retval;
     PPCODE:
     	retval = g_key_file_load_from_data_dirs (key_file,

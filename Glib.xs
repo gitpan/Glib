@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2005, 2012 by the gtk2-perl team (see the file AUTHORS
- * for the full list)
+ * Copyright (C) 2003-2005, 2012-2013 by the gtk2-perl team (see the file
+ * AUTHORS for the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -179,6 +179,21 @@ gperl_str_hash (gconstpointer key)
 	return h;
 }
 
+/* --- GPerlArgv ----------------------------------------------------------- */
+
+typedef struct {
+	/* Shadow copies of the pointers to the copies of the strings in argv.
+	 * Used to free the copied strings reliably even if they are removed
+	 * from argv. */
+	char **shadows;
+	 /* Hash table (pointer (not string) -> utf8 flag) so we can completely
+	  * restore PVs from the strings.  We cannot simply use an array of
+	  * utf8 flags because strings might be removed from argv, in which
+	  * case we wouldn't know which entry in the utf8 flag array
+	  * corresponds to which string. */
+	GHashTable *utf8_flags;
+} GPerlArgvPriv;
+
 =item GPerlArgv * gperl_argv_new ()
 
 Creates a new Perl argv object whose members can then be passed to functions
@@ -197,6 +212,7 @@ gperl_argv_new ()
 	SV * ARGV0;
 	int len, i;
 	GPerlArgv *pargv;
+	GPerlArgvPriv *priv;
 
 	pargv = g_new (GPerlArgv, 1);
 
@@ -224,16 +240,26 @@ gperl_argv_new ()
 	len = av_len (ARGV) + 1;
 
 	pargv->argc = len + 1;
-	pargv->shadow = g_new0 (char*, pargv->argc);
 	pargv->argv = g_new0 (char*, pargv->argc);
+
+	priv = g_new (GPerlArgvPriv, 1);
+	priv->shadows = g_new0 (char*, pargv->argc);
+	priv->utf8_flags = g_hash_table_new (NULL, NULL);
+	pargv->priv = priv;
 
 	pargv->argv[0] = SvPV_nolen (ARGV0);
 
 	for (i = 0 ; i < len ; i++) {
 		SV ** svp = av_fetch (ARGV, i, 0);
-		if (svp && gperl_sv_is_defined (*svp))
-			pargv->shadow[i] = pargv->argv[i+1]
-			                 = g_strdup (SvPV_nolen (*svp));
+		if (svp && gperl_sv_is_defined (*svp)) {
+			const char *arg = SvPV_nolen (*svp);
+			gboolean utf8_flag = !!SvUTF8 (*svp);
+			priv->shadows[i] = pargv->argv[i+1]
+			                 = g_strdup (arg);
+			g_hash_table_insert (priv->utf8_flags,
+			                     pargv->argv[i+1],
+			                     GINT_TO_POINTER (utf8_flag));
+		}
 	}
 
 	return pargv;
@@ -247,6 +273,7 @@ Updates @ARGV to resemble the stored argv array.
 void
 gperl_argv_update (GPerlArgv *pargv)
 {
+	GPerlArgvPriv *priv = pargv->priv;
 	AV * ARGV;
 	int i;
 
@@ -254,8 +281,15 @@ gperl_argv_update (GPerlArgv *pargv)
 
 	/* clear and refill @ARGV with whatever gtk_init didn't steal. */
 	av_clear (ARGV);
-	for (i = 1 ; i < pargv->argc ; i++)
-		av_push (ARGV, newSVpv (pargv->argv[i], 0));
+	for (i = 1 ; i < pargv->argc ; i++) {
+		SV *sv;
+		const char *arg = pargv->argv[i];
+		gboolean utf8_flag = !!g_hash_table_lookup (priv->utf8_flags, arg);
+		sv = newSVpv (arg, PL_na);
+		if (utf8_flag)
+			SvUTF8_on (sv);
+		av_push (ARGV, sv);
+	}
 }
 
 =item void gperl_argv_free (GPerlArgv *pargv)
@@ -266,10 +300,15 @@ Frees any resources associated with I<pargv>.
 void
 gperl_argv_free (GPerlArgv *pargv)
 {
-	g_strfreev (pargv->shadow);
+	GPerlArgvPriv *priv = pargv->priv;
+	g_strfreev (priv->shadows);
+	g_hash_table_destroy (priv->utf8_flags);
+	g_free (pargv->priv);
 	g_free (pargv->argv);
 	g_free (pargv);
 }
+
+/* ------------------------------------------------------------------------- */
 
 =item char * gperl_format_variable_for_output (SV * sv)
 
