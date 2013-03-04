@@ -1756,8 +1756,7 @@ gperl_type_instance_init (GObject * instance)
 	SV **slot;
 	g_assert (stash != NULL);
 
-	/* this SV will be freed below either via sv_2mortal or explicitly. */
-	obj = gperl_new_object (instance, FALSE);
+	obj = sv_2mortal (gperl_new_object (instance, FALSE));
 	/* we need to re-bless the wrapper because classes change
 	 * during construction of an object. */
 	sv_bless (obj, stash);
@@ -1776,13 +1775,11 @@ gperl_type_instance_init (GObject * instance)
 		ENTER;
 		SAVETMPS;
 		PUSHMARK (SP);
-		XPUSHs (sv_2mortal (obj));	/* mortalize the SV */
+		XPUSHs (obj);
 		PUTBACK;
 		call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
 		FREETMPS;
 		LEAVE;
-	} else {
-		SvREFCNT_dec (obj);		/* free the SV explicitly */
 	}
 }
 
