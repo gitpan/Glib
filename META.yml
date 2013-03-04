@@ -1,61 +1,48 @@
---- #YAML:1.0
-name:               Glib
-version:            1.291
-abstract:           Perl wrappers for the GLib utility and Object libraries
+---
+abstract: 'Perl wrappers for the GLib utility and Object libraries'
 author:
-    - gtk2-perl Team <gtk-perl-list at gnome dot org>
-license:            lgpl_2_1
-distribution_type:  module
+  - 'gtk2-perl Team <gtk-perl-list at gnome dot org>'
+build_requires: {}
 configure_requires:
-    ExtUtils::MakeMaker:  0
-build_requires:
-    ExtUtils::MakeMaker:  0
-requires:
-    ExtUtils::Depends:    0.300
-    ExtUtils::PkgConfig:  1.000
-resources:
-    bugtracker:
-        mailto:  bug-Glib [at] rt.cpan.org
-        web:     http://rt.cpan.org/Public/Dist/Display.html?Name=Glib
-    homepage:       http://gtk2-perl.sourceforge.net
-    license:        http://www.gnu.org/licenses/lgpl-2.1.html
-    repository:
-        type:  git
-        url:   git://git.gnome.org/perl-Glib
-        web:   http://git.gnome.org/browse/perl-Glib
-    x_MailingList:  https://mail.gnome.org/mailman/listinfo/gtk-perl-list
-no_index:
-    directory:
-        - t
-        - inc
-    file:
-        - Glib.xs
-        - GError.xs
-        - GUtils.xs
-        - GLog.xs
-        - GType.xs
-        - GBoxed.xs
-        - GObject.xs
-        - GValue.xs
-        - GClosure.xs
-        - GSignal.xs
-        - GMainLoop.xs
-        - GIOChannel.xs
-        - GParamSpec.xs
-        - GKeyFile.xs
-        - GOption.xs
-        - GBookmarkFile.xs
-        - Makefile.PL
-        - xsapi.pod.head
-        - xsapi.pod.foot
-    package:  MY
-generated_by:       ExtUtils::MakeMaker version 6.57_05
+  ExtUtils::Depends: 0.300
+  ExtUtils::PkgConfig: 1.000
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.64, CPAN::Meta::Converter version 2.112621'
+license: lgpl
 meta-spec:
-    url:      http://search.cpan.org/perldoc?CPAN::Meta::Spec
-    version:  2
-prereqs:
-    configure:
-        requires:
-            ExtUtils::Depends:    0.300
-            ExtUtils::PkgConfig:  1.000
-release_status:     unstable
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Glib
+no_index:
+  directory:
+    - t
+    - inc
+  file:
+    - Glib.xs
+    - GError.xs
+    - GUtils.xs
+    - GLog.xs
+    - GType.xs
+    - GBoxed.xs
+    - GObject.xs
+    - GValue.xs
+    - GClosure.xs
+    - GSignal.xs
+    - GMainLoop.xs
+    - GIOChannel.xs
+    - GParamSpec.xs
+    - GKeyFile.xs
+    - GOption.xs
+    - GBookmarkFile.xs
+    - Makefile.PL
+    - xsapi.pod.head
+    - xsapi.pod.foot
+  package:
+    - MY
+resources:
+  bugtracker: http://rt.cpan.org/Public/Dist/Display.html?Name=Glib
+  homepage: http://gtk2-perl.sourceforge.net
+  license: http://www.gnu.org/licenses/lgpl-2.1.html
+  repository: git://git.gnome.org/perl-Glib
+  x_MailingList: https://mail.gnome.org/mailman/listinfo/gtk-perl-list
+version: 1.291_001
