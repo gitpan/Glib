@@ -51,7 +51,7 @@
          }
       }
    },
-   "release_status" : "unstable",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "mailto" : "bug-Glib [at] rt.cpan.org",
@@ -68,5 +68,5 @@
       },
       "x_MailingList" : "https://mail.gnome.org/mailman/listinfo/gtk-perl-list"
    },
-   "version" : "1.291_002"
+   "version" : "1.300"
 }
