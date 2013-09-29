@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2005, 2009, 2010 by the gtk2-perl team (see the file AUTHORS for
- * the full list)
+ * Copyright (C) 2003-2005, 2009, 2010, 2013 by the gtk2-perl team (see the
+ * file AUTHORS for the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -1505,7 +1505,7 @@ install_overrides (GType type)
 			PUSHMARK (SP);
 			if (!name)
 				name = gperl_object_package_from_type (type);
-			XPUSHs (sv_2mortal (newSVpv (name, PL_na)));
+			XPUSHs (sv_2mortal (newSVpv (name, 0)));
 			PUTBACK;
 			call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
 			FREETMPS;

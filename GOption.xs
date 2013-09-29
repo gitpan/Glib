@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005-2009 by the gtk2-perl team (see the file AUTHORS)
+ * Copyright (c) 2005-2009, 2013 by the gtk2-perl team (see the file AUTHORS)
  *
  * Licensed under the LGPL, see LICENSE file for more information.
  *
@@ -547,7 +547,7 @@ sv_from_filenames (gchar **filenames)
 	av = newAV ();
 	for (i = 0; filenames[i] != NULL; i++) {
 		/* FIXME: Is this the correct converter? */
-		av_push (av, newSVpv (filenames[i], PL_na));
+		av_push (av, newSVpv (filenames[i], 0));
 	}
 
 	return newRV_noinc ((SV *) av);

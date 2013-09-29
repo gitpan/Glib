@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2005, 2010 by the gtk2-perl team (see the file AUTHORS for
- * the full list)
+ * Copyright (C) 2003-2005, 2010, 2013 by the gtk2-perl team (see the file
+ * AUTHORS for the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -408,7 +408,7 @@ typedef struct {
   void *priv;
 } GPerlArgv;
 
-GPerlArgv * gperl_argv_new ();
+GPerlArgv * gperl_argv_new (void);
 void gperl_argv_update (GPerlArgv *pargv);
 void gperl_argv_free (GPerlArgv *pargv);
 
