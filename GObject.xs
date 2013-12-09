@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2003-2006, 2010, 2012 by the gtk2-perl team (see the file
- * AUTHORS for the full list)
+ * Copyright (C) 2003-2006, 2010, 2012-2013 by the gtk2-perl team (see the
+ * file AUTHORS for the full list)
  *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Library General Public License as published by
@@ -287,7 +287,7 @@ class_info_finish_loading (ClassInfo * class_info)
 					av_push (new_isa,
 						 newSVpv (package, 0));
 				else
-					warn ("interface type %s(%d) is not"
+					warn ("interface type %s(%"G_GSIZE_FORMAT") is not"
 					      " registered",
 					      g_type_name (interfaces[i]),
 					      interfaces[i]);
@@ -1123,7 +1123,8 @@ _inc_ref_and_count (GObject * key, gint value, gpointer user_data)
 {
 	PERL_UNUSED_VAR (user_data);
 	g_object_ref (key);
-	g_hash_table_replace (perl_gobjects, key, (gpointer)++value);
+	value += 1;
+	g_hash_table_replace (perl_gobjects, key, GINT_TO_POINTER (value));
 }
 #endif
 
@@ -1251,13 +1252,13 @@ DESTROY (SV *sv)
 	{
 		gint count;
 		G_LOCK (perl_gobjects);
-		count = (int)g_hash_table_lookup (perl_gobjects, object);
+		count = GPOINTER_TO_INT (g_hash_table_lookup (perl_gobjects, object));
 		count--;
 		if (count > 0)
 		{
 /*g_printerr ("decing: %p - %d\n", object, count);*/
 			g_hash_table_replace (perl_gobjects, object,
-					      (gpointer)count);
+					      GINT_TO_POINTER (count));
 		}
 		else
 		{

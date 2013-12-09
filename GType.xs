@@ -28,6 +28,7 @@
 #include "gperl.h"
 #include "gperl_marshal.h"
 
+#include "gperl-gtypes.h"
 #include "gperl-private.h" /* for _gperl_fetch_wrapper_key */
 
 /* for fundamental types */
@@ -1104,9 +1105,8 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 	if (SvTRUE (ERRSV)) {
 		warn ("### WOAH!  unhandled exception in a signal accumulator!\n"
 		      "### this is really uncool, and for now i'm not even going to\n"
-		      "### try to recover.\n"
-		      "###    aborting");
-		abort ();
+		      "### try to recover.");
+		croak (Nullch);
 	}
 
 	if (n != 2) {
@@ -1118,10 +1118,9 @@ gperl_real_signal_accumulator (GSignalInvocationHint *ihint,
 		      "### your sub returned %d value%s\n"
 		      "###\n"
 		      "### there's no resonable way to recover from this.\n"
-		      "### you must fix this code.\n"
-		      "###    aborting",
+		      "### you must fix this code",
 		      n, n==1?"":"s");
-		abort ();
+		croak (Nullch);
 	}
 
 	SPAGAIN;
@@ -1756,8 +1755,28 @@ gperl_type_instance_init (GObject * instance)
 	SV **slot;
 	g_assert (stash != NULL);
 
-	/* this SV will be freed below either via sv_2mortal or explicitly. */
-	obj = gperl_new_object (instance, FALSE);
+	/* we need to always create a wrapper, regardless of whether there is
+	 * an INIT_INSTANCE sub.  otherwise, the fallback mechanism in
+	 * GType.xs' SET_PROPERTY handler will not have an HV to store the
+	 * properties in.
+	 *
+	 * we also need to ensure that the wrapper we create is not immediately
+	 * destroyed when we return from gperl_type_instance_init.  otherwise,
+	 * instances of classes derived from GInitiallyUnowned might be
+	 * destroyed prematurely when code in INIT_INSTANCE manages to sink the
+	 * initial, floating reference.  example: in a container subclass'
+	 * INIT_INSTANCE, adding a child and then calling the child's
+	 * get_parent() method.  so we mortalize the wrapper before the
+	 * SAVETMPS/FREETMPS pair below.  this should ensure that the wrapper
+	 * survives long enough so that it is still intact when the call to the
+	 * Perl constructor returns.
+	 *
+	 * if we always sank floating references, or if we forbade doing things
+	 * as described in the example, we could simply free the SV before we
+	 * return from gperl_type_instance_init.  this would result in more
+	 * predictable reference counting. */
+	obj = sv_2mortal (gperl_new_object (instance, FALSE));
+
 	/* we need to re-bless the wrapper because classes change
 	 * during construction of an object. */
 	sv_bless (obj, stash);
@@ -1776,13 +1795,11 @@ gperl_type_instance_init (GObject * instance)
 		ENTER;
 		SAVETMPS;
 		PUSHMARK (SP);
-		XPUSHs (sv_2mortal (obj));	/* mortalize the SV */
+		XPUSHs (obj);
 		PUTBACK;
 		call_sv ((SV *)GvCV (*slot), G_VOID|G_DISCARD);
 		FREETMPS;
 		LEAVE;
-	} else {
-		SvREFCNT_dec (obj);		/* free the SV explicitly */
 	}
 }
 
@@ -1852,12 +1869,21 @@ gperl_type_base_init (gpointer class)
 	 * 
 	 * many thanks to Brett Kosinski for devising this evil^Wclever scheme.
 	 */
+#if GLIB_CHECK_VERSION (2, 32, 0)
+	/* GRecMutex in static storage do not need initialization */
+	static GRecMutex base_init_lock;
+#else
 	static GStaticRecMutex base_init_lock = G_STATIC_REC_MUTEX_INIT;
+#endif /* 2.32 */
 	static GHashTable * seen = NULL;
 	GSList * types;
 	GType t;
 
+#if GLIB_CHECK_VERSION (2, 32, 0)
+	g_rec_mutex_lock (&base_init_lock);
+#else
 	g_static_rec_mutex_lock (&base_init_lock);
+#endif /* 2.32 */
 
 	if (!seen)
 		seen = g_hash_table_new (g_direct_hash, g_direct_equal);
@@ -1921,7 +1947,11 @@ gperl_type_base_init (gpointer class)
 		}
 	}
 
+#if GLIB_CHECK_VERSION (2, 32, 0)
+	g_rec_mutex_unlock (&base_init_lock);
+#else
 	g_static_rec_mutex_unlock (&base_init_lock);
+#endif /* 2.32 */
 }
 
 /* make sure we close the open list to keep from freaking out pod readers... */
@@ -1978,6 +2008,9 @@ BOOT:
 	 * only one mapping (the last and correct one) from type to package.
 	 */
 	gperl_register_fundamental_alias (G_TYPE_UINT, "Glib::Uint");
+
+	/* register custom GTypes that do not have a better home. */
+	gperl_register_fundamental (GPERL_TYPE_SPAWN_FLAGS, "Glib::SpawnFlags");
 
 
 =for apidoc
