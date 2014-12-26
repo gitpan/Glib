@@ -9,7 +9,7 @@ configure_requires:
   ExtUtils::MakeMaker: '0'
   ExtUtils::PkgConfig: '1.000'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.141520'
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.143240'
 license: lgpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -50,4 +50,4 @@ resources:
   homepage: http://gtk2-perl.sourceforge.net
   license: http://www.gnu.org/licenses/lgpl-2.1.html
   repository: git://git.gnome.org/perl-Glib
-version: '1.306'
+version: '1.307'
